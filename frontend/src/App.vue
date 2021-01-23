@@ -1,19 +1,16 @@
 <template>
-  <v-app>
-    <v-main>
-      <Login/>
-    </v-main>
-  </v-app>
+  <v-fade-transition mode="out-in">
+    <router-view />
+  </v-fade-transition>
 </template>
 
 <script>
-import Login from './components/Login';
 
 export default {
-  name: 'App',
+  name: 'Main',
 
   components: {
-    Login,
+    
   },
 
   data: () => ({

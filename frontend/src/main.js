@@ -4,39 +4,46 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import App from './App.vue'
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import LoginComponent from "./components/Login.vue"
-import SecureComponent from "./components/Secure.vue"
+//import LoginComponent from "./components/Login.vue"
+//import MainComponent from "./components/Main.vue"
 import vuetify from './plugins/vuetify';
+import store from './store'
+import router from './router'
+import { sync } from 'vuex-router-sync'
+
 Vue.config.productionTip = false
 
 
+/*
 const routes = [
   {
     path: "/",
-    name: "root",
-    component: LoginComponent
+    name: "Root",
+    component: MainComponent
   },
   {
       path: "/login",
-      name: "login",
+      name: "Login",
       component: LoginComponent
   },
   {
-      path: "/secure",
-      name: "secure",
-      component: SecureComponent
+      path: "/main",
+      name: "Main",
+      component: MainComponent
   }
 ]
-
+const router = new VueRouter({routes})
+*/
 
 Vue.use(VueRouter)
 
-const router = new VueRouter({routes})
 
 
+sync(store, router)
 
 new Vue({
-  render: h => h(App),
+  router,
   vuetify,
-  router: router
+  store,
+  render: h => h(App),
 }).$mount('#app')
