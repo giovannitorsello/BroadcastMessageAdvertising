@@ -1,4 +1,3 @@
-# bma
-Broadcast Message Advertising
 # BroadcastMessageAdvertising
-# BroadcastMessageAdvertising
+
+Tool to manage messages gateway (SMS, WhatsApp, etc) to deliver messages.
