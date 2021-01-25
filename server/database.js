@@ -8,6 +8,7 @@ sequelize.options.logging = true;
 
 //const sequelize = new Sequelize('database', 'username', 'password', {host: config.database.host,dialect: config.database.type});
 class User extends Model { };
+class Customer extends Model { };
 class Config extends Model { };
 
 
@@ -16,6 +17,7 @@ module.exports = {
     seq: {},
     entities: {
         user: User,
+        customer: Customer,
         config: Config,
     },
     setup(app, callback) {
@@ -52,6 +54,23 @@ module.exports = {
             modelName: 'user'
         });
 
+        Customer.init({
+            uid: { type: Sequelize.STRING, allowNull: false },
+            firstname: { type: Sequelize.STRING, allowNull: false },
+            lastname: { type: Sequelize.STRING, allowNull: false },
+            email: { type: Sequelize.STRING, allowNull: true },
+            mobilephone: { type: Sequelize.STRING, allowNull: false },
+            address: { type: Sequelize.STRING, allowNull: true },
+            postcode: { type: Sequelize.STRING, allowNull: true },
+            city: { type: Sequelize.STRING, allowNull: true },
+            state: { type: Sequelize.STRING, allowNull: true },
+            creationdate: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+            objData: { type: Sequelize.JSON }
+        }, {
+            sequelize,
+            modelName: 'customer'
+        });
+
         Config.init({
             key: { type: Sequelize.STRING, allowNull: true },    //key section config
             value: { type: Sequelize.BLOB, allowNull: true },  //JSON configuration     
@@ -62,6 +81,7 @@ module.exports = {
 
         //Tabelle da non modificare. Dati Fissi.
         Config.sync({ force: false });
+        Customer.sync({ force: false });
         User.sync({ force: false });
     },
     execute_raw_query(sql, callback) {

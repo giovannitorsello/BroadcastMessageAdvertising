@@ -1,5 +1,6 @@
 const config = require("./config.js").load();
 const mailer = require("./mailer.js");
+const utility = require("./utility.js");
 const formidable = require("formidable");
 const { Op } = require("sequelize");
 const { fork } = require("child_process");
@@ -93,6 +94,49 @@ module.exports = {
     app.post("/adminarea/get_session", function (req, res) {
       if (req.session) res.send({ session: req.session, status: "OK" });
       else res.send({ session: {}, status: "error" });
+    });
+
+    ///////////////////// Customer ///////////////////////////
+    app.post("/adminarea/customer/getall", function (req, res) {
+      database.entities.customer.findAll().then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Customers found", customers: results });
+        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/getCaps", function (req, res) {
+      database.execute_raw_query("SELECT postcode, city from customers GROUP BY postcode, city;", function (results){
+        if (results)
+          res.send({ status: "OK", msg: "Caps found", caps: results });
+        else res.send({ status: "OK", msg: "Caps not found", caps: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/getStates", function (req, res) {
+      database.execute_raw_query("SELECT state from customers GROUP BY state;", function (results){
+        if (results)
+          res.send({ status: "OK", msg: "States found", states: results });
+        else res.send({ status: "OK", msg: "States not found", states: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/selectByCap", function (req, res) {
+      var cap=req.body.selectedCap;
+      database.entities.customer.findAll({where: {postcode: cap}}).then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Customers found", customers: results });
+        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/selectByState", function (req, res) {
+      var st=req.body.selectedState;
+      database.entities.customer.findAll({where: {state: st}}).then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Customers found", customers: results });
+        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
     });
 
     ///////////////////// User ///////////////////////////////
@@ -264,6 +308,31 @@ module.exports = {
         } else {
           res.send({ status: "OK", msg: "Logout accepted.", user: {} });
         }
+      });
+    });
+
+    //////////////////////////Upload files/////////////////////
+    app.post("/upload/contacts", function (req, res) {
+      const form = new formidable.IncomingForm();
+      form.parse(req, function (err, fields, files) {        
+        var oldPath = files.csv_data.path; 
+        var newPath = path.join(__dirname, 'uploads') 
+                + '/'+files.csv_data.name 
+        var rawData = fs.readFileSync(oldPath) 
+        console.log("Received file:  "+oldPath);
+        console.log("Upload file:  "+newPath);
+        
+        fs.writeFile(newPath, rawData, function(err){ 
+            if(err) console.log(err) 
+            else {
+              utility.import_Contacts_From_Csv(newPath, function () {
+                database.entities.customer.findAll().then(function (results) {
+                  res.send({ status: "OK", msg: "Customers found", customers: results });
+                });                    
+              });            
+            }
+            
+        })
       });
     });
   },
