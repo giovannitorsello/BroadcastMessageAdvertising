@@ -11,11 +11,12 @@ const { Sequelize, Model, DataTypes } = require("sequelize");
 const path = require("path");
 const axios = require("axios");
 
-//Geo library
+const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
 
 module.exports = {
   load_routes(app, database) {
+    shortner.load(app, database);
     pingServer.startServer(app, database);
 
     /////////////////////GENERAL UTILITIES //////////////////////
@@ -113,11 +114,35 @@ module.exports = {
       });
     });
 
+    app.post("/adminarea/customer/getCities", function (req, res) {
+      database.execute_raw_query("SELECT city from customers GROUP BY city;", function (results){
+        if (results)
+          res.send({ status: "OK", msg: "Cities found", cities: results });
+        else res.send({ status: "OK", msg: "Cities not found", cities: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/getProvinces", function (req, res) {
+      database.execute_raw_query("SELECT adm1 from customers GROUP BY adm1;", function (results){
+        if (results)
+          res.send({ status: "OK", msg: "Provinces found", provinces: results });
+        else res.send({ status: "OK", msg: "Provinces not found", provinces: {} });
+      });
+    });
+
     app.post("/adminarea/customer/getStates", function (req, res) {
-      database.execute_raw_query("SELECT state from customers GROUP BY state;", function (results){
+      database.execute_raw_query("SELECT adm2 from customers GROUP BY adm2;", function (results){
         if (results)
           res.send({ status: "OK", msg: "States found", states: results });
         else res.send({ status: "OK", msg: "States not found", states: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/getCountries", function (req, res) {
+      database.execute_raw_query("SELECT adm3 from customers GROUP BY adm3;", function (results){
+        if (results)
+          res.send({ status: "OK", msg: "Countries found", countries: results });
+        else res.send({ status: "OK", msg: "Countries not found", countries: {} });
       });
     });
 
@@ -130,12 +155,76 @@ module.exports = {
       });
     });
 
-    app.post("/adminarea/customer/selectByState", function (req, res) {
-      var st=req.body.selectedState;
-      database.entities.customer.findAll({where: {state: st}}).then(function (results) {
+    app.post("/adminarea/customer/selectByCity", function (req, res) {
+      var st=req.body.selectedCity;
+      database.entities.customer.findAll({where: {city: st}}).then(function (results) {
         if (results)
           res.send({ status: "OK", msg: "Customers found", customers: results });
         else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/selectByProvince", function (req, res) {
+      var st=req.body.selectedProvince;
+      database.entities.customer.findAll({where: {adm1: st}}).then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Customers found", customers: results });
+        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/selectByState", function (req, res) {
+      var st=req.body.selectedState;
+      database.entities.customer.findAll({where: {adm2: st}}).then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Customers found", customers: results });
+        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
+    });
+
+    app.post("/adminarea/customer/selectByCountry", function (req, res) {
+      var st=req.body.selectedCountry;
+      database.entities.customer.findAll({where: {adm3: st}}).then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Customers found", customers: results });
+        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+      });
+    });
+
+    /////////////////////Message campaign ////////////////////
+    app.post("/adminarea/messageCampaign/insert", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      var camp={};
+      var link=[];
+      if(messageCampaign.contacts && messageCampaign.contacts.lenght===0) return;
+      
+     
+      camp.uid=utility.makeUuid();
+      camp.name=messageCampaign.name;
+      camp.message=messageCampaign.message.text
+      camp.ncontacts=messageCampaign.contacts.lenght;
+      camp.ncompleted=0;
+      camp.state="disabled";
+      
+
+      database.entities.messageCampaign.create(camp).then(function (objnew) {
+        if (objnew !== null) {
+          urls=[messageCampaign.message.url1, messageCampaign.message.url2];
+          shortner.makeShortLink(objnew, urls, function (results){
+            res.send({ status: "OK", msg: "Message campaign insert successfully", messageCampaign: objnew });                 
+          });                    
+        }
+        else {
+          res.send({ status: "error", msg: "Message campaign not insert", messageCampaign: {} });                 
+        }
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/findAll", function (req, res) {
+      database.entities.messageCampaign.findAll().then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Message campaigns found", messageCampaigns: results });
+        else res.send({ status: "OK", msg: "Message campaigns not found", messageCampaigns: {} });
       });
     });
 

@@ -6,12 +6,7 @@ const state = {
   drawer: null,
   drawerImage: true,
   mini: false,
-  items: [
-    {
-      title: 'Dashboard',
-      icon: 'mdi-view-dashboard',
-      to: '/',
-    },
+  items: [    
     {
       title: 'Gestione campagna',
       icon: 'mdi-sign-text',

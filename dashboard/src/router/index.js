@@ -20,7 +20,7 @@ const router = new Router({
   },
   routes: [
     layout('Default', [
-      route('Dashboard'),
+      //route('Dashboard'),
 
       // Pages
       route('CampaignManage', null, 'campaign/manage'),
@@ -34,10 +34,10 @@ const router = new Router({
       route('Typography', null, 'components/typography'),
 
       // Tables
-      route('Regular Tables', null, 'tables/regular'),
+      //route('Regular Tables', null, 'tables/regular'),
 
       // Maps
-      route('Google Maps', null, 'maps/google'),
+      //route('Google Maps', null, 'maps/google'),
     ]),
   ],
 })

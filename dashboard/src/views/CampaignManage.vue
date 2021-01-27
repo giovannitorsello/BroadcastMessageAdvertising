@@ -2,6 +2,37 @@
   <div>
     <v-container>
       <v-tabs v-model="tab">
+        <v-tab href="#uploadcontacts">
+          <v-card flat>
+            <v-card-text>Caricamento contatti</v-card-text>
+          </v-card>
+        </v-tab>
+        <v-tab-item id="uploadcontacts" key="uploadcontacts">
+          <v-card>
+            <v-row>
+              <v-col>
+                <v-file-input
+                  v-on:change="loadCSVFile"
+                  v-model="fileCSV"
+                  truncate-length="15"
+                  show-size
+                  label="Carica il file CSV dei contatti"
+                ></v-file-input>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-data-table
+                  :headers="headers"
+                  :items="contacts"
+                  :items-per-page="30"
+                  class="elevation-1"
+                ></v-data-table>
+              </v-col>
+            </v-row>
+          </v-card>
+        </v-tab-item>
+
         <v-tab href="#select">
           <v-card flat>
             <v-card-text>Selezione contatti</v-card-text>
@@ -17,10 +48,28 @@
                 v-on:change="selectByCap"
               ></v-select>
               <v-select
+                :items="cities"
+                v-model="selectedCity"
+                label="Seleziona per Città"
+                v-on:change="selectByCity"
+              ></v-select>
+              <v-select
+                :items="provinces"
+                v-model="selectedProvince"
+                label="Seleziona per Provincia"
+                v-on:change="selectByProvince"
+              ></v-select>
+              <v-select
                 :items="states"
                 v-model="selectedState"
                 label="Seleziona per Regione"
                 v-on:change="selectByState"
+              ></v-select>
+              <v-select
+                :items="countries"
+                v-model="selectedCountry"
+                label="Seleziona per Nazione"
+                v-on:change="selectByCountry"
               ></v-select>
             </v-col>
           </v-row>
@@ -55,13 +104,13 @@
               <v-text-field
                 name="input-7-1"
                 filled
-                label="Link n.1"                                
+                label="Link n.1"
                 v-model="messageUrl1"
               ></v-text-field>
               <v-text-field
                 name="input-7-1"
                 filled
-                label="Link n.2"                                
+                label="Link n.2"
                 v-model="messageUrl2"
               ></v-text-field>
             </v-col>
@@ -73,37 +122,34 @@
             <v-card-text>Start/Stop</v-card-text>
           </v-card>
         </v-tab>
-        <v-tab-item id="startstop" key="startstop"></v-tab-item>
-
-        <v-tab href="#uploadcontacts">
-          <v-card flat>
-            <v-card-text>Caricamento contatti</v-card-text>
-          </v-card>
-        </v-tab>
-        <v-tab-item id="uploadcontacts" key="uploadcontacts">
-          <v-card>
-            <v-row>
-              <v-col>
-                <v-file-input
-                  v-on:change="loadCSVFile"
-                  v-model="fileCSV"
-                  truncate-length="15"
-                  show-size
-                  label="Carica il file CSV dei contatti"
-                ></v-file-input>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col>
-                <v-data-table
-                  :headers="headers"
-                  :items="contacts"
+        <v-tab-item id="startstop" key="startstop">
+          <v-row>
+            <v-col>
+              <v-text-field
+                v-model="messageCampaign.name"
+                counter="25"
+                hint="Inserisci il nome della campagna"
+                label="Nome campagna SMS"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-btn depressed color="primary" v-on:click="insertMessageCampaign"
+                >Inserisci campagna</v-btn
+              >
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-data-table
+                  :headers="headerCampaigns"
+                  :items="campaigns"
                   :items-per-page="30"
                   class="elevation-1"
                 ></v-data-table>
-              </v-col>
-            </v-row>
-          </v-card>
+            </v-col>
+          </v-row>
         </v-tab-item>
       </v-tabs>
     </v-container>
@@ -114,11 +160,26 @@
 export default {
   data() {
     return {
-      messageUrl1: "",
-      messageUrl2: "",
-      messageText: "",
+      messageCampaign: { name: "", contacts: [], message: {} },
+
+      messageUrl1: "https://www.google.com",
+      messageUrl2: "https://www.youtube.com",
+      messageText: "Testo di prova (da cambiare) |link1| e |link2|",
+
       selectedCap: "",
+      selectedCity: "",
       selectedState: "",
+      selectedProvince: "",
+      selectedCountry: "",
+
+      campaigns: [],
+      contacts: [],
+      caps: [],
+      cities: [],
+      provinces: [],
+      states: [],
+      countries: [],
+
       tab: null,
       fileCSV: [],
       headers: [
@@ -126,21 +187,66 @@ export default {
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
         { text: "Telefono", value: "mobilephone" },
-        { text: "Città", value: "city" },
         { text: "Indirizzo", value: "address" },
-        { text: "Regione", value: "state" },
+        { text: "Città", value: "city" },
+        { text: "Provincia", value: "adm1" },
+        { text: "Regione", value: "adm2" },
+        { text: "Stato", value: "adm3" },
         { text: "CAP", value: "postcode" },
       ],
-      contacts: [],
-      caps: [],
-      states: [],
+
+      headerCampaigns: [
+        { text: "Codice", value: "uid" },
+        { text: "Nome campagna", value: "name" },
+        { text: "Messagio", value: "message" },
+        { text: "Numero contatti", value: "ncontacts" },
+        { text: "Completamento", value: "ncompleted" },
+      ],
     };
   },
   mounted() {
+    this.getMessageCampaigns();
     this.getCaps();
+    this.getCities();
+    this.getProvinces();
     this.getStates();
+    this.getCountries();
   },
   methods: {
+    insertMessageCampaign() {
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/insert", {
+          messageCampaign: {
+            name:  this.messageCampaign.name,
+            contacts: this.contacts,
+            message: {text: this.messageText, url1: this.messageUrl1, url2: this.messageUrl2},
+          },
+        })
+        .then((request) => {
+          this.campaign.push(request.data.campaign);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    startMessageCampaign() {      
+    },
+    stopMessageCampaign() {      
+    },
+    deleteMessageCampaign() {      
+    },
+    getMessageCampaigns() {
+      this.axios
+        .post("http://localhost:18088/adminarea/campaign/getCampaigns")
+        .then((request) => {
+          if (request.data.campaigns) {
+            this.campaigns = request.data.campaigns;            
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     getCaps() {
       this.axios
         .post("http://localhost:18088/adminarea/customer/getCaps")
@@ -159,6 +265,40 @@ export default {
           console.log(error);
         });
     },
+    getCities() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/getCities")
+        .then((request) => {
+          if (request.data.cities) {
+            this.cities = [];
+            request.data.cities.forEach((element) => {
+              this.cities.push({
+                text: element.city,
+                value: element.city,
+              });
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    getProvinces() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/getProvinces")
+        .then((request) => {
+          console.log(request.data);
+          if (request.data.provinces) {
+            this.provinces = [];
+            request.data.provinces.forEach((element) => {
+              this.provinces.push({ text: element.adm1, value: element.adm1 });
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     getStates() {
       this.axios
         .post("http://localhost:18088/adminarea/customer/getStates")
@@ -166,7 +306,22 @@ export default {
           if (request.data.states) {
             this.states = [];
             request.data.states.forEach((element) => {
-              this.states.push({ text: element.state, value: element.state });
+              this.states.push({ text: element.adm2, value: element.adm2 });
+            });
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    getCountries() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/getCountries")
+        .then((request) => {
+          if (request.data.countries) {
+            this.countries = [];
+            request.data.countries.forEach((element) => {
+              this.countries.push({ text: element.adm3, value: element.adm3 });
             });
           }
         })
@@ -178,6 +333,30 @@ export default {
       this.axios
         .post("http://localhost:18088/adminarea/customer/selectByCap", {
           selectedCap: this.selectedCap,
+        })
+        .then((request) => {
+          this.contacts = request.data.customers;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    selectByCity() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/selectByCity", {
+          selectedCity: this.selectedCity,
+        })
+        .then((request) => {
+          this.contacts = request.data.customers;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    selectByProvince() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/selectByProvince", {
+          selectedProvince: this.selectedProvince,
         })
         .then((request) => {
           this.contacts = request.data.customers;
@@ -198,6 +377,18 @@ export default {
           console.log(error);
         });
     },
+    selectByCountry() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/selectByCountries", {
+          selectedCountry: this.selectedCountry,
+        })
+        .then((request) => {
+          this.contacts = request.data.customers;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     loadCSVFile() {
       console.log(this.fileCSV);
       var formData = new FormData();
@@ -210,6 +401,7 @@ export default {
           },
         })
         .then((request) => {
+          console.log(request.data.customers);
           this.contacts = request.data.customers;
         })
         .catch((error) => {

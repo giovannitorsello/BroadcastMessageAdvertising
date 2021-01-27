@@ -12,20 +12,22 @@ module.exports = {
 
   import_Contacts_From_Csv(filename, callback) {    
     fs.createReadStream(filename)
-      .pipe(csv())
+      .pipe(csv({separator: ";"}))
       .on("data", (row) => {
-        console.log(row);        
+       
         var cust = row;
         cust.id="";
         cust.uid=this.makeUuid();
         cust.firstname=row.NOME;        
-        cust.lastname="";
-        cust.email="";
+        cust.lastname=row.COGNOME;
+        cust.email=row.EMAIL;
         cust.mobilephone=row.NUMERO;
         cust.address=row.INDIRIZZO,
         cust.postcode=row.CAP;
         cust.city=row.PAESE;
-        cust.state="";
+        cust.adm1=row.PROV;
+        cust.adm2=row.REGIONE;
+        cust.adm3=row.STATO;
         
         
         database.entities.customer
@@ -63,5 +65,8 @@ module.exports = {
   makeUuid() {
     var code = uuid.v1();
     return code;
+  },
+  makeShortUrlCode() {
+    return randtoken.generate(2, "abcdefghijklmnopkrstuvwzABCDEFGHIJKLMNOPQRSTUVWz0123456789");
   },
 };

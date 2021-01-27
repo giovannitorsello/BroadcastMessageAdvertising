@@ -7,7 +7,9 @@ var smsCampaigns=[];
 var smsContacts=[];
 var selectedGateway=0;
 var selectedContact=0;
-var waitTime=5;
+var waitTime=5000;
+var nMaxSmsPerSim=200;
+var nTotRadios=8;
 
 module.exports = {
     app: {},
@@ -18,6 +20,7 @@ module.exports = {
         this.database = db;
         this.loadSmsGateways();
         this.loadActiveCampaings();
+        waitTime=1000*(86400/(nMaxSmsPerSim*nTotRadios));
         //start campaigns execution
         setInterval(() => {
             this.startCampaignManager();
@@ -32,7 +35,7 @@ module.exports = {
     sendNextMessage(campaign) {
         //Select next contact in couch database
         // Gateways selection
-        var contact=this.selectCurrentContact();
+        var contact=this.selectCurrentContact(campaign);
         var gateway=this.selectCurrentGateway();
         if(gateway.isWorking) {
             this.sendMessage(campaign, gateway, contact);
@@ -51,7 +54,7 @@ module.exports = {
             })
 
     },
-    selectCurrentContact() {
+    selectCurrentContact(campaign) {
         //1) Connect to couch db
         //2) Retrieve next contact in campaign
         //3) return contact
@@ -81,14 +84,16 @@ module.exports = {
         return callback();
     },
     loadSmsGateways() {
-        smsGateways=config.smsGateways;        
+        smsGateways=config.smsGateways; 
+        //Calculate total number of radios
+        for( var i=0; i<smsGateways.length;i++) {
+            nTotRadios=smsGateways[i].nRadios;
+        }
     },
     loadActiveCampaings() {
         //Caricare dal database solo le campagne attive
         this.smsCampaigns=[
-            {id: "1", "name": "prov1", uuid: "1111", message: "Ciao 1", begin: "", end: ""},
-            {id: "2", "name": "prov2", uuid: "2222", message: "Ciao 1", begin: "", end: ""},
-            {id: "3", "name": "prov3", uuid: "3333", message: "Ciao 1", begin: "", end: ""}
+            {id: "1", "name": "prov1", uuid: "1111", message: "Ciao 1", begin: "", end: ""}            
         ];
     }
 }
