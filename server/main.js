@@ -14,6 +14,7 @@ var cors = require('cors');
 
 
 var database = require('./database.js')
+var smsCampaignManager = require('./smsCampaignManager.js')
 
 //file per route sezioni
 var routes_admin_area = require("./route_admin_area.js");
@@ -66,7 +67,8 @@ app.listen(config.server.http_port);
 
 //Init componets and utilities.
 database.setup(app, function () {
-  //utility.load_postalcodes();
+  smsCampaignManager.setup(app,database);
+  
   //Loading route for customer area
   routes_admin_area.load_routes(app, database);
   //routes_cust_area.load_routes(app, database);  

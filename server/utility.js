@@ -18,6 +18,16 @@ module.exports = {
         var cust = row;
         cust.id="";
         cust.uid=this.makeUuid();
+        cust.firstname=row.NOME;        
+        cust.lastname="";
+        cust.email="";
+        cust.mobilephone=row.NUMERO;
+        cust.address=row.INDIRIZZO,
+        cust.postcode=row.CAP;
+        cust.city=row.PAESE;
+        cust.state="";
+        
+        
         database.entities.customer
           .findOne({ where: { mobilephone: cust.mobilephone } })
           .then(function (item) {
