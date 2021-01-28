@@ -144,7 +144,7 @@
             <v-col>
               <v-data-table
                   :headers="headerCampaigns"
-                  :items="campaigns"
+                  :items="messageCampaigns"
                   :items-per-page="30"
                   class="elevation-1"
                 ></v-data-table>
@@ -172,7 +172,7 @@ export default {
       selectedProvince: "",
       selectedCountry: "",
 
-      campaigns: [],
+      messageCampaigns: [],
       contacts: [],
       caps: [],
       cities: [],
@@ -205,12 +205,7 @@ export default {
     };
   },
   mounted() {
-    this.getMessageCampaigns();
-    this.getCaps();
-    this.getCities();
-    this.getProvinces();
-    this.getStates();
-    this.getCountries();
+    this.refreshAll();
   },
   methods: {
     insertMessageCampaign() {
@@ -223,7 +218,7 @@ export default {
           },
         })
         .then((request) => {
-          this.campaign.push(request.data.campaign);
+          this.messageCampaigns.push(request.data.messageCampaign);
         })
         .catch((error) => {
           console.log(error);
@@ -389,6 +384,25 @@ export default {
           console.log(error);
         });
     },
+    getCsvLoadedCustomers() {
+      this.axios
+        .post("http://localhost:18088/adminarea/customer/getall")
+        .then((request) => {
+          this.contacts = request.data.customers;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    refreshAll() {
+      this.getCaps();
+      this.getCities();
+      this.getProvinces();
+      this.getStates();
+      this.getCountries();
+      this.getCsvLoadedCustomers();
+      this.getMessageCampaigns();
+    },
     loadCSVFile() {
       console.log(this.fileCSV);
       var formData = new FormData();
@@ -401,8 +415,7 @@ export default {
           },
         })
         .then((request) => {
-          console.log(request.data.customers);
-          this.contacts = request.data.customers;
+          setTimeout(this.refreshAll, 3000);
         })
         .catch((error) => {
           console.log(error);
