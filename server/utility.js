@@ -10,7 +10,7 @@ const database = require("./database.js");
 
 module.exports = {
 
-  import_Contacts_From_Csv(filename, callback) {    
+  import_Contacts_From_Csv(idCampaign, filename, callback) {    
     fs.createReadStream(filename)
       .pipe(csv({separator: ";"}))
       .on("data", (row) => {
@@ -28,6 +28,7 @@ module.exports = {
         cust.adm1=row.PROV;
         cust.adm2=row.REGIONE;
         cust.adm3=row.STATO;
+        cust.campaignId=idCampaign;
         
         database.entities.customer
           .findOne({ where: { mobilephone: cust.mobilephone } })

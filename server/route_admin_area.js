@@ -14,6 +14,7 @@ const axios = require("axios");
 const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
 const smsCampaignManager = require("./smsCampaignManager.js");
+const { entities } = require("./database.js");
 
 module.exports = {
   load_routes(app, database) {
@@ -296,20 +297,16 @@ module.exports = {
       camp.id = "";
       camp.name = messageCampaign.name;
       camp.message = messageCampaign.message.text;
-      camp.ncontacts = messageCampaign.contacts.lenght;
+      camp.ncontacts = messageCampaign.ncontacts;
       camp.ncompleted = 0;
       camp.state = "disabled";
 
-      database.entities.messageCampaign.create(camp).then( (objnew) => {
-        if (objnew !== null) {
-          urls = [messageCampaign.message.url1, messageCampaign.message.url2];          
-          shortner.makeShortLink(objnew, urls, function (results) {            
-            res.send({
-              status: "OK",
-              msg: "Message campaign insert successfully",
-              messageCampaign: objnew,
-            });
-            smsCampaignManager.reloadActiveCampaings();
+      database.entities.messageCampaign.create(camp).then((campNew) => {
+        if (campNew !== null) {
+          res.send({
+            status: "OK",
+            msg: "Message campaign insert successfully",
+            messageCampaign: campNew,
           });
         } else {
           res.send({
@@ -318,6 +315,19 @@ module.exports = {
             messageCampaign: {},
           });
         }
+
+        urls = [messageCampaign.message.url1, messageCampaign.message.url2];
+        urls.forEach((url) => {
+          database.entities.link
+            .create({
+              id: "",
+              urlOriginal: url,
+              campaignId: campNew.id,
+            })
+            .then(function (linkNew) {
+              
+            });
+        });
       });
     });
 
@@ -327,17 +337,38 @@ module.exports = {
         .findOne({ where: { id: messageCampaign_updated.id } })
         .then(function (obj) {
           if (obj !== null) {
+            obj.name = messageCampaign_updated.name;
             obj.state = messageCampaign_updated.state;
+            obj.message = messageCampaign_updated.message.text;
             obj.ncontacts = messageCampaign_updated.ncontacts;
-            obj.ncompleted = messageCampaign_updated.ncompleted;
 
-            obj.save().then(function (objupdate) {
-              if (objupdate !== null) {
+            obj.save().then(function (campNew) {
+              if (campNew !== null) {
                 smsCampaignManager.reloadActiveCampaings();
+                //delete all links
+                database.entities.link.destroy({
+                  where: { campaignId: campNew.id },
+                });
+                urls = [
+                  messageCampaign_updated.message.url1,
+                  messageCampaign_updated.message.url2,
+                ];
+                urls.forEach((url) => {
+                  database.entities.link
+                    .create({
+                      id: "",
+                      urlOriginal: url,
+                      campaignId: campNew.id,
+                    })
+                    .then(function (linkNew) {
+                      
+                    });
+                });
+
                 res.send({
                   status: "OK",
                   msg: "Message campaign update successfully",
-                  messageCampaign: objupdate,
+                  messageCampaign: campNew,
                 });
               } else {
                 res.send({
@@ -351,12 +382,80 @@ module.exports = {
         });
     });
 
+    app.post("/adminarea/messageCampaign/start", function (req, res) {
+      var messageCampaign = req.body.messageCampaign;
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign.id } })
+        .then(function (obj) {
+          if (obj !== null) {            
+            obj.state = "active";
+            
+            obj.save().then(function (campNew) {
+              if (campNew !== null) {
+                smsCampaignManager.reloadActiveCampaings();
+                
+                res.send({
+                  status: "OK",
+                  msg: "Message campaign started successfully",
+                  messageCampaign: campNew,
+                });
+              } else {
+                res.send({
+                  status: "error",
+                  msg: "Message campaign start error",
+                  messageCampaign: campNew,
+                });
+              }
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/messageCampaign/pause", function (req, res) {
+      var messageCampaign = req.body.messageCampaign;
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign.id } })
+        .then(function (obj) {
+          if (obj !== null) {            
+            obj.state = "disabled";
+            
+            obj.save().then(function (campNew) {
+              if (campNew !== null) {
+                smsCampaignManager.reloadActiveCampaings();
+                
+                res.send({
+                  status: "OK",
+                  msg: "Message campaign paused successfully",
+                  messageCampaign: campNew,
+                });
+              } else {
+                res.send({
+                  status: "error",
+                  msg: "Message campaign pause error",
+                  messageCampaign: campNew,
+                });
+              }
+            });
+          }
+        });
+    });
+
     app.post("/adminarea/messageCampaign/delete", function (req, res) {
-      var messageCampaign = req.body.messageCampaign;    
+      var messageCampaign = req.body.messageCampaign;
       database.entities.messageCampaign
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (messageCampaignToDel) {
           if (messageCampaignToDel !== null) {
+            //Delete all campaign data
+            database.entities.customer.destroy({
+              where: { campaignId: messageCampaign.id },
+            });
+            database.entities.link.destroy({
+              where: { campaignId: messageCampaign.id },
+            });
+            database.entities.click.destroy({
+              where: { campaignId: messageCampaign.id },
+            });
             messageCampaignToDel.destroy();
             smsCampaignManager.reloadActiveCampaings();
             res.send({
@@ -387,6 +486,114 @@ module.exports = {
             status: "OK",
             msg: "Message campaigns not found",
             messageCampaigns: {},
+          });
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/getCampaignLinks", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      database.entities.link.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Links campaign found",
+            links: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Links campaign not found",
+            links: {},
+          });
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/getCampaignClicks", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      database.entities.click.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Clicks campaign found",
+            clicks: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Cliks campaign not found",
+            cloks: {},
+          });
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/getCampaignCustomers", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      database.entities.customer.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Customers campaign found",
+            links: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Customers campaign not found",
+            links: {},
+          });
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/getCampaignCustomersContacted", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      database.entities.customer.findAll({where: {campaignId: messageCampaign.id, state: "contacted"}}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Customers campaign found",
+            customers: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Customers campaign not found",
+            customers: {},
+          });
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/getCampaignCustomersToContact", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      database.entities.customer.findAll({where: {campaignId: messageCampaign.id, state: "toContact"}}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Customers campaign found",
+            links: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Customers campaign not found",
+            links: {},
+          });
+      });
+    });
+
+    app.post("/adminarea/messageCampaign/getCampaignInterestedCustomers", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+        database.entities.click.findAll({where: {campaignId: messageCampaign.id}, include: [database.entities.customer, database.entities.link]}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Customers interested found",
+            clicks: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Customers interested not found",
+            clicks: {},
           });
       });
     });
@@ -568,6 +775,15 @@ module.exports = {
       const form = new formidable.IncomingForm();
       form.parse(req, function (err, fields, files) {
         var oldPath = files.csv_data.path;
+        var idCampaign = fields.idCampaign;
+        if (!idCampaign || idCampaign <= 0) {
+          res.send({
+            status: "Error",
+            msg: "Error in campaign id",
+            customers: {},
+          });
+          return;
+        }
         var newPath =
           path.join(__dirname, "uploads") + "/" + files.csv_data.name;
         var rawData = fs.readFileSync(oldPath);
@@ -577,7 +793,7 @@ module.exports = {
         fs.writeFile(newPath, rawData, function (err) {
           if (err) console.log(err);
           else {
-            utility.import_Contacts_From_Csv(newPath, function () {
+            utility.import_Contacts_From_Csv(idCampaign, newPath, function () {
               database.entities.customer.findAll().then(function (results) {
                 res.send({
                   status: "OK",

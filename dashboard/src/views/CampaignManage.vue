@@ -2,12 +2,143 @@
   <div>
     <v-container>
       <v-tabs v-model="tab">
-        <v-tab href="#uploadcontacts">
+        <v-tab href="#startstop">
           <v-card flat>
-            <v-card-text>Caricamento contatti</v-card-text>
+            <v-card-text>Start/Stop</v-card-text>
           </v-card>
         </v-tab>
-        <v-tab-item id="uploadcontacts" key="uploadcontacts">
+        <v-tab-item id="startstop" key="startstop">
+          <v-row>
+            <v-col>
+              <v-text-field
+                v-model="campaignName"
+                counter="25"
+                hint="Inserisci il nome della campagna"
+                label="Nome campagna SMS"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-btn
+                depressed
+                color="primary"
+                v-on:click="insertMessageCampaign"
+                >Inserisci campagna</v-btn
+              >
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-data-table
+                :headers="headerCampaigns"
+                :items="messageCampaigns"
+                :items-per-page="30"
+                class="elevation-1"
+              >
+                <template v-slot:item="row">
+                  <tr @click="selectCampaign(row.item)">
+                    <td>{{ row.item.id }}</td>
+                    <td>{{ row.item.name }}</td>
+                    <td>{{ row.item.state }}</td>
+                    <td>{{ row.item.message }}</td>
+                    <td>{{ row.item.ncontacts }}</td>
+                    <td>{{ row.item.ncompleted }}</td>
+                    <td>
+                      <v-btn
+                        class="mx-4"
+                        fab
+                        dark
+                        x-small
+                        color="green"
+                        @click="startCampaign(row.item)"
+                      >
+                        <v-icon dark>mdi-play</v-icon>
+                      </v-btn>
+                    </td>
+                    <td>
+                      <v-btn
+                        class="mx-4"
+                        fab
+                        dark
+                        x-small
+                        color="red"
+                        @click="pauseCampaign(row.item)"
+                      >
+                        <v-icon dark>mdi-pause</v-icon>
+                      </v-btn>
+                    </td>
+                    <td>
+                      <v-btn
+                        class="mx-4"
+                        fab
+                        dark
+                        x-small
+                        color="black"
+                        @click="deleteCampaign(row.item)"
+                      >
+                        <v-icon dark>mdi-delete</v-icon>
+                      </v-btn>
+                    </td>
+                  </tr>
+                </template>
+              </v-data-table>
+            </v-col>
+          </v-row>
+        </v-tab-item>
+
+        <v-tab href="#message">
+          <v-card flat>
+            <v-card-text>Inserimento Messaggio</v-card-text>
+          </v-card>
+        </v-tab>
+        <v-tab-item v-if="selectedCampaign.id" id="message" key="message">
+          <v-row>
+            <v-col>
+              <v-textarea
+                name="input-7-1"
+                filled
+                label="Messaggio"
+                auto-grow
+                counter
+                v-model="messageText"
+              ></v-textarea>
+              <v-text-field
+                name="input-7-1"
+                filled
+                label="Link n.1"
+                v-model="messageUrl1"
+              ></v-text-field>
+              <v-text-field
+                name="input-7-1"
+                filled
+                label="Link n.2"
+                v-model="messageUrl2"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
+              <v-btn
+                depressed
+                color="primary"
+                v-on:click="updateMessageCampaign"
+                >Salva campagna</v-btn
+              >
+            </v-col>
+          </v-row>
+        </v-tab-item>
+
+        <v-tab href="#uploadcontacts">
+          <v-card flat>
+            <v-card-text>Contatti</v-card-text>
+          </v-card>
+        </v-tab>
+        <v-tab-item
+          v-if="selectedCampaign.id"
+          id="uploadcontacts"
+          key="uploadcontacts"
+        >
           <v-card>
             <v-row>
               <v-col>
@@ -18,6 +149,16 @@
                   show-size
                   label="Carica il file CSV dei contatti"
                 ></v-file-input>
+              </v-col>
+            </v-row>
+            <v-row>
+              <v-col>
+                <v-btn
+                  depressed
+                  color="primary"
+                  v-on:click="updateMessageCampaign"
+                  >Salva campagna</v-btn
+                >
               </v-col>
             </v-row>
             <v-row>
@@ -35,10 +176,10 @@
 
         <v-tab href="#select">
           <v-card flat>
-            <v-card-text>Selezione contatti</v-card-text>
+            <v-card-text>Filtro contatti</v-card-text>
           </v-card>
         </v-tab>
-        <v-tab-item id="select" key="select">
+        <v-tab-item v-if="selectedCampaign.id" id="select" key="select">
           <v-row>
             <v-col>
               <v-select
@@ -75,6 +216,16 @@
           </v-row>
           <v-row>
             <v-col>
+              <v-btn
+                depressed
+                color="primary"
+                v-on:click="updateMessageCampaign"
+                >Salva campagna</v-btn
+              >
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
               <v-data-table
                 :headers="headers"
                 :items="contacts"
@@ -85,97 +236,25 @@
           </v-row>
         </v-tab-item>
 
-        <v-tab href="#message">
+        <v-tab href="#interestedcustomers">
           <v-card flat>
-            <v-card-text>Inserimento Messaggio</v-card-text>
+            <v-card-text>Clienti interessati</v-card-text>
           </v-card>
         </v-tab>
-        <v-tab-item id="message" key="message">
-          <v-row>
-            <v-col>
-              <v-textarea
-                name="input-7-1"
-                filled
-                label="Messaggio"
-                auto-grow
-                counter
-                v-model="messageText"
-              ></v-textarea>
-              <v-text-field
-                name="input-7-1"
-                filled
-                label="Link n.1"
-                v-model="messageUrl1"
-              ></v-text-field>
-              <v-text-field
-                name="input-7-1"
-                filled
-                label="Link n.2"
-                v-model="messageUrl2"
-              ></v-text-field>
-            </v-col>
-          </v-row>
-        </v-tab-item>
-
-        <v-tab href="#startstop">
-          <v-card flat>
-            <v-card-text>Start/Stop</v-card-text>
-          </v-card>
-        </v-tab>
-        <v-tab-item id="startstop" key="startstop">
-          <v-row>
-            <v-col>
-              <v-text-field
-                v-model="messageCampaign.name"
-                counter="25"
-                hint="Inserisci il nome della campagna"
-                label="Nome campagna SMS"
-              ></v-text-field>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col>
-              <v-btn depressed color="primary" v-on:click="insertMessageCampaign"
-                >Inserisci campagna</v-btn
-              >
-            </v-col>
-          </v-row>
+        <v-tab-item
+          v-if="selectedCampaign.id"
+          id="interestedcustomers"
+          key="interestedcustomers"
+        >
           <v-row>
             <v-col>
               <v-data-table
-                  :headers="headerCampaigns"
-                  :items="messageCampaigns"
-                  :items-per-page="30"
-                  class="elevation-1"
-                >
-                
-                <template v-slot:item="row">
-                <tr>
-                  <td>{{row.item.id}}</td>
-                  <td>{{row.item.name}}</td>
-                  <td>{{row.item.state}}</td>
-                  <td>{{row.item.message}}</td>
-                  <td>{{row.item.ncontacts}}</td>
-                  <td>{{row.item.ncompleted}}</td>
-                  <td>
-                    <v-btn class="mx-4" fab dark x-small color="green" @click="startCampaign(row.item)">
-                    <v-icon dark>mdi-play</v-icon>
-                    </v-btn>
-                  </td>
-                  <td>
-                    <v-btn class="mx-4" fab dark x-small color="red" @click="pauseCampaign(row.item)">
-                    <v-icon dark>mdi-pause</v-icon>
-                    </v-btn>
-                  </td>
-                  <td>
-                    <v-btn class="mx-4" fab dark x-small color="black" @click="deleteCampaign(row.item)">
-                    <v-icon dark>mdi-delete</v-icon>
-                    </v-btn>
-                  </td>
-                </tr>
-                </template>
-                
-                </v-data-table>
+                :headers="headersInterestedCustomers"
+                :items="interestedCustomers"
+                :items-per-page="30"
+                class="elevation-1"
+              >
+              </v-data-table>
             </v-col>
           </v-row>
         </v-tab-item>
@@ -188,8 +267,7 @@
 export default {
   data() {
     return {
-      messageCampaign: { name: "", contacts: [], message: {} },
-
+      campaignName: "",
       messageUrl1: "https://www.google.com",
       messageUrl2: "https://www.youtube.com",
       messageText: "Testo di prova (da cambiare) |link1| e |link2|",
@@ -199,9 +277,11 @@ export default {
       selectedState: "",
       selectedProvince: "",
       selectedCountry: "",
+      selectedCampaign: { name: "", contacts: [], message: {} },
 
       messageCampaigns: [],
       contacts: [],
+      interestedCustomers: [],
       caps: [],
       cities: [],
       provinces: [],
@@ -212,6 +292,8 @@ export default {
       fileCSV: [],
       headers: [
         { text: "ID", value: "id" },
+        { text: "Stato", value: "state" },
+        { text: "Campagna", value: "campaignId" },
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
         { text: "Telefono", value: "mobilephone" },
@@ -222,7 +304,14 @@ export default {
         { text: "Stato", value: "adm3" },
         { text: "CAP", value: "postcode" },
       ],
-
+      headersInterestedCustomers: [
+        { text: "ID", value: "id" },
+        { text: "Url", value: "url" },
+        { text: "Nome", value: "firstname" },
+        { text: "Cognome", value: "lastname" },
+        { text: "Telefono", value: "mobilephone" },
+        { text: "Indirizzo", value: "address" },
+      ],
       headerCampaigns: [
         { text: "Codice", value: "id" },
         { text: "Nome campagna", value: "name" },
@@ -235,69 +324,110 @@ export default {
   },
   mounted() {
     this.refreshAll();
+    var messCamp = this.messageCampaigns;
+    setInterval(() => {
+      this.refreshAll();
+    }, 10000);
   },
   methods: {
     startCampaign(messageCampaign) {
-      messageCampaign.state="active";
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/update", {messageCampaign: messageCampaign})
-        .then((request) => {          
-         this.messageCampaign=request.data.messageCampaign;
+        .post("http://localhost:18088/adminarea/messageCampaign/start", {
+          messageCampaign: messageCampaign,
         })
-        .catch((error) => {
-            console.log(error);
-        });
-    },
-    pauseCampaign(messageCampaign) {
-      messageCampaign.state="disabled";
-      this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/update", {messageCampaign: messageCampaign})
         .then((request) => {
-          this.messageCampaign=request.data.messageCampaign;          
-        })
-        .catch((error) => {
-            console.log(error);
-        });
-    },
-    deleteCampaign(messageCampaign) {
-      this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/delete", {messageCampaign: messageCampaign})
-        .then((request) => {
-          this.messageCampaign=request.data.messageCampaign;
+          this.selectedCampaign = request.data.messageCampaign;
           this.getMessageCampaigns();
-        })
-        .catch((error) => {
-            console.log(error);
-      });
-    },
-    insertMessageCampaign() {
-      this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/insert", {
-          messageCampaign: {
-            name:  this.messageCampaign.name,
-            contacts: this.contacts,
-            message: {text: this.messageText, url1: this.messageUrl1, url2: this.messageUrl2},
-          },
-        })
-        .then((request) => {
-          this.messageCampaigns.push(request.data.messageCampaign);
         })
         .catch((error) => {
           console.log(error);
         });
     },
-    startMessageCampaign() {      
+    pauseCampaign(messageCampaign) {
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/pause", {
+          messageCampaign: messageCampaign,
+        })
+        .then((request) => {
+          this.selectedCampaign = request.data.messageCampaign;
+          this.getMessageCampaigns();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     },
-    stopMessageCampaign() {      
+    deleteCampaign(messageCampaign) {
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/delete", {
+          messageCampaign: messageCampaign,
+        })
+        .then((request) => {
+          this.messageCampaign = request.data.messageCampaign;
+          this.getMessageCampaigns();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     },
-    deleteMessageCampaign() {      
+    selectCampaign(campaign) {
+      if (campaign.id > 0) {
+        this.selectedCampaign = campaign;
+      }
+    },
+    insertMessageCampaign() {
+      this.contacts = [];
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/insert", {
+          messageCampaign: {
+            name: this.campaignName,
+            ncontacts: this.contacts.length,
+            message: {
+              text: this.messageText,
+              url1: this.messageUrl1,
+              url2: this.messageUrl2,
+            },
+          },
+        })
+        .then((request) => {
+          this.selectedCampaign = request.data.messageCampaign;
+          this.messageCampaigns.push(request.data.messageCampaign);
+          console.log("Campaign inserted");
+          console.log(this.selectedCampaign);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    updateMessageCampaign() {
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/update", {
+          messageCampaign: {
+            id: this.selectedCampaign.id,
+            name: this.selectedCampaign.name,
+            state: this.selectedCampaign.state,
+            contacts: this.contacts,
+            ncontacts: this.contacts.length,
+
+            message: {
+              text: this.messageText,
+              url1: this.messageUrl1,
+              url2: this.messageUrl2,
+            },
+          },
+        })
+        .then((request) => {
+          this.refreshAll();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     },
     getMessageCampaigns() {
       this.axios
         .post("http://localhost:18088/adminarea/messageCampaign/getAll")
         .then((request) => {
           if (request.data.messageCampaigns) {
-            this.messageCampaigns = request.data.messageCampaigns;   
+            this.messageCampaigns = request.data.messageCampaigns;
           }
         })
         .catch((error) => {
@@ -344,7 +474,6 @@ export default {
       this.axios
         .post("http://localhost:18088/adminarea/customer/getProvinces")
         .then((request) => {
-          console.log(request.data);
           if (request.data.provinces) {
             this.provinces = [];
             request.data.provinces.forEach((element) => {
@@ -456,6 +585,34 @@ export default {
           console.log(error);
         });
     },
+    getInterestedCustomers() {
+      this.interestedCustomers=[];
+      if (this.selectedCampaign && this.selectedCampaign.id > 0)
+        this.axios
+          .post(
+            "http://localhost:18088/adminarea/messageCampaign/getCampaignInterestedCustomers",
+            { messageCampaign: this.selectedCampaign }
+          )
+          .then((request) => {
+            if (request.data.clicks) {
+              request.data.clicks.forEach((click) => {
+                var interestedCustomer = {
+                  id: click.customer.id,
+                  url: click.link.urlOriginal,
+                  firstname: click.customer.firstname,
+                  lastname: click.customer.lastname,
+                  address: click.customer.address,
+                  mobilephone: click.customer.mobilephone,
+                  postcode: click.customer.postcode,
+                };
+                this.interestedCustomers.push(interestedCustomer);                
+              });
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+    },
     refreshAll() {
       this.getCaps();
       this.getCities();
@@ -464,24 +621,27 @@ export default {
       this.getCountries();
       this.getCsvLoadedCustomers();
       this.getMessageCampaigns();
+      this.getInterestedCustomers();
     },
     loadCSVFile() {
-      console.log(this.fileCSV);
-      var formData = new FormData();
-      formData.append("csv_data", this.fileCSV);
+      if (this.selectedCampaign.id > 0) {
+        var formData = new FormData();
+        formData.append("csv_data", this.fileCSV);
+        formData.append("idCampaign", this.selectedCampaign.id);
 
-      this.axios
-        .post("http://localhost:18088/upload/contacts", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        .then((request) => {
-          setTimeout(this.refreshAll, 3000);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+        this.axios
+          .post("http://localhost:18088/upload/contacts", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((request) => {
+            setTimeout(this.refreshAll, 3000);
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
     },
   },
 };

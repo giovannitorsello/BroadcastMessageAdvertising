@@ -10,6 +10,7 @@ class User extends Model {}
 class Customer extends Model {}
 class MessageCampaign extends Model {}
 class Link extends Model {}
+class Click extends Model {}
 class Config extends Model {}
 
 module.exports = {
@@ -18,6 +19,7 @@ module.exports = {
     user: User,
     customer: Customer,
     link: Link,
+    click: Click,
     messageCampaign: MessageCampaign,
     config: Config,
   },
@@ -72,8 +74,9 @@ module.exports = {
         city: { type: Sequelize.STRING, allowNull: true },
         adm1: { type: Sequelize.STRING, allowNull: true }, //Provincia
         adm2: { type: Sequelize.STRING, allowNull: true }, //Regione
-        adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato
-        creationdate: { type: Sequelize.DATE, defaultValue: Sequelize.NOW },
+        adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato        
+        campaignId: { type: Sequelize.INTEGER, allowNull: false },
+        state: { type: Sequelize.STRING, defaultValue: "toContact" }, //toContact, contacted
         objData: { type: Sequelize.JSON },
       },
       {
@@ -99,12 +102,23 @@ module.exports = {
     Link.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
-        urlOriginal: { type: Sequelize.STRING, allowNull: false },
-        urlShort: { type: Sequelize.STRING, allowNull: false },        
+        urlOriginal: { type: Sequelize.STRING, allowNull: false },        
       },
       {
         sequelize,
         modelName: "link",
+      }
+    );
+
+    Click.init(
+      {
+        campaignId: { type: Sequelize.INTEGER, allowNull: false },
+        customerId: { type: Sequelize.INTEGER, allowNull: false },
+        linkId: { type: Sequelize.INTEGER, allowNull: false },       
+      },
+      {
+        sequelize,
+        modelName: "click",
       }
     );
 
@@ -119,13 +133,28 @@ module.exports = {
       }
     );
 
-    Customer.sync({ force: false });
-    Link.sync({ force: false });
-    MessageCampaign.sync({ force: false });
-    
-    //Tabelle da non modificare. Dati Fissi.
+    //Association Campaign-Customer
+    MessageCampaign.hasMany(Customer, {foreignKey: 'campaignId'});
+    Customer.belongsTo(MessageCampaign, {foreignKey: 'campaignId'});
+    //Association Campaign-Link
+    MessageCampaign.hasMany(Link, {foreignKey: 'campaignId'});
+    Link.belongsTo(MessageCampaign, {foreignKey: 'campaignId'});
+    //Association Link-Click
+    Link.hasMany(Click, {foreignKey: 'linkId'});
+    Click.belongsTo(Link, {foreignKey: 'linkId'});
+    //Association Customers-Link
+    Customer.hasMany(Click, {foreignKey: 'customerId'});
+    Click.belongsTo(Customer, {foreignKey: 'customerId'});
+
+    /*
+    Customer.sync({ force: true });
+    Link.sync({ force: true });
+    MessageCampaign.sync({ force: true });
+    Click.sync({ force: true });
     Config.sync({ force: true });
     User.sync({ force: true });
+    */
+
   },
   execute_raw_query(sql, callback) {
     this.seq.query(sql, { type: QueryTypes.SELECT }).then((results) => {
