@@ -147,7 +147,35 @@
                   :items="messageCampaigns"
                   :items-per-page="30"
                   class="elevation-1"
-                ></v-data-table>
+                >
+                
+                <template v-slot:item="row">
+                <tr>
+                  <td>{{row.item.id}}</td>
+                  <td>{{row.item.name}}</td>
+                  <td>{{row.item.state}}</td>
+                  <td>{{row.item.message}}</td>
+                  <td>{{row.item.ncontacts}}</td>
+                  <td>{{row.item.ncompleted}}</td>
+                  <td>
+                    <v-btn class="mx-4" fab dark x-small color="green" @click="startCampaign(row.item)">
+                    <v-icon dark>mdi-play</v-icon>
+                    </v-btn>
+                  </td>
+                  <td>
+                    <v-btn class="mx-4" fab dark x-small color="red" @click="pauseCampaign(row.item)">
+                    <v-icon dark>mdi-pause</v-icon>
+                    </v-btn>
+                  </td>
+                  <td>
+                    <v-btn class="mx-4" fab dark x-small color="black" @click="deleteCampaign(row.item)">
+                    <v-icon dark>mdi-delete</v-icon>
+                    </v-btn>
+                  </td>
+                </tr>
+                </template>
+                
+                </v-data-table>
             </v-col>
           </v-row>
         </v-tab-item>
@@ -196,8 +224,9 @@ export default {
       ],
 
       headerCampaigns: [
-        { text: "Codice", value: "uid" },
+        { text: "Codice", value: "id" },
         { text: "Nome campagna", value: "name" },
+        { text: "Stato", value: "state" },
         { text: "Messagio", value: "message" },
         { text: "Numero contatti", value: "ncontacts" },
         { text: "Completamento", value: "ncompleted" },
@@ -208,6 +237,39 @@ export default {
     this.refreshAll();
   },
   methods: {
+    startCampaign(messageCampaign) {
+      messageCampaign.state="active";
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/update", {messageCampaign: messageCampaign})
+        .then((request) => {          
+         this.messageCampaign=request.data.messageCampaign;
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    },
+    pauseCampaign(messageCampaign) {
+      messageCampaign.state="disabled";
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/update", {messageCampaign: messageCampaign})
+        .then((request) => {
+          this.messageCampaign=request.data.messageCampaign;          
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+    },
+    deleteCampaign(messageCampaign) {
+      this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/delete", {messageCampaign: messageCampaign})
+        .then((request) => {
+          this.messageCampaign=request.data.messageCampaign;
+          this.getMessageCampaigns();
+        })
+        .catch((error) => {
+            console.log(error);
+      });
+    },
     insertMessageCampaign() {
       this.axios
         .post("http://localhost:18088/adminarea/messageCampaign/insert", {
@@ -232,10 +294,10 @@ export default {
     },
     getMessageCampaigns() {
       this.axios
-        .post("http://localhost:18088/adminarea/campaign/getCampaigns")
+        .post("http://localhost:18088/adminarea/messageCampaign/getAll")
         .then((request) => {
-          if (request.data.campaigns) {
-            this.campaigns = request.data.campaigns;            
+          if (request.data.messageCampaigns) {
+            this.messageCampaigns = request.data.messageCampaigns;   
           }
         })
         .catch((error) => {

@@ -1,0 +1,10 @@
+--2021-01-28 16:40:03--  http://10.10.10.121/default/en_US/send.html?u=admin
+Connessione a 10.10.10.121:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 200 OK
+Lunghezza: non specificato [text/html]
+Salvataggio in: "send.html?u=admin"
+
+send.html?u=admin                                [<=>                                                                                            ]       0  --.-KB/s               send.html?u=admin                                [ <=>                                                                                           ]      30  --.-KB/s    in 0s      
+
+2021-01-28 16:40:03 (1,97 MB/s) - "send.html?u=admin" salvato [30]
+

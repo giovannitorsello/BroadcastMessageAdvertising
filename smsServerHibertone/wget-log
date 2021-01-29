@@ -1,0 +1,5 @@
+--2021-01-28 15:50:30--  http://10.10.10.122/goip/en/dosend.php?USERNAME=admin
+Connessione a 10.10.10.122:80... connesso.
+Richiesta HTTP inviata, in attesa di risposta... 404 Not Found
+2021-01-28 15:50:30 ERRORE 404: Not Found.
+

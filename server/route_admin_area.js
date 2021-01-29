@@ -13,6 +13,7 @@ const axios = require("axios");
 
 const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
+const smsCampaignManager = require("./smsCampaignManager.js");
 
 module.exports = {
   load_routes(app, database) {
@@ -101,130 +102,292 @@ module.exports = {
     app.post("/adminarea/customer/getall", function (req, res) {
       database.entities.customer.findAll().then(function (results) {
         if (results)
-          res.send({ status: "OK", msg: "Customers found", customers: results });
-        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
+          res.send({
+            status: "OK",
+            msg: "Customers found",
+            customers: results,
+          });
+        else
+          res.send({ status: "OK", msg: "Customers not found", customers: {} });
       });
     });
 
     app.post("/adminarea/customer/getCaps", function (req, res) {
-      database.execute_raw_query("SELECT postcode, city from customers GROUP BY postcode, city;", function (results){
-        if (results)
-          res.send({ status: "OK", msg: "Caps found", caps: results });
-        else res.send({ status: "OK", msg: "Caps not found", caps: {} });
-      });
+      database.execute_raw_query(
+        "SELECT postcode, city from customers GROUP BY postcode, city;",
+        function (results) {
+          if (results)
+            res.send({ status: "OK", msg: "Caps found", caps: results });
+          else res.send({ status: "OK", msg: "Caps not found", caps: {} });
+        }
+      );
     });
 
     app.post("/adminarea/customer/getCities", function (req, res) {
-      database.execute_raw_query("SELECT city from customers GROUP BY city;", function (results){
-        if (results)
-          res.send({ status: "OK", msg: "Cities found", cities: results });
-        else res.send({ status: "OK", msg: "Cities not found", cities: {} });
-      });
+      database.execute_raw_query(
+        "SELECT city from customers GROUP BY city;",
+        function (results) {
+          if (results)
+            res.send({ status: "OK", msg: "Cities found", cities: results });
+          else res.send({ status: "OK", msg: "Cities not found", cities: {} });
+        }
+      );
     });
 
     app.post("/adminarea/customer/getProvinces", function (req, res) {
-      database.execute_raw_query("SELECT adm1 from customers GROUP BY adm1;", function (results){
-        if (results)
-          res.send({ status: "OK", msg: "Provinces found", provinces: results });
-        else res.send({ status: "OK", msg: "Provinces not found", provinces: {} });
-      });
+      database.execute_raw_query(
+        "SELECT adm1 from customers GROUP BY adm1;",
+        function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Provinces found",
+              provinces: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Provinces not found",
+              provinces: {},
+            });
+        }
+      );
     });
 
     app.post("/adminarea/customer/getStates", function (req, res) {
-      database.execute_raw_query("SELECT adm2 from customers GROUP BY adm2;", function (results){
-        if (results)
-          res.send({ status: "OK", msg: "States found", states: results });
-        else res.send({ status: "OK", msg: "States not found", states: {} });
-      });
+      database.execute_raw_query(
+        "SELECT adm2 from customers GROUP BY adm2;",
+        function (results) {
+          if (results)
+            res.send({ status: "OK", msg: "States found", states: results });
+          else res.send({ status: "OK", msg: "States not found", states: {} });
+        }
+      );
     });
 
     app.post("/adminarea/customer/getCountries", function (req, res) {
-      database.execute_raw_query("SELECT adm3 from customers GROUP BY adm3;", function (results){
-        if (results)
-          res.send({ status: "OK", msg: "Countries found", countries: results });
-        else res.send({ status: "OK", msg: "Countries not found", countries: {} });
-      });
+      database.execute_raw_query(
+        "SELECT adm3 from customers GROUP BY adm3;",
+        function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Countries found",
+              countries: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Countries not found",
+              countries: {},
+            });
+        }
+      );
     });
 
     app.post("/adminarea/customer/selectByCap", function (req, res) {
-      var cap=req.body.selectedCap;
-      database.entities.customer.findAll({where: {postcode: cap}}).then(function (results) {
-        if (results)
-          res.send({ status: "OK", msg: "Customers found", customers: results });
-        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
-      });
+      var cap = req.body.selectedCap;
+      database.entities.customer
+        .findAll({ where: { postcode: cap } })
+        .then(function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Customers found",
+              customers: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers not found",
+              customers: {},
+            });
+        });
     });
 
     app.post("/adminarea/customer/selectByCity", function (req, res) {
-      var st=req.body.selectedCity;
-      database.entities.customer.findAll({where: {city: st}}).then(function (results) {
-        if (results)
-          res.send({ status: "OK", msg: "Customers found", customers: results });
-        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
-      });
+      var st = req.body.selectedCity;
+      database.entities.customer
+        .findAll({ where: { city: st } })
+        .then(function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Customers found",
+              customers: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers not found",
+              customers: {},
+            });
+        });
     });
 
     app.post("/adminarea/customer/selectByProvince", function (req, res) {
-      var st=req.body.selectedProvince;
-      database.entities.customer.findAll({where: {adm1: st}}).then(function (results) {
-        if (results)
-          res.send({ status: "OK", msg: "Customers found", customers: results });
-        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
-      });
+      var st = req.body.selectedProvince;
+      database.entities.customer
+        .findAll({ where: { adm1: st } })
+        .then(function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Customers found",
+              customers: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers not found",
+              customers: {},
+            });
+        });
     });
 
     app.post("/adminarea/customer/selectByState", function (req, res) {
-      var st=req.body.selectedState;
-      database.entities.customer.findAll({where: {adm2: st}}).then(function (results) {
-        if (results)
-          res.send({ status: "OK", msg: "Customers found", customers: results });
-        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
-      });
+      var st = req.body.selectedState;
+      database.entities.customer
+        .findAll({ where: { adm2: st } })
+        .then(function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Customers found",
+              customers: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers not found",
+              customers: {},
+            });
+        });
     });
 
     app.post("/adminarea/customer/selectByCountry", function (req, res) {
-      var st=req.body.selectedCountry;
-      database.entities.customer.findAll({where: {adm3: st}}).then(function (results) {
-        if (results)
-          res.send({ status: "OK", msg: "Customers found", customers: results });
-        else res.send({ status: "OK", msg: "Customers not found", customers: {} });
-      });
+      var st = req.body.selectedCountry;
+      database.entities.customer
+        .findAll({ where: { adm3: st } })
+        .then(function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Customers found",
+              customers: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers not found",
+              customers: {},
+            });
+        });
     });
 
     /////////////////////Message campaign ////////////////////
     app.post("/adminarea/messageCampaign/insert", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      var camp={};
-      var link=[];
-      if(messageCampaign.contacts && messageCampaign.contacts.lenght===0) return;
-      
-     
-      camp.uid=utility.makeUuid();
-      camp.name=messageCampaign.name;
-      camp.message=messageCampaign.message.text
-      camp.ncontacts=messageCampaign.contacts.lenght;
-      camp.ncompleted=0;
-      camp.state="disabled";
-      
+      var messageCampaign = req.body.messageCampaign;
+      var camp = {};
+      var link = [];
+      if (messageCampaign.contacts && messageCampaign.contacts.lenght === 0)
+        return;
 
-      database.entities.messageCampaign.create(camp).then(function (objnew) {
+      camp.id = "";
+      camp.name = messageCampaign.name;
+      camp.message = messageCampaign.message.text;
+      camp.ncontacts = messageCampaign.contacts.lenght;
+      camp.ncompleted = 0;
+      camp.state = "disabled";
+
+      database.entities.messageCampaign.create(camp).then( (objnew) => {
         if (objnew !== null) {
-          urls=[messageCampaign.message.url1, messageCampaign.message.url2];
-          shortner.makeShortLink(objnew, urls, function (results){
-            res.send({ status: "OK", msg: "Message campaign insert successfully", messageCampaign: objnew });                 
-          });                    
-        }
-        else {
-          res.send({ status: "error", msg: "Message campaign not insert", messageCampaign: {} });                 
+          urls = [messageCampaign.message.url1, messageCampaign.message.url2];          
+          shortner.makeShortLink(objnew, urls, function (results) {            
+            res.send({
+              status: "OK",
+              msg: "Message campaign insert successfully",
+              messageCampaign: objnew,
+            });
+            smsCampaignManager.reloadActiveCampaings();
+          });
+        } else {
+          res.send({
+            status: "error",
+            msg: "Message campaign not insert",
+            messageCampaign: {},
+          });
         }
       });
     });
 
-    app.post("/adminarea/messageCampaign/findAll", function (req, res) {
+    app.post("/adminarea/messageCampaign/update", function (req, res) {
+      var messageCampaign_updated = req.body.messageCampaign;
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign_updated.id } })
+        .then(function (obj) {
+          if (obj !== null) {
+            obj.state = messageCampaign_updated.state;
+            obj.ncontacts = messageCampaign_updated.ncontacts;
+            obj.ncompleted = messageCampaign_updated.ncompleted;
+
+            obj.save().then(function (objupdate) {
+              if (objupdate !== null) {
+                smsCampaignManager.reloadActiveCampaings();
+                res.send({
+                  status: "OK",
+                  msg: "Message campaign update successfully",
+                  messageCampaign: objupdate,
+                });
+              } else {
+                res.send({
+                  status: "error",
+                  msg: "Message campaign update error",
+                  messageCampaign: messageCampaign_updated,
+                });
+              }
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/messageCampaign/delete", function (req, res) {
+      var messageCampaign = req.body.messageCampaign;    
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign.id } })
+        .then(function (messageCampaignToDel) {
+          if (messageCampaignToDel !== null) {
+            messageCampaignToDel.destroy();
+            smsCampaignManager.reloadActiveCampaings();
+            res.send({
+              status: "OK",
+              msg: "Campaign deleted successfully",
+              messageCampaign: messageCampaignToDel,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Campaign delete error",
+              messageCampaign: messageCampaignToDel,
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/messageCampaign/getAll", function (req, res) {
       database.entities.messageCampaign.findAll().then(function (results) {
         if (results)
-          res.send({ status: "OK", msg: "Message campaigns found", messageCampaigns: results });
-        else res.send({ status: "OK", msg: "Message campaigns not found", messageCampaigns: {} });
+          res.send({
+            status: "OK",
+            msg: "Message campaigns found",
+            messageCampaigns: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Message campaigns not found",
+            messageCampaigns: {},
+          });
       });
     });
 
@@ -403,25 +566,28 @@ module.exports = {
     //////////////////////////Upload files/////////////////////
     app.post("/upload/contacts", function (req, res) {
       const form = new formidable.IncomingForm();
-      form.parse(req, function (err, fields, files) {        
-        var oldPath = files.csv_data.path; 
-        var newPath = path.join(__dirname, 'uploads') 
-                + '/'+files.csv_data.name 
-        var rawData = fs.readFileSync(oldPath) 
-        console.log("Received file:  "+oldPath);
-        console.log("Upload file:  "+newPath);
-        
-        fs.writeFile(newPath, rawData, function(err){ 
-            if(err) console.log(err) 
-            else {
-              utility.import_Contacts_From_Csv(newPath, function () {
-                database.entities.customer.findAll().then(function (results) {
-                  res.send({ status: "OK", msg: "Customers found", customers: results });
-                });                    
-              });            
-            }
-            
-        })
+      form.parse(req, function (err, fields, files) {
+        var oldPath = files.csv_data.path;
+        var newPath =
+          path.join(__dirname, "uploads") + "/" + files.csv_data.name;
+        var rawData = fs.readFileSync(oldPath);
+        console.log("Received file:  " + oldPath);
+        console.log("Upload file:  " + newPath);
+
+        fs.writeFile(newPath, rawData, function (err) {
+          if (err) console.log(err);
+          else {
+            utility.import_Contacts_From_Csv(newPath, function () {
+              database.entities.customer.findAll().then(function (results) {
+                res.send({
+                  status: "OK",
+                  msg: "Customers found",
+                  customers: results,
+                });
+              });
+            });
+          }
+        });
       });
     });
   },

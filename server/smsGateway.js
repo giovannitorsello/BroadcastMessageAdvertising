@@ -1,10 +1,13 @@
 const config = require("./config.js").load();
 const { ServerFactory, HttpSms, SocketSms } = require("goip");
 
-const server = ServerFactory.make(333);
+const server = ServerFactory.make(
+  config.smsServer.ip,
+  config.smsServer.port,
+  config.smsServer.password
+);
 
 module.exports = {
-
   setupListener() {
     const { ServerFactory } = require("goip");
 
@@ -53,24 +56,36 @@ module.exports = {
       console.log(message);
     });
   },
-  sendSMS(ip, port, password, message, mobilephone, callback) {
-    const sms = new SocketSms(
-      ip, // Goip address
-      port, // Goip port
-      password // Goip password
+  sendSMS(device, message, mobilephone, callback) {
+    const sms = new HttpSms(
+      "http://"+device.ip,
+      device.selectedLine,
+      device.login,
+      device.password,
+      {
+        waitForStatus: true, // Wait and check sending status
+        waitTries: 3, // Number of attempts
+        waitTime: 2000, // Time in  milliseconds
+      }
     );
 
-    /*
     sms
-      .sendOne(mobilephone, message)
+      .send(mobilephone, message)
       .then((response) => {
-        callback({status: "OK", msg: "Message sent", response: response})
         console.log(response);
+        sms.isSend()
+        callback(response);
       })
       .catch((error) => {
-        callback({status: "error", msg: "Error message not sent", response: error})
         console.log(error);
-      });*/
-      callback({status: "developing", msg: "temporary disabled", response: "developing"})
+      });
+    
+      /*
+    callback({
+      status: "developing",
+      msg: "temporary disabled",
+      response: "developing",
+    });*/
   },
 };
+

@@ -41,7 +41,6 @@ module.exports = {
   init_entities() {
     User.init(
       {
-        uid: { type: DataTypes.UUID, allowNull: false, primaryKey: true },
         username: { type: Sequelize.STRING, allowNull: false },
         password: { type: Sequelize.STRING, allowNull: false },
         role: { type: Sequelize.STRING, allowNull: false }, //admin, operator, ecc.
@@ -64,7 +63,6 @@ module.exports = {
 
     Customer.init(
       {
-        uid: { type: DataTypes.UUID, allowNull: false, primaryKey: true },
         firstname: { type: Sequelize.STRING, allowNull: false },
         lastname: { type: Sequelize.STRING, allowNull: true },
         email: { type: Sequelize.STRING, allowNull: true },
@@ -86,7 +84,6 @@ module.exports = {
 
     MessageCampaign.init(
       {
-        uid: { type: DataTypes.UUID, allowNull: false, primaryKey: true },
         name: { type: Sequelize.STRING, allowNull: false },
         message: { type: Sequelize.STRING, allowNull: false },
         ncontacts: { type: Sequelize.STRING, allowNull: true },
@@ -101,8 +98,7 @@ module.exports = {
 
     Link.init(
       {
-        uid: { type: DataTypes.UUID, allowNull: false, primaryKey: true },       
-        campaignUid: { type: DataTypes.UUID, allowNull: false, primaryKey: true },
+        campaignId: { type: Sequelize.INTEGER, allowNull: false },
         urlOriginal: { type: Sequelize.STRING, allowNull: false },
         urlShort: { type: Sequelize.STRING, allowNull: false },        
       },
@@ -114,7 +110,6 @@ module.exports = {
 
     Config.init(
       {
-        uid: { type: DataTypes.UUID, allowNull: false, primaryKey: true },
         key: { type: Sequelize.STRING, allowNull: true }, //key section config
         value: { type: Sequelize.BLOB, allowNull: true }, //JSON configuration
       },
@@ -124,16 +119,13 @@ module.exports = {
       }
     );
 
-    //MessageCampaign.hasMany(Link);
-    //Link.belongsTo(MessageCampaign);
-
-    Customer.sync({ force: true });
-    Link.sync({ force: true });
-    MessageCampaign.sync({ force: true });
-
+    Customer.sync({ force: false });
+    Link.sync({ force: false });
+    MessageCampaign.sync({ force: false });
+    
     //Tabelle da non modificare. Dati Fissi.
-    Config.sync({ force: false });
-    User.sync({ force: false });
+    Config.sync({ force: true });
+    User.sync({ force: true });
   },
   execute_raw_query(sql, callback) {
     this.seq.query(sql, { type: QueryTypes.SELECT }).then((results) => {

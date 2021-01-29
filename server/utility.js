@@ -29,7 +29,6 @@ module.exports = {
         cust.adm2=row.REGIONE;
         cust.adm3=row.STATO;
         
-        
         database.entities.customer
           .findOne({ where: { mobilephone: cust.mobilephone } })
           .then(function (item) {
@@ -68,5 +67,5 @@ module.exports = {
   },
   makeShortUrlCode() {
     return randtoken.generate(2, "abcdefghijklmnopkrstuvwzABCDEFGHIJKLMNOPQRSTUVWz0123456789");
-  },
+  }
 };

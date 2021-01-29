@@ -22,18 +22,18 @@ module.exports = {
           else {
             database.entities.link
               .create({
-                uid: utility.makeUuid(),
+                id: "",
                 urlOriginal: originalUrl,
                 urlShort: shortUrl,
-                campaignUid: campaign.uid,
+                campaignId: campaign.id,
               })
               .then(function (objnew) {
                 if (objnew !== null) {
-                  console.log({
+                  /* console.log({
                     status: "OK",
                     msg: "Link insert successfully",
                     messageCampaign: objnew,
-                  });
+                  });*/
                 } else {
                   console.log({
                     status: "error",
