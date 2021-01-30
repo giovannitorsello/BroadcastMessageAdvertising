@@ -407,7 +407,7 @@ export default {
   methods: {
     startCampaign(messageCampaign) {
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/start", {
+        .post("/adminarea/messageCampaign/start", {
           messageCampaign: messageCampaign,
         })
         .then((request) => {
@@ -420,7 +420,7 @@ export default {
     },
     pauseCampaign(messageCampaign) {
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/pause", {
+        .post("/adminarea/messageCampaign/pause", {
           messageCampaign: messageCampaign,
         })
         .then((request) => {
@@ -433,7 +433,7 @@ export default {
     },
     deleteCampaign(messageCampaign) {
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/delete", {
+        .post("/adminarea/messageCampaign/delete", {
           messageCampaign: messageCampaign,
         })
         .then((request) => {
@@ -449,7 +449,7 @@ export default {
         this.selectedCampaign = campaign;
         this.axios
           .post(
-            "http://localhost:18088/adminarea/messageCampaign/getCampaign",
+            "/adminarea/messageCampaign/getCampaign",
             { messageCampaign: campaign }
           )
           .then((request) => {
@@ -476,7 +476,7 @@ export default {
     insertMessageCampaign() {
       this.contacts = [];
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/insert", {
+        .post("/adminarea/messageCampaign/insert", {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
@@ -500,7 +500,7 @@ export default {
     },
     updateMessageCampaign() {
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/update", {
+        .post("/adminarea/messageCampaign/update", {
           messageCampaign: {
             id: this.selectedCampaign.id,
             name: this.selectedCampaign.name,
@@ -529,7 +529,7 @@ export default {
     getMessageCampaigns() {
       this.messageCampaigns=[]
       this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/getAll")
+        .post("/adminarea/messageCampaign/getAll")
         .then((request) => {
           if (request.data.messageCampaigns) {            
             request.data.messageCampaigns.forEach(camp => {              
@@ -546,7 +546,7 @@ export default {
     },
     getCaps() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/getCaps")
+        .post("/adminarea/customer/getCaps")
         .then((request) => {
           if (request.data.caps) {
             this.caps = [];
@@ -564,7 +564,7 @@ export default {
     },
     getCities() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/getCities")
+        .post("/adminarea/customer/getCities")
         .then((request) => {
           if (request.data.cities) {
             this.cities = [];
@@ -582,7 +582,7 @@ export default {
     },
     getProvinces() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/getProvinces")
+        .post("/adminarea/customer/getProvinces")
         .then((request) => {
           if (request.data.provinces) {
             this.provinces = [];
@@ -597,7 +597,7 @@ export default {
     },
     getStates() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/getStates")
+        .post("/adminarea/customer/getStates")
         .then((request) => {
           if (request.data.states) {
             this.states = [];
@@ -612,7 +612,7 @@ export default {
     },
     getCountries() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/getCountries")
+        .post("/adminarea/customer/getCountries")
         .then((request) => {
           if (request.data.countries) {
             this.countries = [];
@@ -627,7 +627,7 @@ export default {
     },
     selectByCap() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/selectByCap", {
+        .post("/adminarea/customer/selectByCap", {
           selectedCap: this.selectedCap,
         })
         .then((request) => {
@@ -639,7 +639,7 @@ export default {
     },
     selectByCity() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/selectByCity", {
+        .post("/adminarea/customer/selectByCity", {
           selectedCity: this.selectedCity,
         })
         .then((request) => {
@@ -651,7 +651,7 @@ export default {
     },
     selectByProvince() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/selectByProvince", {
+        .post("/adminarea/customer/selectByProvince", {
           selectedProvince: this.selectedProvince,
         })
         .then((request) => {
@@ -663,7 +663,7 @@ export default {
     },
     selectByState() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/selectByState", {
+        .post("/adminarea/customer/selectByState", {
           selectedState: this.selectedState,
         })
         .then((request) => {
@@ -675,7 +675,7 @@ export default {
     },
     selectByCountry() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/selectByCountries", {
+        .post("/adminarea/customer/selectByCountries", {
           selectedCountry: this.selectedCountry,
         })
         .then((request) => {
@@ -687,7 +687,7 @@ export default {
     },
     getCsvLoadedCustomers() {
       this.axios
-        .post("http://localhost:18088/adminarea/customer/getall")
+        .post("/adminarea/customer/getall")
         .then((request) => {
           this.contacts = request.data.customers;
         })
@@ -700,7 +700,7 @@ export default {
       if (this.selectedCampaign && this.selectedCampaign.id > 0)
         this.axios
           .post(
-            "http://localhost:18088/adminarea/messageCampaign/getCampaignInterestedCustomers",
+            "/adminarea/messageCampaign/getCampaignInterestedCustomers",
             { messageCampaign: this.selectedCampaign }
           )
           .then((request) => {
@@ -740,7 +740,7 @@ export default {
         formData.append("idCampaign", this.selectedCampaign.id);
 
         this.axios
-          .post("http://localhost:18088/upload/contacts", formData, {
+          .post("/upload/contacts", formData, {
             headers: {
               "Content-Type": "multipart/form-data",
             },

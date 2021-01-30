@@ -132,6 +132,7 @@ module.exports = {
         operator: { type: Sequelize.STRING, allowNull: true },
         nRadios: { type: Sequelize.INTEGER, defaultValue: 0 },
         ip: { type: Sequelize.STRING, allowNull: true },
+        port: { type: Sequelize.STRING, allowNull: true },
         login: { type: Sequelize.STRING, allowNull: true },
         password: { type: Sequelize.STRING, allowNull: true },
         longitude: { type: Sequelize.STRING, allowNull: true },
@@ -160,6 +161,15 @@ module.exports = {
       }
     );
     
+    Config.sync({ force: false });
+    User.sync({ force: false });
+    Gateway.sync({ force: false });
+    MessageCampaign.sync({ force: false });
+    Customer.sync({ force: false });
+    Link.sync({ force: false });    
+    Click.sync({ force: false });
+
+
     //Association Campaign-Customer
     MessageCampaign.hasMany(Customer, {foreignKey: 'campaignId'});
     Customer.belongsTo(MessageCampaign, {foreignKey: 'campaignId'});
@@ -172,16 +182,6 @@ module.exports = {
     //Association Customers-Link
     Customer.hasMany(Click, {foreignKey: 'customerId'});
     Click.belongsTo(Customer, {foreignKey: 'customerId'});
-    
-    /*
-    Config.sync({ force: true });
-    User.sync({ force: true });
-    Gateway.sync({ force: true });
-    Click.sync({ force: true });
-    Link.sync({ force: true });    
-    Customer.sync({ force: true });
-    MessageCampaign.sync({ force: true });    
-    */
 
   },
   execute_raw_query(sql, callback) {
