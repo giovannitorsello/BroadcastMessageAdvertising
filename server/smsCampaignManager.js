@@ -11,6 +11,9 @@ var waitTime = 5000;
 var nMaxSmsPerSim = 200;
 var nTotRadios = 8;
 
+//antifraud routine variables
+var gatewayToSentAntifraudMessage = {};
+
 module.exports = {
   app: {},
   database: {},
@@ -18,14 +21,16 @@ module.exports = {
   setup(app, db) {
     this.app = app;
     this.database = db;
-    this.loadSmsGateways();
-    this.loadCampaings((campaigns) => {
-      this.smsCampaigns = campaigns;
-      waitTime = 1000 * (86400 / (nMaxSmsPerSim * nTotRadios));
-      //start campaigns execution
-      setInterval(() => {
-        this.startCampaignManager();
-      }, waitTime);
+    this.loadSmsGateways((gateways) => {
+      smsGateways = gateways;
+      this.loadCampaings((campaigns) => {
+        this.smsCampaigns = campaigns;
+        waitTime = 1000 * (14400 / (nMaxSmsPerSim * nTotRadios));
+        //start campaigns execution
+        setInterval(() => {
+          this.startCampaignManager();
+        }, waitTime);
+      });
     });
   },
   startCampaignManager() {
@@ -44,42 +49,45 @@ module.exports = {
     this.sendMessage(campaign, gateway, contact);
   },
   sendMessage(campaign, gateway, contact) {
+    if (!contact) return;
+    //if(contact.state==="contacted") return;
+    var database = this.database;
     var ip = gateway.ip;
     var mobilephone = contact.mobilephone;
     var message = this.formatMessage(campaign, contact);
     if (message !== "") {
-      console.log(
-        "Sending  " +
-          message +
-          " -- " +
-          gateway.name +
-          "--" +
-          gateway.selectedLine +
-          " to " +
-          contact.mobilephone
-      );
-
-      this.database.entities.customer.findOne({where: {id: contact.id}}).then( cust => {
-        cust.state="contacted";
-        cust.save().then(custSaved => {
-          campaign.contacts[selectedContact].state="contacted";
-          this.database.entities.messageCampaign.findOne({where: {id: custSaved.campaignId}}).then(camp => {
-            if(camp.ncompleted<camp.ncontacts) camp.ncompleted++;
-            camp.save().then(campSaved => {
-
+      sms_gateway_hardware.sendSMS(
+        gateway,
+        message,
+        contact.mobilephone,
+        (response) => {
+          database.entities.customer
+            .findOne({ where: { id: contact.id } })
+            .then((cust) => {
+              cust.state = "contacted";
+              cust.save().then((custSaved) => {
+                campaign.contacts[selectedContact].state = "contacted";
+                database.entities.messageCampaign
+                  .findOne({ where: { id: custSaved.campaignId } })
+                  .then((camp) => {
+                    if (parseInt(camp.ncompleted) < parseInt(camp.ncontacts)) camp.ncompleted=parseInt(camp.ncompleted)+1;
+                    if (parseInt(camp.ncompleted) === parseInt(camp.ncontacts)) camp.state="complete";
+                    camp.save().then((campSaved) => {
+                      gateway.nSmsSent++;
+                      database.entities.gateway
+                        .findOne({ where: { id: gateway.id } })
+                        .then((gat) => {
+                          gat.nSmsSent = gateway.nSmsSent;
+                          gat.save();
+                          this.antifraudRoutine(gateway);
+                        });
+                    });
+                  });
+              });
             });
-          });
-        })
-      });
-
-      /*
-        sms_gateway_hardware.sendSMS(
-            gateway, 
-            campaign.message, contact.mobilephone,
-            function(response){
-                console.log(response);
-            })
-        */
+          console.log(response);
+        }
+      );
     }
   },
   formatMessage(campaign, contact) {
@@ -119,9 +127,9 @@ module.exports = {
       });
   },
   selectCurrentContact(campaign) {
-    var currContact=campaign.contacts[selectedContact];
+    var currContact = campaign.contacts[selectedContact];
     selectedContact++;
-    if(selectedContact>campaign.ncontacts) selectedContact=0;
+    if (selectedContact > campaign.ncontacts) selectedContact = 0;
     return currContact;
   },
   selectCurrentGateway() {
@@ -158,12 +166,24 @@ module.exports = {
   getCampaignInfo(campaignData, callback) {
     return callback();
   },
-  loadSmsGateways() {
-    smsGateways = config.smsGateways;
-    //Calculate total number of radios
-    for (var i = 0; i < smsGateways.length; i++) {
-      nTotRadios = smsGateways[i].nRadios;
-    }
+  loadSmsGateways(callback) {
+    var gateways = [];
+    this.database.entities.gateway.findAll().then((results) => {
+      if (results.length > 0) gateways = results;
+      else {
+        //First time import from config
+        gateways = config.smsGateways;
+        //Calculate total number of radios
+        for (var i = 0; i < smsGateways.length; i++) {
+          nTotRadios = smsGateways[i].nRadios;
+        }
+        gateways.forEach((gat) => {
+          gat.id = "";
+          this.database.entities.gateway.create(gat);
+        });
+      }
+      callback(gateways);
+    });
   },
   loadCampaings(callback) {
     var campaigns = [];
@@ -176,14 +196,15 @@ module.exports = {
             .findAll({ where: { campaignId: camp.id } })
             .then((links) => {
               camp.links = links;
-              
-              this.database.entities.customer.findAll({ where: { campaignId: camp.id } }).then((contacts) => {
-                camp.contacts=contacts;
-                camp.ncontacts=contacts.length;
-                campaigns.push(camp);
-                callback(campaigns);
-              });
-              
+
+              this.database.entities.customer
+                .findAll({ where: { campaignId: camp.id } })
+                .then((contacts) => {
+                  camp.contacts = contacts;
+                  camp.ncontacts = contacts.length;
+                  campaigns.push(camp);
+                  callback(campaigns);
+                });
             });
         });
       }
@@ -194,5 +215,79 @@ module.exports = {
     this.loadCampaings((campaigns) => {
       this.smsCampaigns = campaigns;
     });
+  },
+  antifraudRoutine(gateway) {
+    //Antifroud routine
+    var nToReceive =
+      gateway.nMaxDailyMessagePerLine * (1 - gateway.nMaxSentPercetage / 100);
+    var factor = Math.floor(gateway.nMaxDailyMessagePerLine / nToReceive);
+    if (gateway.nSmsSent % factor === 0) {
+      //build list of other operator gateways
+      var gatewaysToSend = [];
+      smsGateways.forEach((gat, index, arrGat) => {
+        if (gat.operator != gateway.operator && gat.isWorking) {
+          gatewaysToSend.push(gat);
+        }
+        if (index === arrGat.length - 1) {
+          var nSmsSent = gatewaysToSend[0].nSmsSent;
+          this.gatewayToSentAntifraudMessage = gatewaysToSend[0];
+          //find gateway with less messages sent (gateway more free)
+          gatewaysToSend.forEach((gatOtherOp, indexOtherOp, arrGatOtherOp) => {
+            if (nSmsSent > gatOtherOp.nSmsSent && gatOtherOp.isWorking) {
+              nSmsSent = gatOtherOp.nSmsSent;
+              this.gatewayToSentAntifraudMessage = arrGatOtherOp[gatOtherOp];
+            }
+
+            if (indexOtherOp === arrGatOtherOp.length - 1) {
+              this.sendAntifraudMessage(
+                this.gatewayToSentAntifraudMessage,
+                gateway
+              );
+            }
+          });
+        }
+      });
+    }
+  },
+  sendAntifraudMessage(sender, receiver) {
+    if(!receiver.objData) return;
+    if(!receiver.objData.lines) return;
+    if (sender.selectedLine >= sender.nRadios) sender.selectedLine = 0;
+    if (receiver.selectedLine >= sender.nRadios) receiver.selectedLine--;
+    
+    var mobilephone=receiver.objData.lines[receiver.selectedLine];
+    if(!mobilephone) return;
+
+    var message = this.getAntigraudMessageText();
+    if (message !== "") {
+      sms_gateway_hardware.sendSMS(
+        sender,
+        message,
+        mobilephone,
+        (response) => {
+          this.database.entities.gateway
+            .findOne({ where: { id: sender.id } })
+            .then((gat) => {
+              gat.nSmsSent++;
+              gat.save();
+            });
+
+          this.database.entities.gateway
+            .findOne({ where: { id: receiver.id } })
+            .then((gat) => {
+              gat.nSmsReceived++;
+              gat.save();
+            });
+          console.log(response);
+        }
+      );
+    }
+  },
+  getAntigraudMessageText() {
+    var antifraudMessageTexts = config.antifraudMessageTexts;
+    var nRand = Math.floor(
+      Math.random() * (config.antifraudMessageTexts.length - 1)
+    );
+    return antifraudMessageTexts[nRand];
   },
 };

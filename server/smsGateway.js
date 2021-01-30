@@ -69,23 +69,39 @@ module.exports = {
       }
     );
 
-    sms
-      .send(mobilephone, message)
-      .then((response) => {
-        console.log(response);
-        sms.isSend()
-        callback(response);
-      })
-      .catch((error) => {
-        console.log(error);
+    if(config.production===true){
+      sms
+        .send(mobilephone, message)
+        .then((response) => {
+          console.log(response);
+          sms.isSend()
+          callback(response);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+    else
+    {
+      console.log(
+        "Sending message  " +
+          message +
+          " -- " +
+          device.name +
+          "--" +
+          device.operator +
+          "--" +
+          device.selectedLine +
+          " to " +
+          mobilephone
+      );
+      callback({
+        status: "developing",
+        msg: "temporary disabled",
+        response: "developing",
       });
-    
-      /*
-    callback({
-      status: "developing",
-      msg: "temporary disabled",
-      response: "developing",
-    });*/
+    }
+      
   },
 };
 

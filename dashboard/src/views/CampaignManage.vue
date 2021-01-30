@@ -219,8 +219,8 @@
               <v-btn
                 depressed
                 color="primary"
-                v-on:click="updateMessageCampaign"
-                >Salva campagna</v-btn
+                v-on:click="filterContactsCampaign"
+                >Applica filtro alla campagna</v-btn
               >
             </v-col>
           </v-row>
@@ -228,7 +228,7 @@
             <v-col>
               <v-data-table
                 :headers="headers"
-                :items="contacts"
+                :items="filteredContacts"
                 :items-per-page="30"
                 class="elevation-1"
               ></v-data-table>
@@ -281,6 +281,8 @@ export default {
 
       messageCampaigns: [],
       contacts: [],
+      filteredContacts: [],
+      links: [],
       interestedCustomers: [],
       caps: [],
       cities: [],
@@ -372,6 +374,28 @@ export default {
     selectCampaign(campaign) {
       if (campaign.id > 0) {
         this.selectedCampaign = campaign;
+        this.axios
+        .post("http://localhost:18088/adminarea/messageCampaign/getCampaign", {messageCampaign: campaign})
+        .then((request) => {
+          if (request.data.messageCampaign) {
+            this.selectedCampaign=request.data.messageCampaign;
+            if(this.selectedCampaign.contacts)
+              this.contacts=this.selectedCampaign.contacts;
+            
+            if(this.selectedCampaign.links)
+            {
+              this.links=this.selectedCampaign.links;
+              this.messageUrl1=this.links[0].urlOriginal;
+              this.messageUrl2=this.links[1].urlOriginal;
+            }
+
+            if(this.selectedCampaign.message)
+              this.messageText=this.selectedCampaign.message;
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
       }
     },
     insertMessageCampaign() {
@@ -421,6 +445,10 @@ export default {
         .catch((error) => {
           console.log(error);
         });
+    },
+    filterContactsCampaign() {
+      this.contacts=this.filteredContacts;
+      this.updateMessageCampaign();
     },
     getMessageCampaigns() {
       this.axios
@@ -521,7 +549,7 @@ export default {
           selectedCap: this.selectedCap,
         })
         .then((request) => {
-          this.contacts = request.data.customers;
+          this.filteredContacts = request.data.customers;
         })
         .catch((error) => {
           console.log(error);
@@ -533,7 +561,7 @@ export default {
           selectedCity: this.selectedCity,
         })
         .then((request) => {
-          this.contacts = request.data.customers;
+          this.filteredContacts = request.data.customers;
         })
         .catch((error) => {
           console.log(error);
@@ -545,7 +573,7 @@ export default {
           selectedProvince: this.selectedProvince,
         })
         .then((request) => {
-          this.contacts = request.data.customers;
+          this.filteredContacts = request.data.customers;
         })
         .catch((error) => {
           console.log(error);
@@ -557,7 +585,7 @@ export default {
           selectedState: this.selectedState,
         })
         .then((request) => {
-          this.contacts = request.data.customers;
+          this.filteredContacts = request.data.customers;
         })
         .catch((error) => {
           console.log(error);
@@ -569,7 +597,7 @@ export default {
           selectedCountry: this.selectedCountry,
         })
         .then((request) => {
-          this.contacts = request.data.customers;
+          this.filteredContacts = request.data.customers;
         })
         .catch((error) => {
           console.log(error);

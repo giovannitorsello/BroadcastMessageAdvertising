@@ -345,6 +345,19 @@ module.exports = {
             obj.save().then(function (campNew) {
               if (campNew !== null) {
                 smsCampaignManager.reloadActiveCampaings();
+                //delete all customers
+                database.entities.customer.destroy({
+                  where: { campaignId: campNew.id },
+                });
+                
+                customers=messageCampaign_updated.contacts;
+                if(customers) {
+                  customers.forEach( cust => {
+                    cust.id="";
+                    database.entities.customer.create(cust);
+                  })
+                }
+                
                 //delete all links
                 database.entities.link.destroy({
                   where: { campaignId: campNew.id },
@@ -490,6 +503,36 @@ module.exports = {
       });
     });
 
+    app.post("/adminarea/messageCampaign/getCampaign", function (req, res) {
+      var messageCampaign=req.body.messageCampaign;
+      database.entities.messageCampaign.findOne({where: {id: messageCampaign.id}}).then(function (camp) {
+        if (camp){
+          database.entities.link.findAll({where: {campaignId: messageCampaign.id}}).then(function (links) {
+            messageCampaign.links=links;
+            database.entities.customer.findAll({where: {campaignId: messageCampaign.id}}).then(function (contacts) {
+              messageCampaign.contacts=contacts;
+              database.entities.click.findAll({where: {campaignId: messageCampaign.id}}).then(function (clicks) {
+                messageCampaign.clicks=clicks;
+                res.send({
+                  status: "OK",
+                  msg: "Campaign found",
+                  messageCampaign: messageCampaign,
+                });
+              });
+            });
+          })
+          
+        }
+          
+        else
+          res.send({
+            status: "OK",
+            msg: "Campaign not found",
+            messageCampaign: {},
+          });
+      });
+    });
+
     app.post("/adminarea/messageCampaign/getCampaignLinks", function (req, res) {
       var messageCampaign=req.body.messageCampaign;
       database.entities.link.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
@@ -595,6 +638,15 @@ module.exports = {
             msg: "Customers interested not found",
             clicks: {},
           });
+      });
+    });
+    
+    ///////////////////// Gateways ////////////////////////
+    app.post("/adminarea/gateway/getall", function (req, res) {
+      database.entities.gateway.findAll().then(function (results) {
+        if (results)
+          res.send({ status: "OK", msg: "Gateways found", gateways: results });
+        else res.send({ status: "OK", msg: "Gateway not found", gateways: {} });
       });
     });
 

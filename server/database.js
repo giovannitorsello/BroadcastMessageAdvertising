@@ -9,6 +9,7 @@ sequelize.options.logging = true;
 class User extends Model {}
 class Customer extends Model {}
 class MessageCampaign extends Model {}
+class Gateway extends Model {}
 class Link extends Model {}
 class Click extends Model {}
 class Config extends Model {}
@@ -21,6 +22,7 @@ module.exports = {
     link: Link,
     click: Click,
     messageCampaign: MessageCampaign,
+    gateway: Gateway,
     config: Config,
   },
   setup(app, callback) {
@@ -91,7 +93,7 @@ module.exports = {
         message: { type: Sequelize.STRING, allowNull: false },
         ncontacts: { type: Sequelize.STRING, allowNull: true },
         ncompleted: { type: Sequelize.STRING, allowNull: true },
-        state: { type: Sequelize.STRING, allowNull: false }, //active, disabled
+        state: { type: Sequelize.STRING, allowNull: false }, //active, disabled, complete
       },
       {
         sequelize,
@@ -122,6 +124,29 @@ module.exports = {
       }
     );
 
+    Gateway.init(
+      {
+        name: { type: Sequelize.STRING, allowNull: false },
+        operator: { type: Sequelize.STRING, allowNull: true },
+        nRadios: { type: Sequelize.INTEGER, defaultValue: 0 },
+        ip: { type: Sequelize.STRING, allowNull: true },
+        login: { type: Sequelize.STRING, allowNull: true },
+        password: { type: Sequelize.STRING, allowNull: true },
+        longitude: { type: Sequelize.STRING, allowNull: true },
+        latitude: { type: Sequelize.STRING, allowNull: true },
+        nSmsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
+        nSmsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
+        nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
+        nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
+        isWorking: { type: Sequelize.BOOLEAN, allowNull: true },
+        objData: { type: Sequelize.JSON }
+      },
+      {
+        sequelize,
+        modelName: "gateway",
+      }
+    );
+
     Config.init(
       {
         key: { type: Sequelize.STRING, allowNull: true }, //key section config
@@ -132,7 +157,7 @@ module.exports = {
         modelName: "config",
       }
     );
-
+    
     //Association Campaign-Customer
     MessageCampaign.hasMany(Customer, {foreignKey: 'campaignId'});
     Customer.belongsTo(MessageCampaign, {foreignKey: 'campaignId'});
@@ -145,12 +170,13 @@ module.exports = {
     //Association Customers-Link
     Customer.hasMany(Click, {foreignKey: 'customerId'});
     Click.belongsTo(Customer, {foreignKey: 'customerId'});
-
+    
     /*
     Customer.sync({ force: true });
     Link.sync({ force: true });
     MessageCampaign.sync({ force: true });
     Click.sync({ force: true });
+    Gateway.sync({ force: true });
     Config.sync({ force: true });
     User.sync({ force: true });
     */
