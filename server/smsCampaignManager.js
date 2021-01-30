@@ -55,14 +55,14 @@ module.exports = {
     //Controllo su data ed ora di inizio
     if (now > dateCampaign) {
       this.sendMessage(campaign, gateway, contact);
-      
-      //calcolo orario di fine presunto
-      var nMillis = (campaign.ncontacts - campaign.ncompleted) * waitTime;
-      var now = new Date().getTime();
-      var endTime = new Date(now + nMillis);
+            
       this.database.entities.messageCampaign
         .findOne({ where: { id: campaign.id } })
         .then((camp) => {
+          //calcolo orario di fine presunto
+          var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
+          var now = new Date().getTime();
+          var endTime = new Date(now + nMillis);
           camp.end = endTime;
           camp.save();
         });      
