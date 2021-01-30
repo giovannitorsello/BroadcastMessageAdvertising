@@ -58,7 +58,7 @@ module.exports = {
   },
   sendSMS(device, message, mobilephone, callback) {
     const sms = new HttpSms(
-      "http://"+device.ip,
+      "http://"+device.ip+":"+device.port,
       device.selectedLine,
       device.login,
       device.password,
