@@ -11,6 +11,6 @@
 
 You can also run additional tasks such as
 
-- `yarn run build` to build your app for production
+- `yarn run build` to build your app for production (export VUE_APP_API_BASE_URL="API URL" before for axios environment)
 - `yarn run lint` to run linting.
 
