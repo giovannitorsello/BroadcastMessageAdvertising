@@ -12,6 +12,7 @@
   "dependencies": {
     "@vue/eslint-plugin": "^4.2.0",
     "axios": "^0.21.1",
+    "caniuse-lite": "^1.0.30001181",
     "typescript": "^4.1.3",
     "vue": "^2.6.11",
     "vue-axios": "^3.2.2",
