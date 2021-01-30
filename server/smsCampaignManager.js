@@ -25,8 +25,11 @@ module.exports = {
       smsGateways = gateways;
       this.loadCampaings((campaigns) => {
         this.smsCampaigns = campaigns;
-        waitTime = 1000 * (14400 / (nMaxSmsPerSim * nTotRadios));
+
+        var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
+        waitTime = 1000 * (14400 / nMaxSmSPerHour);
         //start campaigns execution
+        this.startCampaignManager();
         setInterval(() => {
           this.startCampaignManager();
         }, waitTime);
@@ -35,6 +38,7 @@ module.exports = {
   },
   startCampaignManager() {
     this.smsCampaigns.forEach((campaign) => {
+      //controllo campagna attiva
       if (campaign.state === "active") {
         //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
         this.sendNextMessage(campaign);
@@ -46,7 +50,23 @@ module.exports = {
     // Gateways selection
     var contact = this.selectCurrentContact(campaign);
     var gateway = this.selectCurrentGateway();
-    this.sendMessage(campaign, gateway, contact);
+    var dateCampaign = Date.parse(campaign.begin);
+    var now = new Date().getTime();
+    //Controllo su data ed ora di inizio
+    if (now > dateCampaign) {
+      this.sendMessage(campaign, gateway, contact);
+      
+      //calcolo orario di fine presunto
+      var nMillis = (campaign.ncontacts - campaign.ncompleted) * waitTime;
+      var now = new Date().getTime();
+      var endTime = new Date(now + nMillis);
+      this.database.entities.messageCampaign
+        .findOne({ where: { id: campaign.id } })
+        .then((camp) => {
+          camp.end = endTime;
+          camp.save();
+        });      
+    }
   },
   sendMessage(campaign, gateway, contact) {
     if (!contact) return;
@@ -70,8 +90,9 @@ module.exports = {
                 database.entities.messageCampaign
                   .findOne({ where: { id: custSaved.campaignId } })
                   .then((camp) => {
-                    if (parseInt(camp.ncompleted) < parseInt(camp.ncontacts)) camp.ncompleted=parseInt(camp.ncompleted)+1;
-                    if (parseInt(camp.ncompleted) === parseInt(camp.ncontacts)) camp.state="complete";
+                    if (camp.ncompleted < camp.ncontacts) camp.ncompleted++;
+                    if (camp.ncompleted === camp.ncontacts)
+                      camp.state = "complete";
                     camp.save().then((campSaved) => {
                       gateway.nSmsSent++;
                       database.entities.gateway
@@ -171,17 +192,19 @@ module.exports = {
     this.database.entities.gateway.findAll().then((results) => {
       if (results.length > 0) gateways = results;
       else {
-        //First time import from config
         gateways = config.smsGateways;
-        //Calculate total number of radios
-        for (var i = 0; i < smsGateways.length; i++) {
-          nTotRadios = smsGateways[i].nRadios;
-        }
         gateways.forEach((gat) => {
           gat.id = "";
           this.database.entities.gateway.create(gat);
         });
       }
+
+      //Calculate total number of radios
+      nTotRadios = 0;
+      for (var i = 0; i < gateways.length; i++) {
+        nTotRadios += gateways[i].nRadios;
+      }
+
       callback(gateways);
     });
   },
@@ -250,37 +273,32 @@ module.exports = {
     }
   },
   sendAntifraudMessage(sender, receiver) {
-    if(!receiver.objData) return;
-    if(!receiver.objData.lines) return;
+    if (!receiver.objData) return;
+    if (!receiver.objData.lines) return;
     if (sender.selectedLine >= sender.nRadios) sender.selectedLine = 0;
     if (receiver.selectedLine >= sender.nRadios) receiver.selectedLine--;
-    
-    var mobilephone=receiver.objData.lines[receiver.selectedLine];
-    if(!mobilephone) return;
+
+    var mobilephone = receiver.objData.lines[receiver.selectedLine];
+    if (!mobilephone) return;
 
     var message = this.getAntigraudMessageText();
     if (message !== "") {
-      sms_gateway_hardware.sendSMS(
-        sender,
-        message,
-        mobilephone,
-        (response) => {
-          this.database.entities.gateway
-            .findOne({ where: { id: sender.id } })
-            .then((gat) => {
-              gat.nSmsSent++;
-              gat.save();
-            });
+      sms_gateway_hardware.sendSMS(sender, message, mobilephone, (response) => {
+        this.database.entities.gateway
+          .findOne({ where: { id: sender.id } })
+          .then((gat) => {
+            gat.nSmsSent++;
+            gat.save();
+          });
 
-          this.database.entities.gateway
-            .findOne({ where: { id: receiver.id } })
-            .then((gat) => {
-              gat.nSmsReceived++;
-              gat.save();
-            });
-          console.log(response);
-        }
-      );
+        this.database.entities.gateway
+          .findOne({ where: { id: receiver.id } })
+          .then((gat) => {
+            gat.nSmsReceived++;
+            gat.save();
+          });
+        console.log(response);
+      });
     }
   },
   getAntigraudMessageText() {

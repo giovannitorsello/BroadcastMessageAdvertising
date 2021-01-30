@@ -299,6 +299,7 @@ module.exports = {
       camp.message = messageCampaign.message.text;
       camp.ncontacts = messageCampaign.ncontacts;
       camp.ncompleted = 0;
+      camp.begin = messageCampaign.begin;      
       camp.state = "disabled";
 
       database.entities.messageCampaign.create(camp).then((campNew) => {

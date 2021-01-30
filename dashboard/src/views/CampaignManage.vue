@@ -17,7 +17,69 @@
                 label="Nome campagna SMS"
               ></v-text-field>
             </v-col>
+
+            <v-col cols="12" lg="6">
+              <v-menu
+                ref="menuDate"
+                v-model="menuDate"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                max-width="290px"
+                min-width="auto"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <v-text-field
+                    v-model="beginDate"
+                    label="Scegli la data"
+                    hint="MM/DD/YYYY format"
+                    persistent-hint
+                    prepend-icon="mdi-calendar"
+                    v-bind="attrs"
+                    @blur="date = parseDate(beginDate)"
+                    v-on="on"
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="date"
+                  no-title
+                  @input="menuDate = false"
+                ></v-date-picker>
+              </v-menu>
+            </v-col>
+
+            <v-col>
+              <v-menu
+                ref="menuTime"
+                v-model="menuTime"
+                :close-on-content-click="false"
+                :nudge-right="40"
+                :return-value.sync="time"
+                transition="scale-transition"
+                offset-y
+                max-width="290px"
+                min-width="290px"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <v-text-field
+                    v-model="beginTime"
+                    label="Scegli l'orario"
+                    prepend-icon="mdi-clock-time-four-outline"
+                    readonly
+                    v-bind="attrs"
+                    v-on="on"
+                  ></v-text-field>
+                </template>
+                <v-time-picker
+                  v-if="menuTime"
+                  v-model="time"
+                  full-width
+                  @click:minute="saveTime(time)"
+                ></v-time-picker>
+              </v-menu>
+            </v-col>
           </v-row>
+
           <v-row>
             <v-col>
               <v-btn
@@ -44,6 +106,8 @@
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
                     <td>{{ row.item.ncompleted }}</td>
+                    <td>{{ row.item.begin }}</td>
+                    <td>{{ row.item.end }}</td>
                     <td>
                       <v-btn
                         class="mx-4"
@@ -271,6 +335,12 @@ export default {
       messageUrl1: "https://www.google.com",
       messageUrl2: "https://www.youtube.com",
       messageText: "Testo di prova (da cambiare) |link1| e |link2|",
+      beginDate: "",
+      beginTime: "",
+      date: new Date().toISOString().substr(0, 10),
+      time: "",
+      menuDate: false,
+      menuTime: false,
 
       selectedCap: "",
       selectedCity: "",
@@ -321,12 +391,15 @@ export default {
         { text: "Messagio", value: "message" },
         { text: "Numero contatti", value: "ncontacts" },
         { text: "Completamento", value: "ncompleted" },
+        { text: "Inizio", value: "begin" },
+        { text: "Fine", value: "end" },
       ],
     };
   },
   mounted() {
+    this.beginDate=(new Date()).toLocaleDateString("it-IT");
+    this.beginTime=(new Date()).toLocaleTimeString("it-IT");
     this.refreshAll();
-    var messCamp = this.messageCampaigns;
     setInterval(() => {
       this.refreshAll();
     }, 10000);
@@ -375,27 +448,29 @@ export default {
       if (campaign.id > 0) {
         this.selectedCampaign = campaign;
         this.axios
-        .post("http://localhost:18088/adminarea/messageCampaign/getCampaign", {messageCampaign: campaign})
-        .then((request) => {
-          if (request.data.messageCampaign) {
-            this.selectedCampaign=request.data.messageCampaign;
-            if(this.selectedCampaign.contacts)
-              this.contacts=this.selectedCampaign.contacts;
-            
-            if(this.selectedCampaign.links)
-            {
-              this.links=this.selectedCampaign.links;
-              this.messageUrl1=this.links[0].urlOriginal;
-              this.messageUrl2=this.links[1].urlOriginal;
-            }
+          .post(
+            "http://localhost:18088/adminarea/messageCampaign/getCampaign",
+            { messageCampaign: campaign }
+          )
+          .then((request) => {
+            if (request.data.messageCampaign) {
+              this.selectedCampaign = request.data.messageCampaign;
+              if (this.selectedCampaign.contacts)
+                this.contacts = this.selectedCampaign.contacts;
 
-            if(this.selectedCampaign.message)
-              this.messageText=this.selectedCampaign.message;
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+              if (this.selectedCampaign.links) {
+                this.links = this.selectedCampaign.links;
+                this.messageUrl1 = this.links[0].urlOriginal;
+                this.messageUrl2 = this.links[1].urlOriginal;
+              }
+
+              if (this.selectedCampaign.message)
+                this.messageText = this.selectedCampaign.message;
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       }
     },
     insertMessageCampaign() {
@@ -405,6 +480,7 @@ export default {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
+            begin: this.getBeginDate(),
             message: {
               text: this.messageText,
               url1: this.messageUrl1,
@@ -447,15 +523,21 @@ export default {
         });
     },
     filterContactsCampaign() {
-      this.contacts=this.filteredContacts;
+      this.contacts = this.filteredContacts;
       this.updateMessageCampaign();
     },
     getMessageCampaigns() {
+      this.messageCampaigns=[]
       this.axios
         .post("http://localhost:18088/adminarea/messageCampaign/getAll")
         .then((request) => {
-          if (request.data.messageCampaigns) {
-            this.messageCampaigns = request.data.messageCampaigns;
+          if (request.data.messageCampaigns) {            
+            request.data.messageCampaigns.forEach(camp => {              
+              camp.begin=(new Date(camp.begin)).toLocaleString('it-IT');
+              camp.end=(new Date(camp.end)).toLocaleString('it-IT');              
+              this.messageCampaigns.push(camp);  
+            })
+            
           }
         })
         .catch((error) => {
@@ -614,7 +696,7 @@ export default {
         });
     },
     getInterestedCustomers() {
-      this.interestedCustomers=[];
+      this.interestedCustomers = [];
       if (this.selectedCampaign && this.selectedCampaign.id > 0)
         this.axios
           .post(
@@ -633,7 +715,7 @@ export default {
                   mobilephone: click.customer.mobilephone,
                   postcode: click.customer.postcode,
                 };
-                this.interestedCustomers.push(interestedCustomer);                
+                this.interestedCustomers.push(interestedCustomer);
               });
             }
           })
@@ -670,6 +752,34 @@ export default {
             console.log(error);
           });
       }
+    },
+    parseDate(date) {
+      if (!date) return null;
+      const [day, month, year] = date.split("/");
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    },
+    formatDate(date) {
+      if (!date) return null;
+      const [year, month, day] = date.split("-");
+      this.beginDate = `${day}/${month}/${year}`;
+      return `${day}/${month}/${year}`;
+    },
+    saveTime(time) {
+      this.beginTime=time;
+    },
+    getBeginDate() {
+      const [day, month, year] = this.beginDate.split("/");
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${this.beginTime}:00.000`;
+    }
+  },
+  computed: {
+    computedDateFormatted() {
+      return this.formatDate(this.date);
+    },
+  },
+  watch: {
+    date(val) {
+      this.dateFormatted = this.formatDate(this.date);
     },
   },
 };

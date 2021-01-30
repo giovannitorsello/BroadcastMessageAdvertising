@@ -91,8 +91,10 @@ module.exports = {
       {
         name: { type: Sequelize.STRING, allowNull: false },
         message: { type: Sequelize.STRING, allowNull: false },
-        ncontacts: { type: Sequelize.STRING, allowNull: true },
-        ncompleted: { type: Sequelize.STRING, allowNull: true },
+        ncontacts: { type: Sequelize.INTEGER, allowNull: true },
+        ncompleted: { type: Sequelize.INTEGER, allowNull: true },
+        begin: { type: Sequelize.DATE, allowNull: true },
+        end: { type: Sequelize.DATE, allowNull: true },
         state: { type: Sequelize.STRING, allowNull: false }, //active, disabled, complete
       },
       {
@@ -172,13 +174,13 @@ module.exports = {
     Click.belongsTo(Customer, {foreignKey: 'customerId'});
     
     /*
-    Customer.sync({ force: true });
-    Link.sync({ force: true });
-    MessageCampaign.sync({ force: true });
-    Click.sync({ force: true });
-    Gateway.sync({ force: true });
     Config.sync({ force: true });
     User.sync({ force: true });
+    Gateway.sync({ force: true });
+    Click.sync({ force: true });
+    Link.sync({ force: true });    
+    Customer.sync({ force: true });
+    MessageCampaign.sync({ force: true });    
     */
 
   },
