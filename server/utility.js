@@ -12,31 +12,32 @@ const database = require("./database.js");
 
 module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
-    fs.createReadStream(filename)
-      .pipe(csvParser({ separator: config.csvSeparator }))
-      .on("data", (row, index, arr) => {
-        var cust = row;
-        cust.id = "";
-        cust.uid = this.makeUuid();
-        cust.firstname = row.NOME;
-        cust.lastname = row.COGNOME;
-        cust.email = row.EMAIL;
-        cust.mobilephone = row.NUMERO;
-        cust.address = row.INDIRIZZO;
-        cust.postcode = row.CAP;
-        cust.city = row.PAESE;
-        cust.adm1 = row.PROV;
-        cust.adm2 = row.REGIONE;
-        cust.adm3 = row.STATO;
-        cust.campaignId = idCampaign;
+    console.log("Destroy ld contacts and import new");
+    //Delete old contacts
+    database.entities.customer
+      .destroy({ where: { campaignId: idCampaign } })
+      .then((results) => {
+        fs.createReadStream(filename)
+          .pipe(csvParser({ separator: config.csvSeparator }))
+          .on("data", (row, index, arr) => {
+            var cust = row;
+            cust.id = "";
+            cust.uid = this.makeUuid();
+            cust.firstname = row.NOME;
+            cust.lastname = row.COGNOME;
+            cust.email = row.EMAIL;
+            cust.mobilephone = row.NUMERO;
+            cust.address = row.INDIRIZZO;
+            cust.postcode = row.CAP;
+            cust.city = row.PAESE;
+            cust.adm1 = row.PROV;
+            cust.adm2 = row.REGIONE;
+            cust.adm3 = row.STATO;
+            cust.campaignId = idCampaign;
 
-        console.log("Destroy ld contacts and import new");
-        if(!cust.mobilephone) cust.mobilephone="00";
-        //Delete old contacts
-        database.entities.customer
-          .destroy({ where: { campaignId: idCampaign } })
-          .then((results) => {
-            console.log("Import "+cust.mobilephone+" for campaign: "+idCampaign);
+            console.log(
+              "Import " + cust.mobilephone + " for campaign: " + idCampaign
+            );
             database.entities.customer
               .findOne({ where: { mobilephone: cust.mobilephone } })
               .then((item) => {
