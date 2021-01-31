@@ -65,7 +65,7 @@ module.exports = {
       {
         waitForStatus: true, // Wait and check sending status
         waitTries: 3, // Number of attempts
-        waitTime: 2000, // Time in  milliseconds
+        waitTime: 10000, // Time in  milliseconds
       }
     );
 
@@ -74,11 +74,12 @@ module.exports = {
         .send(mobilephone, message)
         .then((response) => {
           console.log(response);
-          sms.isSend()
+          var isSend=sms.isSend()
           callback(response);
         })
         .catch((error) => {
           console.log(error);
+          callback(error);
         });
     }
     else

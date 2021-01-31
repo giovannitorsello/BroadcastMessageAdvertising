@@ -89,6 +89,7 @@ module.exports = {
     //create csv files, zip and callback
     const createCsvWriter = csvWriter.createObjectCsvWriter;
     const csvWriterCampaign = createCsvWriter({
+      fieldDelimiter: config.csvSeparator,
       path: fileCampaign,
       header: [
         { id: "id", title: "Id" },
@@ -102,6 +103,7 @@ module.exports = {
       ],
     });
     const csvWriterLink = createCsvWriter({
+      fieldDelimiter: config.csvSeparator,
       path: fileLinks,
       header: [
         { id: "campaignId", title: "identificativoCampagna" },
@@ -109,6 +111,7 @@ module.exports = {
       ],
     });
     const csvWriterContacts = createCsvWriter({
+      fieldDelimiter: config.csvSeparator,
       path: fileContacts,
       header: [
         { id: "id", title: "Id" },
@@ -124,43 +127,63 @@ module.exports = {
         { id: "country", title: "Stato" },
       ],
     });
-    const csvWriterCliks = createCsvWriter({
+    const csvWriterClicks = createCsvWriter({
+      fieldDelimiter: config.csvSeparator,
       path: fileClicks,
       header: [
-        { id: "customer.id", title: "Id" },
-        { id: "link.urlOriginal", title: "Link" },
-        { id: "click.customer.firstname", title: "Nome" },
-        { id: "click.customer.lastname", title: "Cognome" },
-        { id: "click.customer.mobilephone", title: "Telfono" },
-        { id: "click.customer.address", title: "Indirizzo" },
-        { id: "click.customer.postcode", title: "Cap" },
-        { id: "click.customer.adm1", title: "Citta" },
-        { id: "click.customer.adm2", title: "Provincia" },
-        { id: "click.customer.adm3", title: "Regione" },
-        { id: "click.customer.country", title: "Stato" },
+        { id: "id", title: "Id" },
+        { id: "url", title: "Link" },
+        { id: "firstname", title: "Nome" },
+        { id: "lastname", title: "Cognome" },
+        { id: "mobilephone", title: "Telfono" },
+        { id: "address", title: "Indirizzo" },
+        { id: "postcode", title: "Cap" },
+        { id: "adm1", title: "Citta" },
+        { id: "adm2", title: "Provincia" },
+        { id: "adm3", title: "Regione" },
+        { id: "country", title: "Stato" },
       ],
     });
 
-    csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
-      csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-        csvWriterLink.writeRecords(pkgData.links).then(() => {
-          csvWriterCliks.writeRecords(pkgData.clicks).then(() => {
-            //zip all files
-            // creating archives
-            var zip = new admZip();
-
-            // add file directly
-            zip.addLocalFile(fileCampaign);
-            zip.addLocalFile(fileContacts);
-            zip.addLocalFile(fileLinks);
-            zip.addLocalFile(fileClicks);
-
-            filenameZip =
-              pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-            zip.writeZip(
-              process.cwd() + config.paths.downloadFolder + "/" + filenameZip
-            );
-            callback({ fileArchive: filenameZip });
+    //forma clicks
+    var clickData=[];
+    pkgData.clicks.forEach((click, index, arrClick) => {
+      clickData.push({
+        id: click.customer.id,
+        url: click.link.urlOriginal,
+        firstname: click.customer.firstname,
+        lastname: click.customer.lastname,
+        mobilephone: click.customer.mobilephone,
+        address: click.customer.address,
+        postcode: click.customer.postcode,
+        adm1: click.customer.adm1,
+        adm2: click.customer.adm2,
+        adm3: click.customer.adm3,
+        country: click.customer.country
+      });
+      
+      if(index===pkgData.clicks.length-1)
+      csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
+        csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
+          csvWriterLink.writeRecords(pkgData.links).then(() => {
+            csvWriterClicks.writeRecords(clickData).then(() => {
+              //zip all files
+              // creating archives
+              var zip = new admZip();
+  
+              // add file directly
+              zip.addLocalFile(fileCampaign);
+              zip.addLocalFile(fileContacts);
+              zip.addLocalFile(fileLinks);
+              zip.addLocalFile(fileClicks);
+  
+              filenameZip =
+                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+              zip.writeZip(
+                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
+              );
+              callback({ fileArchive: filenameZip });
+            });
           });
         });
       });

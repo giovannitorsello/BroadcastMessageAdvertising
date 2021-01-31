@@ -28,8 +28,9 @@ module.exports = {
 
         var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
-        if(waitTime<10000) waiTime=10000; //force 10 secs between two messages
-        waitTime=1000;
+        if (waitTime < 5000) waiTime = 5000; //force a minumum of 10 secs between two messages
+        //For debug only
+        waitTime = 10000;
         //start campaigns execution
         this.startCampaignManager();
         setInterval(() => {
@@ -57,7 +58,7 @@ module.exports = {
     //Controllo su data ed ora di inizio
     if (now > dateCampaign) {
       this.sendMessage(campaign, gateway, contact);
-            
+
       this.database.entities.messageCampaign
         .findOne({ where: { id: campaign.id } })
         .then((camp) => {
@@ -67,7 +68,7 @@ module.exports = {
           var endTime = new Date(now + nMillis);
           camp.end = endTime;
           camp.save();
-        });      
+        });
     }
   },
   sendMessage(campaign, gateway, contact) {
@@ -83,31 +84,36 @@ module.exports = {
         message,
         contact.mobilephone,
         (response) => {
-          database.entities.customer
-            .findOne({ where: { id: contact.id } })
-            .then((cust) => {
-              cust.state = "contacted";
-              cust.save().then((custSaved) => {
-                campaign.contacts[selectedContact].state = "contacted";
-                database.entities.messageCampaign
-                  .findOne({ where: { id: custSaved.campaignId } })
-                  .then((camp) => {
-                    if (camp.ncompleted < camp.ncontacts) camp.ncompleted++;
-                    if (camp.ncompleted === camp.ncontacts)
-                      camp.state = "complete";
-                    camp.save().then((campSaved) => {
-                      gateway.nSmsSent++;
-                      database.entities.gateway
-                        .findOne({ where: { id: gateway.id } })
-                        .then((gat) => {
-                          gat.nSmsSent = gateway.nSmsSent;
-                          gat.save();
-                          this.antifraudRoutine(gateway);
-                        });
+          if (response.status) {
+            database.entities.customer
+              .findOne({ where: { id: contact.id } })
+              .then((cust) => {
+                if (response.status === "send") cust.state = "contacted";
+                else cust.state = "toContact";
+                cust.save().then((custSaved) => {
+                  if (response.status === "send")
+                    campaign.contacts[selectedContact].state = "contacted";
+                  else campaign.contacts[selectedContact].state = "toContact";
+                  database.entities.messageCampaign
+                    .findOne({ where: { id: custSaved.campaignId } })
+                    .then((camp) => {
+                      if (camp.ncompleted < camp.ncontacts) camp.ncompleted++;
+                      if (camp.ncompleted === camp.ncontacts)
+                        camp.state = "complete";
+                      camp.save().then((campSaved) => {
+                        gateway.nSmsSent++;
+                        database.entities.gateway
+                          .findOne({ where: { id: gateway.id } })
+                          .then((gat) => {
+                            gat.nSmsSent = gateway.nSmsSent;
+                            gat.save();
+                            this.antifraudRoutine(gateway);
+                          });
+                      });
                     });
-                  });
+                });
               });
-            });
+          }
           console.log(response);
         }
       );

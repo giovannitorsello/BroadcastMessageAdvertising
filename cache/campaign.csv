@@ -1,2 +1,2 @@
-Id,NomeCampagna,Messaggio,Inizio,Fine,Stato,NumeroContatti,NumeroCompletati
-8,Prova,Testo di prova (da cambiare) |link1| e |link2|,"31/1/2021, 12:53:06","31/1/2021, 13:28:15",active,100,0
+Id;NomeCampagna;Messaggio;Inizio;Fine;Stato;NumeroContatti;NumeroCompletati
+10;SecondaProvaDomenica;prova domenicale |link1| e |link2|;31/1/2021, 16:42:00;31/1/2021, 16:45:09;disabled;6;6
