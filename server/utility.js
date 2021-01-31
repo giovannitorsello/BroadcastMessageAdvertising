@@ -29,10 +29,13 @@ module.exports = {
         cust.adm3 = row.STATO;
         cust.campaignId = idCampaign;
 
+        console.log("Destroy ld contacts and import new");
+        if(!cust.mobilephone) cust.mobilephone="00";
         //Delete old contacts
         database.entities.customer
           .destroy({ where: { campaignId: idCampaign } })
           .then((results) => {
+            console.log("Import "+cust.mobilephone+" for campaign: "+idCampaign);
             database.entities.customer
               .findOne({ where: { mobilephone: cust.mobilephone } })
               .then((item) => {
