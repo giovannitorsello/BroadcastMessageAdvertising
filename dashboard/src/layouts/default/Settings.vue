@@ -182,54 +182,6 @@
             </v-item-group>
           </v-card>
 
-          <v-btn
-            block
-            class="mb-3"
-            color="grey darken-1"
-            dark
-            href="https://vuetifyjs.com/components/api-explorer"
-            rel="noopener"
-            target="_blank"
-          >
-            Vuetify Documentation
-          </v-btn>
-
-          <v-btn
-            block
-            color="info"
-            href="https://store.vuetifyjs.com/products/vuetify-material-dashboard-free"
-            rel="noopener"
-            target="_blank"
-          >
-            Get Free Demo
-          </v-btn>
-
-          <div class="my-12" />
-
-          <div>
-            <strong class="mb-3 d-inline-block">THANK YOU FOR SHARING!</strong>
-          </div>
-
-          <v-btn
-            class="ma-1"
-            color="#55acee"
-            dark
-            rounded
-          >
-            <v-icon>mdi-twitter</v-icon>
-            - 45
-          </v-btn>
-
-          <v-btn
-            class="ma-1"
-            color="#3b5998"
-            dark
-            default
-            rounded
-          >
-            <v-icon>mdi-facebook</v-icon>
-            - 50
-          </v-btn>
         </v-card-text>
       </v-card>
     </v-menu>

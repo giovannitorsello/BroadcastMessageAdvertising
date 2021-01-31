@@ -51,6 +51,7 @@ app.use(bodyParser.json({ limit: '2000kb' }));
 var upload = multer({ dest: './uploads/' })
 //other static contents folders
 app.use('/cache', express.static(process.cwd() + config.paths.cacheFolder));
+app.use('/downloads', express.static(process.cwd() + config.paths.downloadFolder));
 
 /* to enable https
 const options = {

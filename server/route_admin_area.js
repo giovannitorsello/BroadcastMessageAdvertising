@@ -423,6 +423,7 @@ module.exports = {
 
     app.post("/adminarea/messageCampaign/pause", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
+      database.exportCampaignData(messageCampaign, (fileArchive) => {
       database.entities.messageCampaign
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (obj) {
@@ -436,17 +437,20 @@ module.exports = {
                   status: "OK",
                   msg: "Message campaign paused successfully",
                   messageCampaign: campNew,
+                  fileArchive: fileArchive 
                 });
               } else {
                 res.send({
                   status: "error",
                   msg: "Message campaign pause error",
                   messageCampaign: campNew,
+                  fileArchive: fileArchive 
                 });
               }
             });
           }
         });
+      });
     });
 
     app.post("/adminarea/messageCampaign/delete", function (req, res) {
@@ -455,9 +459,9 @@ module.exports = {
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (messageCampaignToDel) {
           if (messageCampaignToDel !== null) {
-            database.exportCampaignData(messageCampaignToDel, (filename) => {
+            database.exportCampaignData(messageCampaignToDel, (fileArchive) => {
               //Delete all campaign data
-              /*
+              
               database.entities.customer.destroy({
                 where: { campaignId: messageCampaign.id },
               });
@@ -468,13 +472,11 @@ module.exports = {
                 where: { campaignId: messageCampaign.id },
               });
               messageCampaignToDel.destroy();
-              */
-              messageCampaignToDel.fileArchive=filename;
+                            
               smsCampaignManager.reloadActiveCampaings();
               res.send({
                 status: "OK",
-                msg: "Campaign deleted successfully",
-                messageCampaign: messageCampaignToDel
+                msg: "Campaign deleted successfully", fileArchive: fileArchive               
               });
             });
           } else {
@@ -539,8 +541,7 @@ module.exports = {
         });
     });
 
-    app.post(
-      "/adminarea/messageCampaign/getCampaignLinks",
+    app.post("/adminarea/messageCampaign/getCampaignLinks",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.link
@@ -562,8 +563,7 @@ module.exports = {
       }
     );
 
-    app.post(
-      "/adminarea/messageCampaign/getCampaignClicks",
+    app.post("/adminarea/messageCampaign/getCampaignClicks",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.click
@@ -585,8 +585,7 @@ module.exports = {
       }
     );
 
-    app.post(
-      "/adminarea/messageCampaign/getCampaignCustomers",
+    app.post("/adminarea/messageCampaign/getCampaignCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.customer
@@ -608,8 +607,7 @@ module.exports = {
       }
     );
 
-    app.post(
-      "/adminarea/messageCampaign/getCampaignCustomersContacted",
+    app.post("/adminarea/messageCampaign/getCampaignCustomersContacted",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.customer
@@ -633,8 +631,7 @@ module.exports = {
       }
     );
 
-    app.post(
-      "/adminarea/messageCampaign/getCampaignCustomersToContact",
+    app.post("/adminarea/messageCampaign/getCampaignCustomersToContact",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.customer
@@ -658,8 +655,7 @@ module.exports = {
       }
     );
 
-    app.post(
-      "/adminarea/messageCampaign/getCampaignInterestedCustomers",
+    app.post("/adminarea/messageCampaign/getCampaignInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.click

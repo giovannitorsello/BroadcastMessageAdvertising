@@ -427,6 +427,8 @@ export default {
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
           this.getMessageCampaigns();
+          var fileArchive = request.data.fileArchive;
+          this.downloadMessageCampaignArchive(fileArchive);
         })
         .catch((error) => {
           console.log(error);
@@ -438,21 +440,9 @@ export default {
           messageCampaign: messageCampaign,
         })
         .then((request) => {
-          this.messageCampaign = request.data.messageCampaign;
+          var fileArchive = request.data.fileArchive;
+          this.downloadMessageCampaignArchive(fileArchive);
           this.getMessageCampaigns();
-          zipCampaignArchive = this.messageCampaign.fileArchive;
-          axios({
-            url: "/download"+zipCampaignArchive,
-            method: "GET",
-            responseType: "blob",
-          }).then((response) => {
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement("a");
-            link.href = url;
-            link.setAttribute("download", zipCampaignArchive);
-            document.body.appendChild(link);
-            link.click();
-          });
         })
         .catch((error) => {
           console.log(error);
@@ -783,6 +773,21 @@ export default {
       return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${
         this.beginTime
       }:00.000`;
+    },
+    downloadMessageCampaignArchive(fileArchive) {            
+      var zipCampaignArchive = fileArchive.fileArchive;      
+      this.axios({
+        url: "/downloads/" + zipCampaignArchive,
+        method: "GET",
+        responseType: "blob",
+      }).then((response) => {
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", zipCampaignArchive);
+        document.body.appendChild(link);
+        link.click();
+      });
     },
   },
   computed: {

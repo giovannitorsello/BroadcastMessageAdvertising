@@ -207,8 +207,8 @@ module.exports = {
                   .findAll({where: {campaignId: campaign.id}, include: [this.entities.customer, this.entities.link]})
                   .then((cs) => {
                     if (cs) {
-                      cliks = cs;
-                      pkgData={campaign: campaign, contacts: contacts, links: links, cliks: cliks}                      
+                      clicks = cs;
+                      pkgData={campaign: campaign, contacts: contacts, links: links, clicks: clicks}                      
                       utility.createCampaignPackage(pkgData, data => {
                         callback(data);
                       });
