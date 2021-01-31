@@ -889,8 +889,8 @@ module.exports = {
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
-            utility.import_Contacts_From_Csv(idCampaign, newPath, database, function () {
-              database.entities.customer.findAll().then(function (results) {
+            utility.import_Contacts_From_Csv(idCampaign, newPath, database, () => {
+              database.entities.customer.findAll({where: {campaignId: idCampaign}}).then( (results) => {
                 res.send({
                   status: "OK",
                   msg: "Customers found",

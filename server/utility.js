@@ -19,7 +19,7 @@ module.exports = {
       .then((results) => {
         fs.createReadStream(filename)
           .pipe(csvParser({ separator: config.csvSeparator }))
-          .on("data", (row, index, arr) => {
+          .on("data", row => {
             var cust = row;
             cust.id = "";
             cust.uid = this.makeUuid();
@@ -66,7 +66,7 @@ module.exports = {
           })
           .on("end", () => {
             callback();
-            console.log("CSV file successfully processed." + filename);
+            console.log("CSV file successfully processed: " + filename);
           });
       });
   },
