@@ -12,7 +12,7 @@ const database = require("./database.js");
 
 module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
-    console.log("Destroy ld contacts and import new");
+    console.log("Destroy old contacts and import new");
     //Delete old contacts
     database.entities.customer
       .destroy({ where: { campaignId: idCampaign } })
