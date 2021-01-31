@@ -299,7 +299,7 @@ module.exports = {
       camp.message = messageCampaign.message.text;
       camp.ncontacts = messageCampaign.ncontacts;
       camp.ncompleted = 0;
-      camp.begin = messageCampaign.begin;      
+      camp.begin = messageCampaign.begin;
       camp.state = "disabled";
 
       database.entities.messageCampaign.create(camp).then((campNew) => {
@@ -325,9 +325,7 @@ module.exports = {
               urlOriginal: url,
               campaignId: campNew.id,
             })
-            .then(function (linkNew) {
-              
-            });
+            .then(function (linkNew) {});
         });
       });
     });
@@ -350,15 +348,15 @@ module.exports = {
                 database.entities.customer.destroy({
                   where: { campaignId: campNew.id },
                 });
-                
-                customers=messageCampaign_updated.contacts;
-                if(customers) {
-                  customers.forEach( cust => {
-                    cust.id="";
+
+                customers = messageCampaign_updated.contacts;
+                if (customers) {
+                  customers.forEach((cust) => {
+                    cust.id = "";
                     database.entities.customer.create(cust);
-                  })
+                  });
                 }
-                
+
                 //delete all links
                 database.entities.link.destroy({
                   where: { campaignId: campNew.id },
@@ -374,9 +372,7 @@ module.exports = {
                       urlOriginal: url,
                       campaignId: campNew.id,
                     })
-                    .then(function (linkNew) {
-                      
-                    });
+                    .then(function (linkNew) {});
                 });
 
                 res.send({
@@ -401,13 +397,13 @@ module.exports = {
       database.entities.messageCampaign
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (obj) {
-          if (obj !== null) {            
+          if (obj !== null) {
             obj.state = "active";
-            
+
             obj.save().then(function (campNew) {
               if (campNew !== null) {
                 smsCampaignManager.reloadActiveCampaings();
-                
+
                 res.send({
                   status: "OK",
                   msg: "Message campaign started successfully",
@@ -430,13 +426,12 @@ module.exports = {
       database.entities.messageCampaign
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (obj) {
-          if (obj !== null) {            
+          if (obj !== null) {
             obj.state = "disabled";
-            
+
             obj.save().then(function (campNew) {
               if (campNew !== null) {
                 smsCampaignManager.reloadActiveCampaings();
-                
                 res.send({
                   status: "OK",
                   msg: "Message campaign paused successfully",
@@ -460,22 +455,27 @@ module.exports = {
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (messageCampaignToDel) {
           if (messageCampaignToDel !== null) {
-            //Delete all campaign data
-            database.entities.customer.destroy({
-              where: { campaignId: messageCampaign.id },
-            });
-            database.entities.link.destroy({
-              where: { campaignId: messageCampaign.id },
-            });
-            database.entities.click.destroy({
-              where: { campaignId: messageCampaign.id },
-            });
-            messageCampaignToDel.destroy();
-            smsCampaignManager.reloadActiveCampaings();
-            res.send({
-              status: "OK",
-              msg: "Campaign deleted successfully",
-              messageCampaign: messageCampaignToDel,
+            database.exportCampaignData(messageCampaignToDel, (filename) => {
+              //Delete all campaign data
+              /*
+              database.entities.customer.destroy({
+                where: { campaignId: messageCampaign.id },
+              });
+              database.entities.link.destroy({
+                where: { campaignId: messageCampaign.id },
+              });
+              database.entities.click.destroy({
+                where: { campaignId: messageCampaign.id },
+              });
+              messageCampaignToDel.destroy();
+              */
+              messageCampaignToDel.fileArchive=filename;
+              smsCampaignManager.reloadActiveCampaings();
+              res.send({
+                status: "OK",
+                msg: "Campaign deleted successfully",
+                messageCampaign: messageCampaignToDel
+              });
             });
           } else {
             res.send({
@@ -505,143 +505,185 @@ module.exports = {
     });
 
     app.post("/adminarea/messageCampaign/getCampaign", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      database.entities.messageCampaign.findOne({where: {id: messageCampaign.id}}).then(function (camp) {
-        if (camp){
-          database.entities.link.findAll({where: {campaignId: messageCampaign.id}}).then(function (links) {
-            messageCampaign.links=links;
-            database.entities.customer.findAll({where: {campaignId: messageCampaign.id}}).then(function (contacts) {
-              messageCampaign.contacts=contacts;
-              database.entities.click.findAll({where: {campaignId: messageCampaign.id}}).then(function (clicks) {
-                messageCampaign.clicks=clicks;
-                res.send({
-                  status: "OK",
-                  msg: "Campaign found",
-                  messageCampaign: messageCampaign,
-                });
+      var messageCampaign = req.body.messageCampaign;
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign.id } })
+        .then(function (camp) {
+          if (camp) {
+            database.entities.link
+              .findAll({ where: { campaignId: messageCampaign.id } })
+              .then(function (links) {
+                messageCampaign.links = links;
+                database.entities.customer
+                  .findAll({ where: { campaignId: messageCampaign.id } })
+                  .then(function (contacts) {
+                    messageCampaign.contacts = contacts;
+                    database.entities.click
+                      .findAll({ where: { campaignId: messageCampaign.id } })
+                      .then(function (clicks) {
+                        messageCampaign.clicks = clicks;
+                        res.send({
+                          status: "OK",
+                          msg: "Campaign found",
+                          messageCampaign: messageCampaign,
+                        });
+                      });
+                  });
               });
+          } else
+            res.send({
+              status: "OK",
+              msg: "Campaign not found",
+              messageCampaign: {},
             });
+        });
+    });
+
+    app.post(
+      "/adminarea/messageCampaign/getCampaignLinks",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.link
+          .findAll({ where: { campaignId: messageCampaign.id } })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Links campaign found",
+                links: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Links campaign not found",
+                links: {},
+              });
+          });
+      }
+    );
+
+    app.post(
+      "/adminarea/messageCampaign/getCampaignClicks",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.click
+          .findAll({ where: { campaignId: messageCampaign.id } })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Clicks campaign found",
+                clicks: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Cliks campaign not found",
+                cloks: {},
+              });
+          });
+      }
+    );
+
+    app.post(
+      "/adminarea/messageCampaign/getCampaignCustomers",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.customer
+          .findAll({ where: { campaignId: messageCampaign.id } })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Customers campaign found",
+                links: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers campaign not found",
+                links: {},
+              });
+          });
+      }
+    );
+
+    app.post(
+      "/adminarea/messageCampaign/getCampaignCustomersContacted",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.customer
+          .findAll({
+            where: { campaignId: messageCampaign.id, state: "contacted" },
           })
-          
-        }
-          
-        else
-          res.send({
-            status: "OK",
-            msg: "Campaign not found",
-            messageCampaign: {},
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Customers campaign found",
+                customers: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers campaign not found",
+                customers: {},
+              });
           });
-      });
-    });
+      }
+    );
 
-    app.post("/adminarea/messageCampaign/getCampaignLinks", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      database.entities.link.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Links campaign found",
-            links: results,
+    app.post(
+      "/adminarea/messageCampaign/getCampaignCustomersToContact",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.customer
+          .findAll({
+            where: { campaignId: messageCampaign.id, state: "toContact" },
+          })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Customers campaign found",
+                links: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers campaign not found",
+                links: {},
+              });
           });
-        else
-          res.send({
-            status: "OK",
-            msg: "Links campaign not found",
-            links: {},
-          });
-      });
-    });
+      }
+    );
 
-    app.post("/adminarea/messageCampaign/getCampaignClicks", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      database.entities.click.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Clicks campaign found",
-            clicks: results,
+    app.post(
+      "/adminarea/messageCampaign/getCampaignInterestedCustomers",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.click
+          .findAll({
+            where: { campaignId: messageCampaign.id },
+            include: [database.entities.customer, database.entities.link],
+          })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Customers interested found",
+                clicks: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers interested not found",
+                clicks: {},
+              });
           });
-        else
-          res.send({
-            status: "OK",
-            msg: "Cliks campaign not found",
-            cloks: {},
-          });
-      });
-    });
+      }
+    );
 
-    app.post("/adminarea/messageCampaign/getCampaignCustomers", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      database.entities.customer.findAll({where: {campaignId: messageCampaign.id}}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Customers campaign found",
-            links: results,
-          });
-        else
-          res.send({
-            status: "OK",
-            msg: "Customers campaign not found",
-            links: {},
-          });
-      });
-    });
-
-    app.post("/adminarea/messageCampaign/getCampaignCustomersContacted", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      database.entities.customer.findAll({where: {campaignId: messageCampaign.id, state: "contacted"}}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Customers campaign found",
-            customers: results,
-          });
-        else
-          res.send({
-            status: "OK",
-            msg: "Customers campaign not found",
-            customers: {},
-          });
-      });
-    });
-
-    app.post("/adminarea/messageCampaign/getCampaignCustomersToContact", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-      database.entities.customer.findAll({where: {campaignId: messageCampaign.id, state: "toContact"}}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Customers campaign found",
-            links: results,
-          });
-        else
-          res.send({
-            status: "OK",
-            msg: "Customers campaign not found",
-            links: {},
-          });
-      });
-    });
-
-    app.post("/adminarea/messageCampaign/getCampaignInterestedCustomers", function (req, res) {
-      var messageCampaign=req.body.messageCampaign;
-        database.entities.click.findAll({where: {campaignId: messageCampaign.id}, include: [database.entities.customer, database.entities.link]}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Customers interested found",
-            clicks: results,
-          });
-        else
-          res.send({
-            status: "OK",
-            msg: "Customers interested not found",
-            clicks: {},
-          });
-      });
-    });
-    
     ///////////////////// Gateways ////////////////////////
     app.post("/adminarea/gateway/getall", function (req, res) {
       database.entities.gateway.findAll().then(function (results) {
@@ -843,10 +885,10 @@ module.exports = {
         console.log("Received file:  " + oldPath);
         console.log("Upload file:  " + newPath);
 
-        fs.writeFile(newPath, rawData, function (err) {
+        fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
-            utility.import_Contacts_From_Csv(idCampaign, newPath, function () {
+            utility.import_Contacts_From_Csv(idCampaign, newPath, database, function () {
               database.entities.customer.findAll().then(function (results) {
                 res.send({
                   status: "OK",

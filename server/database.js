@@ -2,6 +2,7 @@ const config = require("./config.js").load();
 var path = require("path");
 
 const { Sequelize, Model, DataTypes, QueryTypes } = require("sequelize");
+const utility = require("./utility.js");
 const sequelize = new Sequelize(config.database);
 sequelize.options.logging = true;
 
@@ -76,7 +77,7 @@ module.exports = {
         city: { type: Sequelize.STRING, allowNull: true },
         adm1: { type: Sequelize.STRING, allowNull: true }, //Provincia
         adm2: { type: Sequelize.STRING, allowNull: true }, //Regione
-        adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato        
+        adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
         state: { type: Sequelize.STRING, defaultValue: "toContact" }, //toContact, contacted
         objData: { type: Sequelize.JSON },
@@ -106,7 +107,7 @@ module.exports = {
     Link.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
-        urlOriginal: { type: Sequelize.STRING, allowNull: false },        
+        urlOriginal: { type: Sequelize.STRING, allowNull: false },
       },
       {
         sequelize,
@@ -118,7 +119,7 @@ module.exports = {
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
         customerId: { type: Sequelize.INTEGER, allowNull: false },
-        linkId: { type: Sequelize.INTEGER, allowNull: false },       
+        linkId: { type: Sequelize.INTEGER, allowNull: false },
       },
       {
         sequelize,
@@ -142,7 +143,7 @@ module.exports = {
         nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
         isWorking: { type: Sequelize.BOOLEAN, allowNull: true },
-        objData: { type: Sequelize.JSON }
+        objData: { type: Sequelize.JSON },
       },
       {
         sequelize,
@@ -160,33 +161,62 @@ module.exports = {
         modelName: "config",
       }
     );
-    
+
     Config.sync({ force: false });
     User.sync({ force: false });
     Gateway.sync({ force: false });
     MessageCampaign.sync({ force: false });
     Customer.sync({ force: false });
-    Link.sync({ force: false });    
+    Link.sync({ force: false });
     Click.sync({ force: false });
 
-
     //Association Campaign-Customer
-    MessageCampaign.hasMany(Customer, {foreignKey: 'campaignId'});
-    Customer.belongsTo(MessageCampaign, {foreignKey: 'campaignId'});
+    MessageCampaign.hasMany(Customer, { foreignKey: "campaignId" });
+    Customer.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
     //Association Campaign-Link
-    MessageCampaign.hasMany(Link, {foreignKey: 'campaignId'});
-    Link.belongsTo(MessageCampaign, {foreignKey: 'campaignId'});
+    MessageCampaign.hasMany(Link, { foreignKey: "campaignId" });
+    Link.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
     //Association Link-Click
-    Link.hasMany(Click, {foreignKey: 'linkId'});
-    Click.belongsTo(Link, {foreignKey: 'linkId'});
+    Link.hasMany(Click, { foreignKey: "linkId" });
+    Click.belongsTo(Link, { foreignKey: "linkId" });
     //Association Customers-Link
-    Customer.hasMany(Click, {foreignKey: 'customerId'});
-    Click.belongsTo(Customer, {foreignKey: 'customerId'});
-
+    Customer.hasMany(Click, { foreignKey: "customerId" });
+    Click.belongsTo(Customer, { foreignKey: "customerId" });
   },
   execute_raw_query(sql, callback) {
     this.seq.query(sql, { type: QueryTypes.SELECT }).then((results) => {
       callback(results);
     });
+  },
+  exportCampaignData(campaign, callback) {
+    //Export contacts, clicks, links
+    var contacts = [],
+      links = [],
+      clicks = [];
+    this.entities.customer
+      .findAll({ where: { campaignId: campaign.id } })
+      .then((conts) => {
+        if (conts) {
+          contacts = conts;
+          this.entities.link
+            .findAll({ where: { campaignId: campaign.id } })
+            .then((ls) => {
+              if (ls) {
+                links = ls;
+                this.entities.click
+                  .findAll({where: {campaignId: campaign.id}, include: [this.entities.customer, this.entities.link]})
+                  .then((cs) => {
+                    if (cs) {
+                      cliks = cs;
+                      pkgData={campaign: campaign, contacts: contacts, links: links, cliks: cliks}                      
+                      utility.createCampaignPackage(pkgData, data => {
+                        callback(data);
+                      });
+                    }
+                  });
+              }
+            });
+        }
+      });
   },
 };

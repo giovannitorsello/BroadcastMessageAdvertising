@@ -139,6 +139,7 @@
                         dark
                         x-small
                         color="black"
+                        :disabled="row.item.state !== 'disabled'"
                         @click="deleteCampaign(row.item)"
                       >
                         <v-icon dark>mdi-delete</v-icon>
@@ -397,8 +398,8 @@ export default {
     };
   },
   mounted() {
-    this.beginDate=(new Date()).toLocaleDateString("it-IT");
-    this.beginTime=(new Date()).toLocaleTimeString("it-IT");
+    this.beginDate = new Date().toLocaleDateString("it-IT");
+    this.beginTime = new Date().toLocaleTimeString("it-IT");
     this.refreshAll();
     setInterval(() => {
       this.refreshAll();
@@ -439,6 +440,19 @@ export default {
         .then((request) => {
           this.messageCampaign = request.data.messageCampaign;
           this.getMessageCampaigns();
+          zipCampaignArchive = this.messageCampaign.fileArchive;
+          axios({
+            url: "/download"+zipCampaignArchive,
+            method: "GET",
+            responseType: "blob",
+          }).then((response) => {
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", zipCampaignArchive);
+            document.body.appendChild(link);
+            link.click();
+          });
         })
         .catch((error) => {
           console.log(error);
@@ -448,10 +462,9 @@ export default {
       if (campaign.id > 0) {
         this.selectedCampaign = campaign;
         this.axios
-          .post(
-            "/adminarea/messageCampaign/getCampaign",
-            { messageCampaign: campaign }
-          )
+          .post("/adminarea/messageCampaign/getCampaign", {
+            messageCampaign: campaign,
+          })
           .then((request) => {
             if (request.data.messageCampaign) {
               this.selectedCampaign = request.data.messageCampaign;
@@ -527,17 +540,16 @@ export default {
       this.updateMessageCampaign();
     },
     getMessageCampaigns() {
-      this.messageCampaigns=[]
+      this.messageCampaigns = [];
       this.axios
         .post("/adminarea/messageCampaign/getAll")
         .then((request) => {
-          if (request.data.messageCampaigns) {            
-            request.data.messageCampaigns.forEach(camp => {              
-              camp.begin=(new Date(camp.begin)).toLocaleString('it-IT');
-              camp.end=(new Date(camp.end)).toLocaleString('it-IT');              
-              this.messageCampaigns.push(camp);  
-            })
-            
+          if (request.data.messageCampaigns) {
+            request.data.messageCampaigns.forEach((camp) => {
+              camp.begin = new Date(camp.begin).toLocaleString("it-IT");
+              camp.end = new Date(camp.end).toLocaleString("it-IT");
+              this.messageCampaigns.push(camp);
+            });
           }
         })
         .catch((error) => {
@@ -699,10 +711,9 @@ export default {
       this.interestedCustomers = [];
       if (this.selectedCampaign && this.selectedCampaign.id > 0)
         this.axios
-          .post(
-            "/adminarea/messageCampaign/getCampaignInterestedCustomers",
-            { messageCampaign: this.selectedCampaign }
-          )
+          .post("/adminarea/messageCampaign/getCampaignInterestedCustomers", {
+            messageCampaign: this.selectedCampaign,
+          })
           .then((request) => {
             if (request.data.clicks) {
               request.data.clicks.forEach((click) => {
@@ -765,12 +776,14 @@ export default {
       return `${day}/${month}/${year}`;
     },
     saveTime(time) {
-      this.beginTime=time;
+      this.beginTime = time;
     },
     getBeginDate() {
       const [day, month, year] = this.beginDate.split("/");
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${this.beginTime}:00.000`;
-    }
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${
+        this.beginTime
+      }:00.000`;
+    },
   },
   computed: {
     computedDateFormatted() {

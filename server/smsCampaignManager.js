@@ -28,6 +28,8 @@ module.exports = {
 
         var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
+        if(waitTime<10000) waiTime=10000; //force 10 secs between two messages
+        waitTime=1000;
         //start campaigns execution
         this.startCampaignManager();
         setInterval(() => {
@@ -283,6 +285,7 @@ module.exports = {
 
     var message = this.getAntigraudMessageText();
     if (message !== "") {
+      console.log("Next is an antifraud message");
       sms_gateway_hardware.sendSMS(sender, message, mobilephone, (response) => {
         this.database.entities.gateway
           .findOne({ where: { id: sender.id } })

@@ -4,11 +4,13 @@
   "description": "API server for frontend",
   "main": "main.js",
   "dependencies": {
+    "adm-zip": "^0.5.2",
     "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "child_process": "^1.0.2",
     "cors": "^2.8.5",
     "csv-parser": "^3.0.0",
+    "csv-writer": "^1.6.0",
     "event-stream": "^4.0.1",
     "express": "^4.17.1",
     "express-session": "^1.17.1",
