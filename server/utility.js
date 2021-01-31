@@ -22,7 +22,8 @@ module.exports = {
         cust.lastname = row.COGNOME;
         cust.email = row.EMAIL;
         cust.mobilephone = row.NUMERO;
-        (cust.address = row.INDIRIZZO), (cust.postcode = row.CAP);
+        cust.address = row.INDIRIZZO;
+        cust.postcode = row.CAP;
         cust.city = row.PAESE;
         cust.adm1 = row.PROV;
         cust.adm2 = row.REGIONE;
