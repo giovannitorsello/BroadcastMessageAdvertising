@@ -14,7 +14,7 @@ module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
     fs.createReadStream(filename)
       .pipe(csvParser({ separator: config.csvSeparator }))
-      .on("data", (row) => {
+      .on("data", (row, index, arr) => {
         var cust = row;
         cust.id = "";
         cust.uid = this.makeUuid();
@@ -29,28 +29,35 @@ module.exports = {
         cust.adm3 = row.STATO;
         cust.campaignId = idCampaign;
 
+        //Delete old contacts
         database.entities.customer
-          .findOne({ where: { mobilephone: cust.mobilephone } })
-          .then((item) => {
-            if (item === null) {
-              console.log("Customer try to insert " + cust.mobilephone);
-              database.entities.customer.create(cust).then(function (objnew) {
-                if (objnew !== null) {
+          .destroy({ where: { campaignId: idCampaign } })
+          .then((results) => {
+            database.entities.customer
+              .findOne({ where: { mobilephone: cust.mobilephone } })
+              .then((item) => {
+                if (item === null) {
+                  console.log("Customer try to insert " + cust.mobilephone);
+                  database.entities.customer
+                    .create(cust)
+                    .then(function (objnew) {
+                      if (objnew !== null) {
+                        console.log(
+                          "Customer insert successfully: " + objnew.mobilephone
+                        );
+                      }
+                    });
+                } else {
                   console.log(
-                    "Customer insert successfully: " + objnew.mobilephone
+                    "Customer exists: " +
+                      item.mobilephone +
+                      " --> " +
+                      item.firstname +
+                      " " +
+                      item.lastname
                   );
                 }
               });
-            } else {
-              console.log(
-                "Customer exists: " +
-                  item.mobilephone +
-                  " --> " +
-                  item.firstname +
-                  " " +
-                  item.lastname
-              );
-            }
           });
       })
       .on("end", () => {
@@ -81,9 +88,11 @@ module.exports = {
     );
   },
   createCampaignPackage(pkgData, callback) {
-    const fileCampaign = process.cwd() + config.paths.cacheFolder + "/campaign.csv";
+    const fileCampaign =
+      process.cwd() + config.paths.cacheFolder + "/campaign.csv";
     const fileLinks = process.cwd() + config.paths.cacheFolder + "/links.csv";
-    const fileContacts = process.cwd() + config.paths.cacheFolder + "/contacts.csv";
+    const fileContacts =
+      process.cwd() + config.paths.cacheFolder + "/contacts.csv";
     const fileClicks = process.cwd() + config.paths.cacheFolder + "/clicks.csv";
 
     //create csv files, zip and callback
@@ -146,7 +155,7 @@ module.exports = {
     });
 
     //forma clicks
-    var clickData=[];
+    var clickData = [];
     pkgData.clicks.forEach((click, index, arrClick) => {
       clickData.push({
         id: click.customer.id,
@@ -159,59 +168,61 @@ module.exports = {
         adm1: click.customer.adm1,
         adm2: click.customer.adm2,
         adm3: click.customer.adm3,
-        country: click.customer.country
+        country: click.customer.country,
       });
-      
-      if(index===pkgData.clicks.length-1)
-      csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
-        csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-          csvWriterLink.writeRecords(pkgData.links).then(() => {
-            csvWriterClicks.writeRecords(clickData).then(() => {
-              //zip all files
-              // creating archives
-              var zip = new admZip();
-  
-              // add file directly
-              zip.addLocalFile(fileCampaign);
-              zip.addLocalFile(fileContacts);
-              zip.addLocalFile(fileLinks);
-              zip.addLocalFile(fileClicks);
-  
-              filenameZip =
-                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-              zip.writeZip(
-                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
-              );
-              callback({ fileArchive: filenameZip });
+
+      if (index === pkgData.clicks.length - 1)
+        csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
+          csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
+            csvWriterLink.writeRecords(pkgData.links).then(() => {
+              csvWriterClicks.writeRecords(clickData).then(() => {
+                //zip all files
+                // creating archives
+                var zip = new admZip();
+
+                // add file directly
+                zip.addLocalFile(fileCampaign);
+                zip.addLocalFile(fileContacts);
+                zip.addLocalFile(fileLinks);
+                zip.addLocalFile(fileClicks);
+
+                filenameZip =
+                  pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+                zip.writeZip(
+                  process.cwd() +
+                    config.paths.downloadFolder +
+                    "/" +
+                    filenameZip
+                );
+                callback({ fileArchive: filenameZip });
+              });
             });
           });
         });
-      });
     });
 
-    if(pkgData.clicks.length===0) {
+    if (pkgData.clicks.length === 0) {
       csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
         csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-          csvWriterLink.writeRecords(pkgData.links).then(() => {            
-              //zip all files
-              // creating archives
-              var zip = new admZip();
-  
-              // add file directly
-              zip.addLocalFile(fileCampaign);
-              zip.addLocalFile(fileContacts);
-              zip.addLocalFile(fileLinks);              
-  
-              filenameZip =
-                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-              zip.writeZip(
-                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
-              );
-              callback({ fileArchive: filenameZip });            
+          csvWriterLink.writeRecords(pkgData.links).then(() => {
+            //zip all files
+            // creating archives
+            var zip = new admZip();
+
+            // add file directly
+            zip.addLocalFile(fileCampaign);
+            zip.addLocalFile(fileContacts);
+            zip.addLocalFile(fileLinks);
+
+            filenameZip =
+              pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+            zip.writeZip(
+              process.cwd() + config.paths.downloadFolder + "/" + filenameZip
+            );
+            callback({ fileArchive: filenameZip });
           });
         });
       });
     }
-
   },
 };

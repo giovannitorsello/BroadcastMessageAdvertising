@@ -365,6 +365,7 @@ module.exports = {
                   messageCampaign_updated.message.url1,
                   messageCampaign_updated.message.url2,
                 ];
+                var links=[];
                 urls.forEach((url) => {
                   database.entities.link
                     .create({
@@ -372,9 +373,12 @@ module.exports = {
                       urlOriginal: url,
                       campaignId: campNew.id,
                     })
-                    .then(function (linkNew) {});
+                    .then(function (linkNew) {
+                      links.push(linkNew);
+                    });
                 });
-
+                campNew.contacts=messageCampaign_updated.contacts;
+                campNew.links=links;
                 res.send({
                   status: "OK",
                   msg: "Message campaign update successfully",
@@ -588,6 +592,7 @@ module.exports = {
     app.post("/adminarea/messageCampaign/getCampaignCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
+        if(messageCampaign && messageCampaign.id)
         database.entities.customer
           .findAll({ where: { campaignId: messageCampaign.id } })
           .then(function (results) {
@@ -595,13 +600,13 @@ module.exports = {
               res.send({
                 status: "OK",
                 msg: "Customers campaign found",
-                links: results,
+                customers: results,
               });
             else
               res.send({
                 status: "OK",
                 msg: "Customers campaign not found",
-                links: {},
+                customers: {},
               });
           });
       }

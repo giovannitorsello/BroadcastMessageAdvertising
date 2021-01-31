@@ -403,7 +403,7 @@ export default {
     this.refreshAll();
     setInterval(() => {
       this.refreshAll();
-    }, 10000);
+    }, 30000);
   },
   methods: {
     startCampaign(messageCampaign) {
@@ -494,7 +494,8 @@ export default {
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
           this.messageCampaigns.push(request.data.messageCampaign);
-          console.log("Campaign inserted");
+          this.contacts=this.messageCampaigns.contacts;
+          console.log("Campaign updated");
           console.log(this.selectedCampaign);
         })
         .catch((error) => {
@@ -502,6 +503,8 @@ export default {
         });
     },
     updateMessageCampaign() {
+      var ncont=0;
+      if(this.contacts) ncont=this.contacts.length;
       this.axios
         .post("/adminarea/messageCampaign/update", {
           messageCampaign: {
@@ -509,7 +512,7 @@ export default {
             name: this.selectedCampaign.name,
             state: this.selectedCampaign.state,
             contacts: this.contacts,
-            ncontacts: this.contacts.length,
+            ncontacts: ncont,
 
             message: {
               text: this.messageText,
@@ -519,6 +522,9 @@ export default {
           },
         })
         .then((request) => {
+          this.selectedCampaign = request.data.messageCampaign;
+          this.contacts=this.messageCampaigns.contacts;
+          this.links=this.messageCampaigns.links;
           this.refreshAll();
         })
         .catch((error) => {
@@ -687,9 +693,10 @@ export default {
           console.log(error);
         });
     },
-    getCsvLoadedCustomers() {
+    getCampaignContacts() {
+      console.log(this.selectedCampaign);
       this.axios
-        .post("/adminarea/customer/getall")
+        .post("/adminarea/messageCampaign/getCampaignCustomers", {messageCampaign: this.selectedCampaign})
         .then((request) => {
           this.contacts = request.data.customers;
         })
@@ -730,7 +737,7 @@ export default {
       this.getProvinces();
       this.getStates();
       this.getCountries();
-      this.getCsvLoadedCustomers();
+      this.getCampaignContacts();
       this.getMessageCampaigns();
       this.getInterestedCustomers();
     },
@@ -739,7 +746,6 @@ export default {
         var formData = new FormData();
         formData.append("csv_data", this.fileCSV);
         formData.append("idCampaign", this.selectedCampaign.id);
-
         this.axios
           .post("/upload/contacts", formData, {
             headers: {
@@ -747,7 +753,12 @@ export default {
             },
           })
           .then((request) => {
-            setTimeout(this.refreshAll, 3000);
+            console.log(request);
+            setTimeout(() =>{
+              console.log("loaded");
+              this.getCampaignContacts();
+            }, 3000)
+            
           })
           .catch((error) => {
             console.log(error);
