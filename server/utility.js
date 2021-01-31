@@ -63,11 +63,11 @@ module.exports = {
                   );
                 }
               });
+          })
+          .on("end", () => {
+            callback();
+            console.log("CSV file successfully processed." + filename);
           });
-      })
-      .on("end", () => {
-        callback();
-        console.log("CSV file successfully processed." + filename);
       });
   },
   makeAuthenticationCode() {
