@@ -11,7 +11,75 @@ const couchdb = require("./couchdb.js");
 const database = require("./database.js");
 
 module.exports = {
+
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
+    console.log("Destroy old contacts and import new");
+    
+    //Delete old contacts
+    database.entities.customer
+      .destroy({ where: { campaignId: idCampaign } })
+      .then((results) => {
+        const rows = [];
+        fs.createReadStream(filename)
+          .pipe(csvParser({ separator: config.csvSeparator }))
+          .on('data', (data) => {
+            rows.push(data)
+          })
+          .on("end", () => {
+            
+            console.log("CSV file successfully processed: " + filename);
+            rows.forEach((row, index, arrRows) => {
+              var cust={};
+              cust.id = "";
+              cust.uid = this.makeUuid();
+              cust.firstname = row.NOME;
+              cust.lastname = row.COGNOME;
+              cust.email = row.EMAIL;
+              cust.mobilephone = row.NUMERO;
+              cust.address = row.INDIRIZZO;
+              cust.postcode = row.CAP;
+              cust.city = row.PAESE;
+              cust.adm1 = row.PROV;
+              cust.adm2 = row.REGIONE;
+              cust.adm3 = row.STATO;
+              cust.campaignId = idCampaign;
+              
+              database.entities.customer
+                .findOne({ where: { mobilephone: cust.mobilephone } })
+                .then((item) => {
+                  if (item === null) {
+                    console.log("Customer try to insert " + cust.mobilephone);
+                    database.entities.customer
+                      .create(cust)
+                      .then(function (objnew) {
+                        if (objnew !== null) {
+                          console.log(
+                            "Customer insert successfully: " +
+                              objnew.mobilephone
+                          );
+                        }
+                      });
+                  } else {
+                    console.log(
+                      "Customer exists: " +
+                        item.mobilephone +
+                        " --> " +
+                        item.firstname +
+                        " " +
+                        item.lastname
+                    );
+                  }
+                });
+              
+              
+              if(index===rows.length-1){
+                callback();
+              }
+            });
+          });
+      });
+  },
+  import_Contacts_From_Csv2(idCampaign, filename, database, callback) {
     console.log("Destroy old contacts and import new");
     //Delete old contacts
     database.entities.customer
@@ -19,7 +87,7 @@ module.exports = {
       .then((results) => {
         fs.createReadStream(filename)
           .pipe(csvParser({ separator: config.csvSeparator }))
-          .on("data", row => {
+          .on("data", (row) => {
             var cust = row;
             cust.id = "";
             cust.uid = this.makeUuid();
