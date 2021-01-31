@@ -188,5 +188,30 @@ module.exports = {
         });
       });
     });
+
+    if(pkgData.clicks.length===0) {
+      csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
+        csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
+          csvWriterLink.writeRecords(pkgData.links).then(() => {            
+              //zip all files
+              // creating archives
+              var zip = new admZip();
+  
+              // add file directly
+              zip.addLocalFile(fileCampaign);
+              zip.addLocalFile(fileContacts);
+              zip.addLocalFile(fileLinks);              
+  
+              filenameZip =
+                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+              zip.writeZip(
+                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
+              );
+              callback({ fileArchive: filenameZip });            
+          });
+        });
+      });
+    }
+
   },
 };

@@ -1,2 +1,2 @@
 Id;NomeCampagna;Messaggio;Inizio;Fine;Stato;NumeroContatti;NumeroCompletati
-10;SecondaProvaDomenica;prova domenicale |link1| e |link2|;31/1/2021, 16:42:00;31/1/2021, 16:45:09;disabled;6;6
+1;CamapagnaProgrammata;Ciao |link1| e |link2|;1/2/2021, 06:00:00;1/1/1970, 01:00:00;active;100;0
