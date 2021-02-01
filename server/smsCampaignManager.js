@@ -73,11 +73,13 @@ module.exports = {
     }
   },
   sendMessage(campaign, gateway, contact) {
-    if (!campaign || campaign.state !== "active") return;
+    
+    if (!campaign || campaign.state !== "active") return;    
     if (!contact || contact.state === "contacted") return;
     var database = this.database;
     var ip = gateway.ip;
     var mobilephone = contact.mobilephone;
+    console.log("try to send message to:" +contact.mobilephone);
     var message = this.formatMessage(campaign, contact);
     if (message !== "" && contact.state === "toContact") {
       sms_gateway_hardware.sendSMS(
