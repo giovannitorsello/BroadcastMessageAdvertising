@@ -79,65 +79,6 @@ module.exports = {
           });
       });
   },
-  import_Contacts_From_Csv2(idCampaign, filename, database, callback) {
-    console.log("Destroy old contacts and import new");
-    //Delete old contacts
-    database.entities.customer
-      .destroy({ where: { campaignId: idCampaign } })
-      .then((results) => {
-        fs.createReadStream(filename)
-          .pipe(csvParser({ separator: config.csvSeparator }))
-          .on("data", (row) => {
-            var cust = row;
-            cust.id = "";
-            cust.uid = this.makeUuid();
-            cust.firstname = row.NOME;
-            cust.lastname = row.COGNOME;
-            cust.email = row.EMAIL;
-            cust.mobilephone = row.NUMERO;
-            cust.address = row.INDIRIZZO;
-            cust.postcode = row.CAP;
-            cust.city = row.PAESE;
-            cust.adm1 = row.PROV;
-            cust.adm2 = row.REGIONE;
-            cust.adm3 = row.STATO;
-            cust.campaignId = idCampaign;
-
-            console.log(
-              "Import " + cust.mobilephone + " for campaign: " + idCampaign
-            );
-            database.entities.customer
-              .findOne({ where: { mobilephone: cust.mobilephone } })
-              .then((item) => {
-                if (item === null) {
-                  console.log("Customer try to insert " + cust.mobilephone);
-                  database.entities.customer
-                    .create(cust)
-                    .then(function (objnew) {
-                      if (objnew !== null) {
-                        console.log(
-                          "Customer insert successfully: " + objnew.mobilephone
-                        );
-                      }
-                    });
-                } else {
-                  console.log(
-                    "Customer exists: " +
-                      item.mobilephone +
-                      " --> " +
-                      item.firstname +
-                      " " +
-                      item.lastname
-                  );
-                }
-              });
-          })
-          .on("end", () => {
-            callback();
-            console.log("CSV file successfully processed: " + filename);
-          });
-      });
-  },
   makeAuthenticationCode() {
     var rnd = randtoken.generate(5, "0123456789");
     var d = new Date(); //now date

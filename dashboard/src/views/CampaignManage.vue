@@ -1,6 +1,8 @@
 <template>
   <div>
+    
     <v-container>
+      <p>Campagna selezionata. {{selectedCampaign.name}} -- {{selectedCampaign.ncontacts}}</p>      
       <v-tabs v-model="tab">
         <v-tab href="#startstop">
           <v-card flat>
