@@ -660,6 +660,32 @@ module.exports = {
       }
     );
 
+    app.post("/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        var customersNoClick =[];
+        database.entities.customer
+          .findAll({
+            where:   database.sequelize.literal('customer.campaignId='+messageCampaign.id+' AND clicks.id IS null') ,
+            include: [database.entities.click],
+          })
+          .then(function (customers) {            
+            if (customers)
+              res.send({
+                status: "OK",
+                msg: "Customers no click found",
+                customers: customers,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers no click not found",
+                contacts: {},
+              });
+          });
+      }
+    );
+
     app.post("/adminarea/messageCampaign/getCampaignInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
@@ -684,6 +710,44 @@ module.exports = {
           });
       }
     );
+
+    //////////////////////////Upload files/////////////////////
+    app.post("/upload/contacts", function (req, res) {
+      const form = new formidable.IncomingForm();
+      form.parse(req, function (err, fields, files) {
+        var oldPath = files.csv_data.path;
+        var idCampaign = fields.idCampaign;
+        if (!idCampaign || idCampaign <= 0) {
+          res.send({
+            status: "Error",
+            msg: "Error in campaign id",
+            customers: {},
+          });
+          return;
+        }
+        var newPath =
+          path.join(__dirname, "uploads") + "/" + files.csv_data.name;
+        var rawData = fs.readFileSync(oldPath);
+        console.log("Received file:  " + oldPath);
+        console.log("Upload file:  " + newPath);
+
+        fs.writeFile(newPath, rawData, (err) => {
+          if (err) console.log(err);
+          else {
+            utility.import_Contacts_From_Csv(idCampaign, newPath, database, () => {
+              database.entities.customer.findAll({where: {campaignId: idCampaign}}).then( (results) => {
+                res.send({
+                  status: "OK",
+                  msg: "Customers found",
+                  customers: results,
+                });
+              });
+            });
+          }
+        });
+      });
+    });
+
 
     ///////////////////// Gateways ////////////////////////
     app.post("/adminarea/gateway/getall", function (req, res) {
@@ -866,41 +930,6 @@ module.exports = {
       });
     });
 
-    //////////////////////////Upload files/////////////////////
-    app.post("/upload/contacts", function (req, res) {
-      const form = new formidable.IncomingForm();
-      form.parse(req, function (err, fields, files) {
-        var oldPath = files.csv_data.path;
-        var idCampaign = fields.idCampaign;
-        if (!idCampaign || idCampaign <= 0) {
-          res.send({
-            status: "Error",
-            msg: "Error in campaign id",
-            customers: {},
-          });
-          return;
-        }
-        var newPath =
-          path.join(__dirname, "uploads") + "/" + files.csv_data.name;
-        var rawData = fs.readFileSync(oldPath);
-        console.log("Received file:  " + oldPath);
-        console.log("Upload file:  " + newPath);
-
-        fs.writeFile(newPath, rawData, (err) => {
-          if (err) console.log(err);
-          else {
-            utility.import_Contacts_From_Csv(idCampaign, newPath, database, () => {
-              database.entities.customer.findAll({where: {campaignId: idCampaign}}).then( (results) => {
-                res.send({
-                  status: "OK",
-                  msg: "Customers found",
-                  customers: results,
-                });
-              });
-            });
-          }
-        });
-      });
-    });
+    
   },
 };

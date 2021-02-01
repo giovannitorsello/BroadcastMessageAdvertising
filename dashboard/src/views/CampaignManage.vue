@@ -101,7 +101,7 @@
                 class="elevation-1"
               >
                 <template v-slot:item="row">
-                  <tr @click="selectCampaign(row.item)">
+                  <tr @click="selectCampaign(row.item)" :class="{'primary': row.item.id===selectedCampaign.id}">
                     <td>{{ row.item.id }}</td>
                     <td>{{ row.item.name }}</td>
                     <td>{{ row.item.state }}</td>
@@ -231,7 +231,7 @@
             <v-row>
               <v-col>
                 <v-data-table
-                  :headers="headers"
+                  :headers="headersCustomers"
                   :items="contacts"
                   :items-per-page="30"
                   class="elevation-1"
@@ -294,7 +294,7 @@
           <v-row>
             <v-col>
               <v-data-table
-                :headers="headers"
+                :headers="headersCustomers"
                 :items="filteredContacts"
                 :items-per-page="30"
                 class="elevation-1"
@@ -318,6 +318,29 @@
               <v-data-table
                 :headers="headersInterestedCustomers"
                 :items="interestedCustomers"
+                :items-per-page="30"
+                class="elevation-1"
+              >
+              </v-data-table>
+            </v-col>
+          </v-row>
+        </v-tab-item>
+
+        <v-tab href="#noclickcustomers">
+          <v-card flat>
+            <v-card-text>Clienti non interessati</v-card-text>
+          </v-card>
+        </v-tab>
+        <v-tab-item
+          v-if="selectedCampaign.id"
+          id="noclickcustomers"
+          key="noclickcustomers"
+        >
+          <v-row>
+            <v-col>
+              <v-data-table
+                :headers="headersCustomers"
+                :items="noInterestedCustomers"
                 :items-per-page="30"
                 class="elevation-1"
               >
@@ -357,6 +380,7 @@ export default {
       filteredContacts: [],
       links: [],
       interestedCustomers: [],
+      noInterestedCustomers: [],
       caps: [],
       cities: [],
       provinces: [],
@@ -365,7 +389,7 @@ export default {
 
       tab: null,
       fileCSV: [],
-      headers: [
+      headersCustomers: [
         { text: "ID", value: "id" },
         { text: "Stato", value: "state" },
         { text: "Campagna", value: "campaignId" },
@@ -386,7 +410,7 @@ export default {
         { text: "Cognome", value: "lastname" },
         { text: "Telefono", value: "mobilephone" },
         { text: "Indirizzo", value: "address" },
-      ],
+      ],      
       headerCampaigns: [
         { text: "Codice", value: "id" },
         { text: "Nome campagna", value: "name" },
@@ -695,8 +719,7 @@ export default {
           console.log(error);
         });
     },
-    getCampaignContacts() {
-      console.log(this.selectedCampaign);
+    getCampaignContacts() {      
       this.axios
         .post("/adminarea/messageCampaign/getCampaignCustomers", {messageCampaign: this.selectedCampaign})
         .then((request) => {
@@ -733,6 +756,22 @@ export default {
             console.log(error);
           });
     },
+    getNoInterestedCustomers() {
+      this.interestedCustomers = [];
+      if (this.selectedCampaign && this.selectedCampaign.id > 0)
+        this.axios
+          .post("/adminarea/messageCampaign/getCampaignNoInterestedCustomers", {
+            messageCampaign: this.selectedCampaign,
+          })
+          .then((request) => {
+            if (request.data.customers) {
+                this.noInterestedCustomers=request.data.customers;                       
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+    },
     refreshAll() {
       this.getCaps();
       this.getCities();
@@ -742,6 +781,7 @@ export default {
       this.getCampaignContacts();
       this.getMessageCampaigns();
       this.getInterestedCustomers();
+      this.getNoInterestedCustomers();
     },
     loadCSVFile() {
       if (this.selectedCampaign.id > 0) {

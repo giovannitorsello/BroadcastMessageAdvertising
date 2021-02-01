@@ -17,6 +17,7 @@ class Config extends Model {}
 
 module.exports = {
   seq: {},
+  sequelize: sequelize,
   entities: {
     user: User,
     customer: Customer,
