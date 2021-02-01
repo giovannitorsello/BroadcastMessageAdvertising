@@ -97,7 +97,7 @@ module.exports = {
           mobilephone
       );
       callback({
-        status: "developing",
+        status: "send",
         msg: "temporary disabled",
         response: "developing",
       });

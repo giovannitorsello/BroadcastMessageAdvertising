@@ -3,6 +3,7 @@ var config = require("./config.js").load();
 const fs = require("fs");
 const https = require("https");
 const http = require("http");
+const { ini_get } = require("locutus/php/info");
 
 var server = {};
 
@@ -13,29 +14,63 @@ module.exports = {
   setup(app, database) {
     this.server = http.createServer((req, res) => {
       if (req.url) {
-        [hexIdCamp, hexIdCust, hexIdLink] = req.url.substring(1).split("/");
-        var idCampaign=parseInt(hexIdCamp,36);
-        var idCustomer=parseInt(hexIdCust,36);
-        var idLink=parseInt(hexIdLink,36);
+        [hexIdCamp, hexIdCust, confirm] = req.url.substring(1).split("/");
+        var idCampaign = parseInt(hexIdCamp, 36);
+        var idCustomer = parseInt(hexIdCust, 36);
 
-        //update database
-        database.entities.click.create({
-            campaignId: idCampaign,
-            customerId: idCustomer,
-            linkId: idLink
-        }).then( (clickNew) => {
-            if(clickNew) {
-                database.entities.link.findAll({where: {campaignId: clickNew.campaignId, id: clickNew.linkId}}).then( links => {
-                    if(links && links.length!==0){
-                        var newUrl=links[0].urlOriginal;
-                        res.writeHead(302, {'Location': newUrl});
-                        res.end();
-                    }
-                })
-            }
-        })
+        //Second click
+        if(confirm && confirm==='1'){
+          database.entities.click.findOne({where: {campaignId: idCampaign, customerId: idCustomer}}).then(click => {
+            click.confirm=true;
+            click.save().then(clickSaved=> {
+              res.writeHeader(200, { "Content-Type": "text/html" });
+              res.write("");
+              res.end();    
+            });
+          })
+        }
+
+        //First click
+        else if (!confirm) {
+          //Load page from templates
+          templateHTML = fs.readFileSync(
+            __dirname + "/templates/messagePage.html",
+            { encoding: "utf8", flag: "r" }
+          );
+          //update database
+          database.entities.click
+            .create({
+              campaignId: idCampaign,
+              customerId: idCustomer,
+              confirm: false
+            })
+            .then((clickNew) => {
+              if (clickNew) {
+                database.entities.messageCampaign
+                  .findOne({ where: { id: clickNew.campaignId } })
+                  .then((camp) => {
+                    templateHTML = templateHTML.replace(
+                      "%%LinkConfirm%%",
+                      "http://10.10.11.2:9000" + req.url + "/1"
+                    ); //config.shortDomain
+                    templateHTML = templateHTML.replace(
+                      "%%MessagePage1%%",
+                      camp.messagePage1
+                    );
+                    templateHTML = templateHTML.replace(
+                      "%%MessagePage2%%",
+                      camp.messagePage2
+                    );
+                    res.writeHeader(200, { "Content-Type": "text/html" });
+                    res.write(templateHTML);
+                    res.end();
+                  });
+              }
+            });
+        }
       }
     });
+
     this.server.listen(config.clickServer.port, config.clickServer.ip, () => {
       console.log(
         `Server running at http://${config.clickServer.ip}:${config.clickServer.port}/`

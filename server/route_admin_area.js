@@ -296,7 +296,9 @@ module.exports = {
 
       camp.id = "";
       camp.name = messageCampaign.name;
-      camp.message = messageCampaign.message.text;
+      camp.message = messageCampaign.message;
+      camp.messagePage1 = messageCampaign.messagePage1;
+      camp.messagePage2 = messageCampaign.messagePage2;
       camp.ncontacts = messageCampaign.ncontacts;
       camp.ncompleted = 0;
       camp.begin = messageCampaign.begin;
@@ -334,14 +336,17 @@ module.exports = {
       var messageCampaign_updated = req.body.messageCampaign;
       database.entities.messageCampaign
         .findOne({ where: { id: messageCampaign_updated.id } })
-        .then(function (obj) {
-          if (obj !== null) {
-            obj.name = messageCampaign_updated.name;
-            obj.state = messageCampaign_updated.state;
-            obj.message = messageCampaign_updated.message.text;
-            obj.ncontacts = messageCampaign_updated.ncontacts;
+        .then(function (camp) {
+          if (camp !== null) {
+            camp.name = messageCampaign_updated.name;
+            camp.state = messageCampaign_updated.state;
+            camp.message = messageCampaign_updated.message;
+            camp.messagePage1 = messageCampaign_updated.messagePage1;
+            camp.messagePage2 = messageCampaign_updated.messagePage2;
+            camp.ncontacts = messageCampaign_updated.ncontacts;
+            camp.ncontacts = messageCampaign_updated.ncontacts;
 
-            obj.save().then(function (campNew) {
+            camp.save().then(function (campNew) {
               if (campNew !== null) {
                 smsCampaignManager.reloadActiveCampaings();
                 //delete all customers
@@ -357,28 +362,7 @@ module.exports = {
                   });
                 }
 
-                //delete all links
-                database.entities.link.destroy({
-                  where: { campaignId: campNew.id },
-                });
-                urls = [
-                  messageCampaign_updated.message.url1,
-                  messageCampaign_updated.message.url2,
-                ];
-                var links=[];
-                urls.forEach((url) => {
-                  database.entities.link
-                    .create({
-                      id: "",
-                      urlOriginal: url,
-                      campaignId: campNew.id,
-                    })
-                    .then(function (linkNew) {
-                      links.push(linkNew);
-                    });
-                });
-                campNew.contacts=messageCampaign_updated.contacts;
-                campNew.links=links;
+                campNew.contacts = messageCampaign_updated.contacts;
                 res.send({
                   status: "OK",
                   msg: "Message campaign update successfully",
@@ -428,32 +412,32 @@ module.exports = {
     app.post("/adminarea/messageCampaign/pause", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
       database.exportCampaignData(messageCampaign, (fileArchive) => {
-      database.entities.messageCampaign
-        .findOne({ where: { id: messageCampaign.id } })
-        .then(function (obj) {
-          if (obj !== null) {
-            obj.state = "disabled";
+        database.entities.messageCampaign
+          .findOne({ where: { id: messageCampaign.id } })
+          .then(function (obj) {
+            if (obj !== null) {
+              obj.state = "disabled";
 
-            obj.save().then(function (campNew) {
-              if (campNew !== null) {
-                smsCampaignManager.reloadActiveCampaings();
-                res.send({
-                  status: "OK",
-                  msg: "Message campaign paused successfully",
-                  messageCampaign: campNew,
-                  fileArchive: fileArchive 
-                });
-              } else {
-                res.send({
-                  status: "error",
-                  msg: "Message campaign pause error",
-                  messageCampaign: campNew,
-                  fileArchive: fileArchive 
-                });
-              }
-            });
-          }
-        });
+              obj.save().then(function (campNew) {
+                if (campNew !== null) {
+                  smsCampaignManager.reloadActiveCampaings();
+                  res.send({
+                    status: "OK",
+                    msg: "Message campaign paused successfully",
+                    messageCampaign: campNew,
+                    fileArchive: fileArchive,
+                  });
+                } else {
+                  res.send({
+                    status: "error",
+                    msg: "Message campaign pause error",
+                    messageCampaign: campNew,
+                    fileArchive: fileArchive,
+                  });
+                }
+              });
+            }
+          });
       });
     });
 
@@ -465,22 +449,21 @@ module.exports = {
           if (messageCampaignToDel !== null) {
             database.exportCampaignData(messageCampaignToDel, (fileArchive) => {
               //Delete all campaign data
-              
+
               database.entities.customer.destroy({
                 where: { campaignId: messageCampaign.id },
               });
-              database.entities.link.destroy({
-                where: { campaignId: messageCampaign.id },
-              });
+
               database.entities.click.destroy({
                 where: { campaignId: messageCampaign.id },
               });
               messageCampaignToDel.destroy();
-                            
+
               smsCampaignManager.reloadActiveCampaings();
               res.send({
                 status: "OK",
-                msg: "Campaign deleted successfully", fileArchive: fileArchive               
+                msg: "Campaign deleted successfully",
+                fileArchive: fileArchive,
               });
             });
           } else {
@@ -516,24 +499,19 @@ module.exports = {
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (camp) {
           if (camp) {
-            database.entities.link
+            database.entities.customer
               .findAll({ where: { campaignId: messageCampaign.id } })
-              .then(function (links) {
-                messageCampaign.links = links;
-                database.entities.customer
+              .then(function (contacts) {
+                messageCampaign.contacts = contacts;
+                database.entities.click
                   .findAll({ where: { campaignId: messageCampaign.id } })
-                  .then(function (contacts) {
-                    messageCampaign.contacts = contacts;
-                    database.entities.click
-                      .findAll({ where: { campaignId: messageCampaign.id } })
-                      .then(function (clicks) {
-                        messageCampaign.clicks = clicks;
-                        res.send({
-                          status: "OK",
-                          msg: "Campaign found",
-                          messageCampaign: messageCampaign,
-                        });
-                      });
+                  .then(function (clicks) {
+                    messageCampaign.clicks = clicks;
+                    res.send({
+                      status: "OK",
+                      msg: "Campaign found",
+                      messageCampaign: messageCampaign,
+                    });
                   });
               });
           } else
@@ -544,28 +522,6 @@ module.exports = {
             });
         });
     });
-
-    app.post("/adminarea/messageCampaign/getCampaignLinks",
-      function (req, res) {
-        var messageCampaign = req.body.messageCampaign;
-        database.entities.link
-          .findAll({ where: { campaignId: messageCampaign.id } })
-          .then(function (results) {
-            if (results)
-              res.send({
-                status: "OK",
-                msg: "Links campaign found",
-                links: results,
-              });
-            else
-              res.send({
-                status: "OK",
-                msg: "Links campaign not found",
-                links: {},
-              });
-          });
-      }
-    );
 
     app.post("/adminarea/messageCampaign/getCampaignClicks",
       function (req, res) {
@@ -592,23 +548,23 @@ module.exports = {
     app.post("/adminarea/messageCampaign/getCampaignCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
-        if(messageCampaign && messageCampaign.id)
-        database.entities.customer
-          .findAll({ where: { campaignId: messageCampaign.id } })
-          .then(function (results) {
-            if (results)
-              res.send({
-                status: "OK",
-                msg: "Customers campaign found",
-                customers: results,
-              });
-            else
-              res.send({
-                status: "OK",
-                msg: "Customers campaign not found",
-                customers: {},
-              });
-          });
+        if (messageCampaign && messageCampaign.id)
+          database.entities.customer
+            .findAll({ where: { campaignId: messageCampaign.id } })
+            .then(function (results) {
+              if (results)
+                res.send({
+                  status: "OK",
+                  msg: "Customers campaign found",
+                  customers: results,
+                });
+              else
+                res.send({
+                  status: "OK",
+                  msg: "Customers campaign not found",
+                  customers: {},
+                });
+            });
       }
     );
 
@@ -648,13 +604,13 @@ module.exports = {
               res.send({
                 status: "OK",
                 msg: "Customers campaign found",
-                links: results,
+                customers: results,
               });
             else
               res.send({
                 status: "OK",
                 msg: "Customers campaign not found",
-                links: {},
+                customers: {},
               });
           });
       }
@@ -663,13 +619,17 @@ module.exports = {
     app.post("/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
-        var customersNoClick =[];
+        var customersNoClick = [];
         database.entities.customer
           .findAll({
-            where:   database.sequelize.literal('customer.campaignId='+messageCampaign.id+' AND clicks.id IS null') ,
+            where: database.sequelize.literal(
+              "customer.campaignId=" +
+                messageCampaign.id +
+                " AND clicks.id IS null"
+            ),
             include: [database.entities.click],
           })
-          .then(function (customers) {            
+          .then(function (customers) {
             if (customers)
               res.send({
                 status: "OK",
@@ -692,7 +652,7 @@ module.exports = {
         database.entities.click
           .findAll({
             where: { campaignId: messageCampaign.id },
-            include: [database.entities.customer, database.entities.link],
+            include: [database.entities.customer],
           })
           .then(function (results) {
             if (results)
@@ -734,20 +694,26 @@ module.exports = {
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
-            utility.import_Contacts_From_Csv(idCampaign, newPath, database, () => {
-              database.entities.customer.findAll({where: {campaignId: idCampaign}}).then( (results) => {
-                res.send({
-                  status: "OK",
-                  msg: "Customers found",
-                  customers: results,
-                });
-              });
-            });
+            utility.import_Contacts_From_Csv(
+              idCampaign,
+              newPath,
+              database,
+              () => {
+                database.entities.customer
+                  .findAll({ where: { campaignId: idCampaign } })
+                  .then((results) => {
+                    res.send({
+                      status: "OK",
+                      msg: "Customers found",
+                      customers: results,
+                    });
+                  });
+              }
+            );
           }
         });
       });
     });
-
 
     ///////////////////// Gateways ////////////////////////
     app.post("/adminarea/gateway/getall", function (req, res) {
@@ -929,7 +895,5 @@ module.exports = {
         }
       });
     });
-
-    
   },
 };

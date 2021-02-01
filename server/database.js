@@ -21,7 +21,7 @@ module.exports = {
   entities: {
     user: User,
     customer: Customer,
-    link: Link,
+    //link: Link,
     click: Click,
     messageCampaign: MessageCampaign,
     gateway: Gateway,
@@ -93,6 +93,8 @@ module.exports = {
       {
         name: { type: Sequelize.STRING, allowNull: false },
         message: { type: Sequelize.STRING, allowNull: false },
+        messagePage1: { type: Sequelize.STRING, allowNull: false },
+        messagePage2: { type: Sequelize.STRING, allowNull: false },
         ncontacts: { type: Sequelize.INTEGER, allowNull: true },
         ncompleted: { type: Sequelize.INTEGER, allowNull: true },
         begin: { type: Sequelize.DATE, allowNull: true },
@@ -104,7 +106,7 @@ module.exports = {
         modelName: "messagecampaign",
       }
     );
-
+    /*
     Link.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
@@ -115,12 +117,12 @@ module.exports = {
         modelName: "link",
       }
     );
-
+*/
     Click.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
         customerId: { type: Sequelize.INTEGER, allowNull: false },
-        linkId: { type: Sequelize.INTEGER, allowNull: false },
+        confirm: { type: Sequelize.BOOLEAN, allowNull: false },
       },
       {
         sequelize,
@@ -168,18 +170,16 @@ module.exports = {
     Gateway.sync({ force: false });
     MessageCampaign.sync({ force: false });
     Customer.sync({ force: false });
-    Link.sync({ force: false });
+    //    Link.sync({ force: false });
     Click.sync({ force: false });
 
     //Association Campaign-Customer
     MessageCampaign.hasMany(Customer, { foreignKey: "campaignId" });
     Customer.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
     //Association Campaign-Link
-    MessageCampaign.hasMany(Link, { foreignKey: "campaignId" });
-    Link.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
-    //Association Link-Click
-    Link.hasMany(Click, { foreignKey: "linkId" });
-    Click.belongsTo(Link, { foreignKey: "linkId" });
+    //MessageCampaign.hasMany(Link, { foreignKey: "campaignId" });
+    //Link.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
+
     //Association Customers-Link
     Customer.hasMany(Click, { foreignKey: "customerId" });
     Click.belongsTo(Customer, { foreignKey: "customerId" });
@@ -190,31 +190,30 @@ module.exports = {
     });
   },
   exportCampaignData(campaign, callback) {
-    //Export contacts, clicks, links
+    //Export contacts, clicks
     var contacts = [],
-      links = [],
       clicks = [];
     this.entities.customer
       .findAll({ where: { campaignId: campaign.id } })
-      .then((conts) => {
-        if (conts) {
-          contacts = conts;
-          this.entities.link
-            .findAll({ where: { campaignId: campaign.id } })
-            .then((ls) => {
-              if (ls) {
-                links = ls;
-                this.entities.click
-                  .findAll({where: {campaignId: campaign.id}, include: [this.entities.customer, this.entities.link]})
-                  .then((cs) => {
-                    if (cs) {
-                      clicks = cs;
-                      pkgData={campaign: campaign, contacts: contacts, links: links, clicks: clicks}                      
-                      utility.createCampaignPackage(pkgData, data => {
-                        callback(data);
-                      });
-                    }
-                  });
+      .then((custs) => {
+        if (custs) {
+          contacts = custs;
+          this.entities.click
+            .findAll({
+              where: { campaignId: campaign.id },
+              include: [this.entities.customer],
+            })
+            .then((cs) => {
+              if (cs) {
+                clicks = cs;
+                pkgData = {
+                  campaign: campaign,
+                  contacts: contacts,
+                  clicks: clicks,
+                };
+                utility.createCampaignPackage(pkgData, (data) => {
+                  callback(data);
+                });
               }
             });
         }

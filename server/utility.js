@@ -11,10 +11,9 @@ const couchdb = require("./couchdb.js");
 const database = require("./database.js");
 
 module.exports = {
-
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
     console.log("Destroy old contacts and import new");
-    
+
     //Delete old contacts
     database.entities.customer
       .destroy({ where: { campaignId: idCampaign } })
@@ -22,14 +21,13 @@ module.exports = {
         const rows = [];
         fs.createReadStream(filename)
           .pipe(csvParser({ separator: config.csvSeparator }))
-          .on('data', (data) => {
-            rows.push(data)
+          .on("data", (data) => {
+            rows.push(data);
           })
           .on("end", () => {
-            
             console.log("CSV file successfully processed: " + filename);
             rows.forEach((row, index, arrRows) => {
-              var cust={};
+              var cust = {};
               cust.id = "";
               cust.uid = this.makeUuid();
               cust.firstname = row.NOME;
@@ -43,7 +41,7 @@ module.exports = {
               cust.adm2 = row.REGIONE;
               cust.adm3 = row.STATO;
               cust.campaignId = idCampaign;
-              
+
               database.entities.customer
                 .findOne({ where: { mobilephone: cust.mobilephone } })
                 .then((item) => {
@@ -70,9 +68,8 @@ module.exports = {
                     );
                   }
                 });
-              
-              
-              if(index===rows.length-1){
+
+              if (index === rows.length - 1) {
                 callback();
               }
             });
@@ -104,11 +101,10 @@ module.exports = {
   createCampaignPackage(pkgData, callback) {
     const fileCampaign =
       process.cwd() + config.paths.cacheFolder + "/campaign.csv";
-    const fileLinks = process.cwd() + config.paths.cacheFolder + "/links.csv";
     const fileContacts =
       process.cwd() + config.paths.cacheFolder + "/contacts.csv";
     const fileClicks = process.cwd() + config.paths.cacheFolder + "/clicks.csv";
-
+    
     //create csv files, zip and callback
     const createCsvWriter = csvWriter.createObjectCsvWriter;
     const csvWriterCampaign = createCsvWriter({
@@ -123,14 +119,6 @@ module.exports = {
         { id: "state", title: "Stato" },
         { id: "ncontacts", title: "NumeroContatti" },
         { id: "ncompleted", title: "NumeroCompletati" },
-      ],
-    });
-    const csvWriterLink = createCsvWriter({
-      fieldDelimiter: config.csvSeparator,
-      path: fileLinks,
-      header: [
-        { id: "campaignId", title: "identificativoCampagna" },
-        { id: "urlOriginal", title: "urlOriginale" },
       ],
     });
     const csvWriterContacts = createCsvWriter({
@@ -155,7 +143,7 @@ module.exports = {
       path: fileClicks,
       header: [
         { id: "id", title: "Id" },
-        { id: "url", title: "Link" },
+        { id: "confirm", title: "Conferme" },
         { id: "firstname", title: "Nome" },
         { id: "lastname", title: "Cognome" },
         { id: "mobilephone", title: "Telfono" },
@@ -167,13 +155,15 @@ module.exports = {
         { id: "country", title: "Stato" },
       ],
     });
-
+    
     //forma clicks
     var clickData = [];
     pkgData.clicks.forEach((click, index, arrClick) => {
+      var strConfirm="1 click";
+      if(click.confirm) strConfirm="2 click";
       clickData.push({
         id: click.customer.id,
-        url: click.link.urlOriginal,
+        confirm: strConfirm,
         firstname: click.customer.firstname,
         lastname: click.customer.lastname,
         mobilephone: click.customer.mobilephone,
@@ -188,28 +178,22 @@ module.exports = {
       if (index === pkgData.clicks.length - 1)
         csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
           csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-            csvWriterLink.writeRecords(pkgData.links).then(() => {
-              csvWriterClicks.writeRecords(clickData).then(() => {
-                //zip all files
-                // creating archives
-                var zip = new admZip();
+            csvWriterClicks.writeRecords(clickData).then(() => {
+              //zip all files
+              // creating archives
+              var zip = new admZip();
 
-                // add file directly
-                zip.addLocalFile(fileCampaign);
-                zip.addLocalFile(fileContacts);
-                zip.addLocalFile(fileLinks);
-                zip.addLocalFile(fileClicks);
+              // add file directly
+              zip.addLocalFile(fileCampaign);
+              zip.addLocalFile(fileContacts);
+              zip.addLocalFile(fileClicks);
 
-                filenameZip =
-                  pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-                zip.writeZip(
-                  process.cwd() +
-                    config.paths.downloadFolder +
-                    "/" +
-                    filenameZip
-                );
-                callback({ fileArchive: filenameZip });
-              });
+              filenameZip =
+                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+              zip.writeZip(
+                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
+              );
+              callback({ fileArchive: filenameZip });
             });
           });
         });
@@ -218,23 +202,20 @@ module.exports = {
     if (pkgData.clicks.length === 0) {
       csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
         csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-          csvWriterLink.writeRecords(pkgData.links).then(() => {
-            //zip all files
-            // creating archives
-            var zip = new admZip();
+          //zip all files
+          // creating archives
+          var zip = new admZip();
 
-            // add file directly
-            zip.addLocalFile(fileCampaign);
-            zip.addLocalFile(fileContacts);
-            zip.addLocalFile(fileLinks);
+          // add file directly
+          zip.addLocalFile(fileCampaign);
+          zip.addLocalFile(fileContacts);
 
-            filenameZip =
-              pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-            zip.writeZip(
-              process.cwd() + config.paths.downloadFolder + "/" + filenameZip
-            );
-            callback({ fileArchive: filenameZip });
-          });
+          filenameZip =
+            pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+          zip.writeZip(
+            process.cwd() + config.paths.downloadFolder + "/" + filenameZip
+          );
+          callback({ fileArchive: filenameZip });
         });
       });
     }

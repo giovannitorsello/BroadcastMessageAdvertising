@@ -1,8 +1,10 @@
 <template>
   <div>
-    
     <v-container>
-      <p>Campagna selezionata. {{selectedCampaign.name}} -- {{selectedCampaign.ncontacts}}</p>      
+      <p>
+        Campagna selezionata. {{ selectedCampaign.name }} --
+        {{ selectedCampaign.ncontacts }}
+      </p>
       <v-tabs v-model="tab">
         <v-tab href="#startstop">
           <v-card flat>
@@ -101,7 +103,10 @@
                 class="elevation-1"
               >
                 <template v-slot:item="row">
-                  <tr @click="selectCampaign(row.item)" :class="{'primary': row.item.id===selectedCampaign.id}">
+                  <tr
+                    @click="selectCampaign(row.item)"
+                    :class="{ primary: row.item.id === selectedCampaign.id }"
+                  >
                     <td>{{ row.item.id }}</td>
                     <td>{{ row.item.name }}</td>
                     <td>{{ row.item.state }}</td>
@@ -173,14 +178,14 @@
               <v-text-field
                 name="input-7-1"
                 filled
-                label="Link n.1"
-                v-model="messageUrl1"
+                label="Messaggio prima pagina web"
+                v-model="messagePage1"
               ></v-text-field>
               <v-text-field
                 name="input-7-1"
                 filled
-                label="Link n.2"
-                v-model="messageUrl2"
+                label="Messaggio seconda pagina web"
+                v-model="messagePage2"
               ></v-text-field>
             </v-col>
           </v-row>
@@ -358,9 +363,10 @@ export default {
   data() {
     return {
       campaignName: "",
-      messageUrl1: "https://www.google.com",
-      messageUrl2: "https://www.youtube.com",
-      messageText: "Testo di prova (da cambiare) |link1| e |link2|",
+      messagePage1: "Vuoi ricevere maggiori informazioni senza impegno?",
+      messagePage2:
+        "Grazie, sarai ricontattato da un nostro operatore al più presto",
+      messageText: "Testo di prova",
       beginDate: "",
       beginTime: "",
       date: new Date().toISOString().substr(0, 10),
@@ -377,8 +383,7 @@ export default {
 
       messageCampaigns: [],
       contacts: [],
-      filteredContacts: [],
-      links: [],
+      filteredContacts: [],      
       interestedCustomers: [],
       noInterestedCustomers: [],
       caps: [],
@@ -405,12 +410,13 @@ export default {
       ],
       headersInterestedCustomers: [
         { text: "ID", value: "id" },
-        { text: "Url", value: "url" },
+        { text: "Conferma", value: "confirmed" },
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
         { text: "Telefono", value: "mobilephone" },
         { text: "Indirizzo", value: "address" },
-      ],      
+        { text: "CAP", value: "postcode" },
+      ],
       headerCampaigns: [
         { text: "Codice", value: "id" },
         { text: "Nome campagna", value: "name" },
@@ -487,14 +493,12 @@ export default {
               if (this.selectedCampaign.contacts)
                 this.contacts = this.selectedCampaign.contacts;
 
-              if (this.selectedCampaign.links) {
-                this.links = this.selectedCampaign.links;
-                this.messageUrl1 = this.links[0].urlOriginal;
-                this.messageUrl2 = this.links[1].urlOriginal;
-              }
-
               if (this.selectedCampaign.message)
                 this.messageText = this.selectedCampaign.message;
+              if (this.selectedCampaign.messagePage1)
+                this.messagePage1 = this.selectedCampaign.messagePage1;
+              if (this.selectedCampaign.messagePage2)
+                this.messagePage2 = this.selectedCampaign.messagePage2;
             }
           })
           .catch((error) => {
@@ -509,18 +513,16 @@ export default {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
+            message: this.messageText,
+            messagePage1: this.messagePage1,
+            messagePage2: this.messagePage2,
             begin: this.getBeginDate(),
-            message: {
-              text: this.messageText,
-              url1: this.messageUrl1,
-              url2: this.messageUrl2,
-            },
           },
         })
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
           this.messageCampaigns.push(request.data.messageCampaign);
-          this.contacts=this.messageCampaigns.contacts;
+          this.contacts = this.messageCampaigns.contacts;
           console.log("Campaign updated");
           console.log(this.selectedCampaign);
         })
@@ -529,8 +531,8 @@ export default {
         });
     },
     updateMessageCampaign() {
-      var ncont=0;
-      if(this.contacts) ncont=this.contacts.length;
+      var ncont = 0;
+      if (this.contacts) ncont = this.contacts.length;
       this.axios
         .post("/adminarea/messageCampaign/update", {
           messageCampaign: {
@@ -539,18 +541,14 @@ export default {
             state: this.selectedCampaign.state,
             contacts: this.contacts,
             ncontacts: ncont,
-
-            message: {
-              text: this.messageText,
-              url1: this.messageUrl1,
-              url2: this.messageUrl2,
-            },
+            message: this.messageText,
+            messagePage1: this.messagePage1,
+            messagePage2: this.messagePage2,
           },
         })
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
-          this.contacts=this.messageCampaigns.contacts;
-          this.links=this.messageCampaigns.links;
+          this.contacts = this.messageCampaigns.contacts;          
           this.refreshAll();
         })
         .catch((error) => {
@@ -719,9 +717,11 @@ export default {
           console.log(error);
         });
     },
-    getCampaignContacts() {      
+    getCampaignContacts() {
       this.axios
-        .post("/adminarea/messageCampaign/getCampaignCustomers", {messageCampaign: this.selectedCampaign})
+        .post("/adminarea/messageCampaign/getCampaignCustomers", {
+          messageCampaign: this.selectedCampaign,
+        })
         .then((request) => {
           this.contacts = request.data.customers;
         })
@@ -736,12 +736,16 @@ export default {
           .post("/adminarea/messageCampaign/getCampaignInterestedCustomers", {
             messageCampaign: this.selectedCampaign,
           })
-          .then((request) => {
+          .then((request) => {            
             if (request.data.clicks) {
               request.data.clicks.forEach((click) => {
+                var strConfirm="";
+                if(click.confirm) strConfirm="2 click";
+                if(!click.confirm) strConfirm="1 click";
+
                 var interestedCustomer = {
                   id: click.customer.id,
-                  url: click.link.urlOriginal,
+                  confirmed: strConfirm,                  
                   firstname: click.customer.firstname,
                   lastname: click.customer.lastname,
                   address: click.customer.address,
@@ -765,7 +769,7 @@ export default {
           })
           .then((request) => {
             if (request.data.customers) {
-                this.noInterestedCustomers=request.data.customers;                       
+              this.noInterestedCustomers = request.data.customers;
             }
           })
           .catch((error) => {
@@ -781,7 +785,7 @@ export default {
       this.getCampaignContacts();
       this.getMessageCampaigns();
       this.getInterestedCustomers();
-      this.getNoInterestedCustomers();
+      this.getNoInterestedCustomers();      
     },
     loadCSVFile() {
       if (this.selectedCampaign.id > 0) {
@@ -796,11 +800,10 @@ export default {
           })
           .then((request) => {
             console.log(request);
-            setTimeout(() =>{
+            setTimeout(() => {
               console.log("loaded");
               this.getCampaignContacts();
-            }, 3000)
-            
+            }, 3000);
           })
           .catch((error) => {
             console.log(error);
@@ -827,8 +830,8 @@ export default {
         this.beginTime
       }:00.000`;
     },
-    downloadMessageCampaignArchive(fileArchive) {            
-      var zipCampaignArchive = fileArchive.fileArchive;      
+    downloadMessageCampaignArchive(fileArchive) {
+      var zipCampaignArchive = fileArchive.fileArchive;
       this.axios({
         url: "/downloads/" + zipCampaignArchive,
         method: "GET",

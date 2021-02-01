@@ -30,7 +30,7 @@ module.exports = {
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
         if (waitTime < 5000) waiTime = 5000; //force a minumum of 10 secs between two messages
         //For debug only
-        waitTime = 10000;
+        waitTime = 1000;
         //start campaigns execution
         this.startCampaignManager();
         setInterval(() => {
@@ -56,7 +56,7 @@ module.exports = {
     var dateCampaign = Date.parse(campaign.begin);
     var now = new Date().getTime();
     //Controllo su data ed ora di inizio
-    if (now > dateCampaign) {
+    if (now > dateCampaign && campaign.state === "active") {
       this.sendMessage(campaign, gateway, contact);
 
       this.database.entities.messageCampaign
@@ -72,13 +72,13 @@ module.exports = {
     }
   },
   sendMessage(campaign, gateway, contact) {
-    if (!contact) return;
-    //if(contact.state==="contacted") return;
+    if (!campaign || campaign.state !== "active") return;
+    if (!contact || contact.state === "contacted") return;
     var database = this.database;
     var ip = gateway.ip;
     var mobilephone = contact.mobilephone;
     var message = this.formatMessage(campaign, contact);
-    if (message !== "") {
+    if (message !== "" && contact.state === "toContact") {
       sms_gateway_hardware.sendSMS(
         gateway,
         message,
@@ -88,30 +88,32 @@ module.exports = {
             database.entities.customer
               .findOne({ where: { id: contact.id } })
               .then((cust) => {
-                if (response.status === "send") cust.state = "contacted";
-                else cust.state = "toContact";
-                cust.save().then((custSaved) => {
-                  if (response.status === "send")
-                    campaign.contacts[selectedContact].state = "contacted";
-                  else campaign.contacts[selectedContact].state = "toContact";
-                  database.entities.messageCampaign
-                    .findOne({ where: { id: custSaved.campaignId } })
-                    .then((camp) => {
-                      if (camp.ncompleted < camp.ncontacts) camp.ncompleted++;
-                      if (camp.ncompleted === camp.ncontacts)
-                        camp.state = "complete";
-                      camp.save().then((campSaved) => {
-                        gateway.nSmsSent++;
-                        database.entities.gateway
-                          .findOne({ where: { id: gateway.id } })
-                          .then((gat) => {
-                            gat.nSmsSent = gateway.nSmsSent;
-                            gat.save();
-                            this.antifraudRoutine(gateway);
-                          });
+                if (response.status === "send") {
+                  cust.state = "contacted";
+                  campaign.contacts[selectedContact - 1].state = "contacted";
+                  cust.save().then((custSaved) => {
+                    database.entities.messageCampaign
+                      .findOne({ where: { id: custSaved.campaignId } })
+                      .then((camp) => {
+                        if (camp.ncompleted < camp.ncontacts) camp.ncompleted++;
+                        if (camp.ncompleted === camp.ncontacts)
+                          camp.state = "complete";
+                        camp.save().then((campSaved) => {
+                          gateway.nSmsSent++;
+                          database.entities.gateway
+                            .findOne({ where: { id: gateway.id } })
+                            .then((gat) => {
+                              gat.nSmsSent = gateway.nSmsSent;
+                              gat.save();
+                              this.antifraudRoutine(gateway);
+                            });
+                        });
                       });
-                    });
-                });
+                  });
+                } else {
+                  cust.state = "toContact";
+                  campaign.contacts[selectedContact - 1].state = "toContact";
+                }
               });
           }
           console.log(response);
@@ -120,42 +122,24 @@ module.exports = {
     }
   },
   formatMessage(campaign, contact) {
-    var hexidContact = parseInt(contact.id).toString(36);
-    var hexidCampaign = parseInt(campaign.id).toString(36);
-    if (campaign.links && campaign.links.length > 0) {
-      var hexidLink1 = parseInt(campaign.links[0].id).toString(36);
-      var hexidLink2 = parseInt(campaign.links[1].id).toString(36);
-      link1 =
-        config.shortDomain +
-        "/" +
-        hexidCampaign +
-        "/" +
-        hexidContact +
-        "/" +
-        hexidLink1;
-      link2 =
-        config.shortDomain +
-        "/" +
-        hexidCampaign +
-        "/" +
-        hexidContact +
-        "/" +
-        hexidLink2;
+    if (
+      campaign &&
+      contact &&
+      campaign.message &&
+      campaign.message !== "" &&
+      campaign.id &&
+      contact.id
+    ) {
+      var hexidContact = parseInt(contact.id).toString(36);
+      var hexidCampaign = parseInt(campaign.id).toString(36);
+      link = config.shortDomain + "/" + hexidCampaign + "/" + hexidContact;
       var message = campaign.message;
-      message = message.replace("|link1|", link1);
-      message = message.replace("|link2|", link2);
-      return message;
+      return message + " " + link;
     }
     return "";
   },
-  selectCampaignLinks(campaign, callback) {
-    this.database.entity.links
-      .findAll({ where: { id: campaign.id } })
-      .then((links) => {
-        if (links) callback(links);
-      });
-  },
   selectCurrentContact(campaign) {
+    if (!campaign.contacts) return {};
     var currContact = campaign.contacts[selectedContact];
     selectedContact++;
     if (selectedContact > campaign.ncontacts) selectedContact = 0;
@@ -186,6 +170,7 @@ module.exports = {
 
     return found_active_gateway;
   },
+  /*
   startCampaign(campaignData, callback) {
     return callback();
   },
@@ -194,7 +179,7 @@ module.exports = {
   },
   getCampaignInfo(campaignData, callback) {
     return callback();
-  },
+  },*/
   loadSmsGateways(callback) {
     var gateways = [];
     this.database.entities.gateway.findAll().then((results) => {
@@ -218,31 +203,24 @@ module.exports = {
   },
   loadCampaings(callback) {
     var campaigns = [];
-    //Charge active campaign and their links
+    //Charge active campaign
     this.database.entities.messageCampaign.findAll().then((camps) => {
       if (camps) {
         camps.forEach((camp) => {
-          //recover campaign links
-          this.database.entities.link
+          this.database.entities.customer
             .findAll({ where: { campaignId: camp.id } })
-            .then((links) => {
-              camp.links = links;
-
-              this.database.entities.customer
-                .findAll({ where: { campaignId: camp.id } })
-                .then((contacts) => {
-                  camp.contacts = contacts;
-                  camp.ncontacts = contacts.length;
-                  campaigns.push(camp);
-                  callback(campaigns);
-                });
+            .then((contacts) => {
+              camp.contacts = contacts;
+              camp.ncontacts = contacts.length;
+              campaigns.push(camp);
+              callback(campaigns);
             });
         });
       }
     });
   },
   reloadActiveCampaings(callback) {
-    //Charge active campaign and their links
+    //Charge active campaign and their
     this.loadCampaings((campaigns) => {
       this.smsCampaigns = campaigns;
     });
