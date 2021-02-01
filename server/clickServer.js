@@ -51,7 +51,7 @@ module.exports = {
                   .then((camp) => {
                     templateHTML = templateHTML.replace(
                       "%%LinkConfirm%%",
-                      "http://10.10.11.2:9000" + req.url + "/1"
+                      config.shortDomain + req.url + "/1"
                     ); //config.shortDomain
                     templateHTML = templateHTML.replace(
                       "%%MessagePage1%%",
