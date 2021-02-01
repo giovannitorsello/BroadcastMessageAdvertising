@@ -30,7 +30,8 @@ module.exports = {
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
         if (waitTime < 5000) waiTime = 5000; //force a minumum of 10 secs between two messages
         //For debug only 
-        waitTime = 10000;
+        if (waitTime > 30000) waitTime = 30000;
+        
         //start campaigns execution
         this.startCampaignManager();
         setInterval(() => {
