@@ -75,6 +75,18 @@ module.exports = {
         .then((response) => {
           console.log(response);
           var isSend=sms.isSend()
+          console.log(
+            "Sending message  " +
+              message +
+              " -- " +
+              device.name +
+              "--" +
+              device.operator +
+              "--" +
+              device.selectedLine +
+              " to " +
+              mobilephone
+          );
           callback(response);
         })
         .catch((error) => {
