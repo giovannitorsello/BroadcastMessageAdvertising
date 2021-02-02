@@ -1,4 +1,3 @@
 Id;Contattato?;Nome;Cognome;Telefono;Indirizzo;Cap;Citta;Provincia;Regione;Stato
-360;contacted;Giovanni;Torsello;3939241987;Via Papa;73013;LE;;ITALY;
-361;contacted;Francesco;Torsello;3890132089;Via Rossi;73013;LE;;ITALY;
-362;contacted;Stefania;Tundo;3475253991;Via Patu;73013;LE;;ITALY;
+523;toContact;GIOVANNI;TORSELLO;3939241987;MANCA;90151;PA;;ITALY;
+524;toContact;SETFANIA;TUNDO;3475253991;MANCA;90151;PA;;ITALY;

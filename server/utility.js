@@ -30,16 +30,16 @@ module.exports = {
               var cust = {};
               cust.id = "";
               cust.uid = this.makeUuid();
-              cust.firstname = row.NOME;
-              cust.lastname = row.COGNOME;
-              cust.email = row.EMAIL;
-              cust.mobilephone = row.NUMERO;
-              cust.address = row.INDIRIZZO;
+              cust.firstname = row.Nome;
+              cust.lastname = row.Cognome;
+              cust.email = row.Email;
+              cust.mobilephone = row.Telefono;
+              cust.address = row.Indirizzo;
               cust.postcode = row.CAP;
-              cust.city = row.PAESE;
-              cust.adm1 = row.PROV;
-              cust.adm2 = row.REGIONE;
-              cust.adm3 = row.STATO;
+              cust.city = row.Citta;
+              cust.adm1 = row.Provincia;
+              cust.adm2 = row.Regione;
+              cust.adm3 = row.Stato;
               cust.campaignId = idCampaign;
 
               database.entities.customer
