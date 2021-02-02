@@ -289,17 +289,12 @@ module.exports = {
     /////////////////////Message campaign ////////////////////
     app.post("/adminarea/messageCampaign/insert", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
-      var camp = {};
-      var link = [];
-      if (messageCampaign.contacts && messageCampaign.contacts.lenght === 0)
-        return;
-
+      var camp = {};            
       camp.id = "";
       camp.name = messageCampaign.name;
       camp.message = messageCampaign.message;
       camp.messagePage1 = messageCampaign.messagePage1;
       camp.messagePage2 = messageCampaign.messagePage2;
-      camp.ncontacts = messageCampaign.ncontacts;
       camp.ncompleted = 0;
       camp.begin = messageCampaign.begin;
       camp.state = "disabled";
@@ -317,19 +312,9 @@ module.exports = {
             msg: "Message campaign not insert",
             messageCampaign: {},
           });
-        }
-
-        urls = [messageCampaign.message.url1, messageCampaign.message.url2];
-        urls.forEach((url) => {
-          database.entities.link
-            .create({
-              id: "",
-              urlOriginal: url,
-              campaignId: campNew.id,
-            })
-            .then(function (linkNew) {});
-        });
+        }       
       });
+
     });
 
     app.post("/adminarea/messageCampaign/update", function (req, res) {
@@ -343,18 +328,21 @@ module.exports = {
             camp.message = messageCampaign_updated.message;
             camp.messagePage1 = messageCampaign_updated.messagePage1;
             camp.messagePage2 = messageCampaign_updated.messagePage2;
-            camp.ncontacts = messageCampaign_updated.ncontacts;
-            camp.ncontacts = messageCampaign_updated.ncontacts;
-
+            customers = messageCampaign_updated.contacts;
+            if(customers) camp.ncontacts=customers.length;
+            else camp.ncontacts=0;
+            camp.ncompleted=0;
+            
             camp.save().then(function (campNew) {
               if (campNew !== null) {
                 smsCampaignManager.reloadActiveCampaings();
-                //delete all customers
+                //delete all old customers
                 database.entities.customer.destroy({
                   where: { campaignId: campNew.id },
                 });
 
-                customers = messageCampaign_updated.contacts;
+                //replace with new customers
+                
                 if (customers) {
                   customers.forEach((cust) => {
                     cust.id = "";
@@ -367,7 +355,11 @@ module.exports = {
                   status: "OK",
                   msg: "Message campaign update successfully",
                   messageCampaign: campNew,
+                  customers: customers
                 });
+
+                //Finally reload all campaigns
+                smsCampaignManager.reloadActiveCampaings();
               } else {
                 res.send({
                   status: "error",

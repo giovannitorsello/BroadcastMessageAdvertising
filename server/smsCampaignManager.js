@@ -29,9 +29,9 @@ module.exports = {
         var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
         if (waitTime < 5000) waiTime = 5000; //force a minumum of 10 secs between two messages
-        //For debug only 
+        //For debug only
         if (waitTime > 30000) waitTime = 30000;
-        
+
         //start campaigns execution
         this.startCampaignManager();
         setInterval(() => {
@@ -59,29 +59,17 @@ module.exports = {
     //Controllo su data ed ora di inizio
     if (now > dateCampaign && campaign.state === "active") {
       this.sendMessage(campaign, gateway, contact);
-
-      this.database.entities.messageCampaign
-        .findOne({ where: { id: campaign.id } })
-        .then((camp) => {
-          //calcolo orario di fine presunto
-          var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
-          var now = new Date().getTime();
-          var endTime = new Date(now + nMillis);
-          camp.end = endTime;
-          camp.save();
-        });
     }
   },
   sendMessage(campaign, gateway, contact) {
-    
-    if (!campaign || campaign.state !== "active") return;    
-    if (!contact || contact.state === "contacted") return;
+    if (!campaign) return;
+    if (!contact) return;
     var database = this.database;
     var ip = gateway.ip;
     var mobilephone = contact.mobilephone;
-    console.log("try to send message to:" +contact.mobilephone);
+    console.log("try to send message to:" + contact.mobilephone);
     var message = this.formatMessage(campaign, contact);
-    if (message !== "" && contact.state === "toContact") {
+    if (message !== "" && contact.state === "toContact" && campaign.state === "active") {
       sms_gateway_hardware.sendSMS(
         gateway,
         message,
@@ -91,26 +79,20 @@ module.exports = {
             database.entities.customer
               .findOne({ where: { id: contact.id } })
               .then((cust) => {
-                if (response.status === "send") {
+                if (
+                  response.status === "send" ||
+                  response.status === "sending"
+                ) {
                   cust.state = "contacted";
                   campaign.contacts[selectedContact - 1].state = "contacted";
                   cust.save().then((custSaved) => {
-                    database.entities.messageCampaign
-                      .findOne({ where: { id: custSaved.campaignId } })
-                      .then((camp) => {
-                        if (camp.ncompleted < camp.ncontacts) camp.ncompleted++;
-                        if (camp.ncompleted === camp.ncontacts)
-                          camp.state = "complete";
-                        camp.save().then((campSaved) => {
-                          gateway.nSmsSent++;
-                          database.entities.gateway
-                            .findOne({ where: { id: gateway.id } })
-                            .then((gat) => {
-                              gat.nSmsSent = gateway.nSmsSent;
-                              gat.save();
-                              this.antifraudRoutine(gateway);
-                            });
-                        });
+                    gateway.nSmsSent++;
+                    database.entities.gateway
+                      .findOne({ where: { id: gateway.id } })
+                      .then((gat) => {
+                        gat.nSmsSent = gateway.nSmsSent;
+                        gat.save();
+                        this.antifraudRoutine(gateway);
                       });
                   });
                 } else {
@@ -119,10 +101,31 @@ module.exports = {
                 }
               });
           }
-          console.log(response);
         }
       );
     }
+
+    //Update ncompleted campaign
+    database.entities.customer
+      .count({ where: { campaignId: campaign.id, state: "contacted" } })
+      .then((countContacted) => {
+        database.entities.messageCampaign
+          .findOne({ where: { id: campaign.id } })
+          .then((camp) => {
+            //aggiornamento contattati
+            campaign.ncompleted = countContacted;
+            camp.ncompleted = countContacted;
+            if (camp.ncompleted === camp.ncontacts) camp.state = "complete";
+
+            //calcolo orario di fine presunto
+            var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
+            var now = new Date().getTime();
+            var endTime = new Date(now + nMillis);
+            camp.end = endTime;
+
+            camp.save();
+          });
+      });
   },
   formatMessage(campaign, contact) {
     if (
@@ -142,11 +145,22 @@ module.exports = {
     return "";
   },
   selectCurrentContact(campaign) {
-    if (!campaign.contacts) return {};
-    var currContact = campaign.contacts[selectedContact];
-    selectedContact++;
-    if (selectedContact > campaign.ncontacts) selectedContact = 0;
-    return currContact;
+    if (!campaign.contacts) {
+      database.entities.customer
+        .findAll({ where: { campaignId: campaign.id } })
+        .then((custs) => {
+          campaign.contacts = custs;
+          selectedContact = 0;
+          var currContact = campaign.contacts[selectedContact];
+          selectedContact++;
+          return currContact;
+        });
+    } else {
+      var currContact = campaign.contacts[selectedContact];
+      selectedContact++;
+      if (selectedContact > campaign.ncontacts) selectedContact = 0;
+      return currContact;
+    }
   },
   selectCurrentGateway() {
     //Find the first active gateway
@@ -173,16 +187,6 @@ module.exports = {
 
     return found_active_gateway;
   },
-  /*
-  startCampaign(campaignData, callback) {
-    return callback();
-  },
-  stopCampaign(campaignData, callback) {
-    return callback();
-  },
-  getCampaignInfo(campaignData, callback) {
-    return callback();
-  },*/
   loadSmsGateways(callback) {
     var gateways = [];
     this.database.entities.gateway.findAll().then((results) => {
@@ -240,7 +244,7 @@ module.exports = {
         if (gat.operator != gateway.operator && gat.isWorking) {
           gatewaysToSend.push(gat);
         }
-        if (index === arrGat.length - 1) {
+        if ((index === arrGat.length - 1) && gatewaysToSend.length>0) {
           var nSmsSent = gatewaysToSend[0].nSmsSent;
           this.gatewayToSentAntifraudMessage = gatewaysToSend[0];
           //find gateway with less messages sent (gateway more free)
@@ -250,7 +254,7 @@ module.exports = {
               this.gatewayToSentAntifraudMessage = arrGatOtherOp[gatOtherOp];
             }
 
-            if (indexOtherOp === arrGatOtherOp.length - 1) {
+            if ((indexOtherOp === arrGatOtherOp.length - 1) && (this.gatewayToSentAntifraudMessage)) {
               this.sendAntifraudMessage(
                 this.gatewayToSentAntifraudMessage,
                 gateway

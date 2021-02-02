@@ -1,7 +1,4 @@
 Id;Contattato?;Nome;Cognome;Telefono;Indirizzo;Cap;Citta;Provincia;Regione;Stato
-273;contacted;Giovanni;Torsello;+393939241987;Via Papa;73013;LE;;ITALY;
-274;contacted;Vincenzo;Pomarico;+393939241987;Via Patu;73013;LE;;ITALY;
-275;contacted;Stefania;Tundo;+393475253991;Via Rossi;73013;LE;;ITALY;
-276;toContact;Francesco;Torsello;+393939241987;Via Verdi;73013;LE;;ITALY;
-277;contacted;Giorgio;Torsello;+393939241987;Via Bianchi;73013;LE;;ITALY;
-278;contacted;Alessandro;Torsello;+393939241987;Via XX Novembre;73013;LE;;ITALY;
+360;contacted;Giovanni;Torsello;3939241987;Via Papa;73013;LE;;ITALY;
+361;contacted;Francesco;Torsello;3890132089;Via Rossi;73013;LE;;ITALY;
+362;contacted;Stefania;Tundo;3475253991;Via Patu;73013;LE;;ITALY;

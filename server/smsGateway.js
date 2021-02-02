@@ -64,12 +64,12 @@ module.exports = {
       device.password,
       {
         waitForStatus: true, // Wait and check sending status
-        waitTries: 3, // Number of attempts
-        waitTime: 10000, // Time in  milliseconds
+        waitTries: 1, // Number of attempts
+        waitTime: 20000, // Time in  milliseconds
       }
     );
 
-    if(config.production===true){
+    if(config.production===true && device.isWorking===true) {
       sms
         .send(mobilephone, message)
         .then((response) => {

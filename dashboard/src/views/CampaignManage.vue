@@ -508,12 +508,14 @@ export default {
     },
     insertMessageCampaign() {
       this.contacts = [];
+      
+      console.log(this.messageText);
       this.axios
         .post("/adminarea/messageCampaign/insert", {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
-            message: this.messageText,
+            message: this.messageText.replace(/\n/g," "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
             begin: this.getBeginDate(),
@@ -541,7 +543,7 @@ export default {
             state: this.selectedCampaign.state,
             contacts: this.contacts,
             ncontacts: ncont,
-            message: this.messageText,
+            message: this.messageText.replace(/\n/g," "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
           },
