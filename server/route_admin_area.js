@@ -10,6 +10,7 @@ const http = require("https");
 const { Sequelize, Model, DataTypes } = require("sequelize");
 const path = require("path");
 const axios = require("axios");
+const jwt = require('jsonwebtoken');
 
 const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
@@ -852,8 +853,9 @@ module.exports = {
     //////////////////////Login and Logout //////////////////////////////
     //Get login by post
     app.post("/adminarea/login", function (req, res) {
-      var user = req.body.username;
-      var pass = req.body.password;
+      if(!req.body.user) {res.send({ status: "error", msg: "Login error", user: usr });};
+      var user = req.body.user.username;
+      var pass = req.body.user.password;
 
       database.entities.user
         .findOne({ where: { username: user, password: pass } })
@@ -862,8 +864,8 @@ module.exports = {
             res.send({ status: "error", msg: "Login error", user: usr });
           } else {
             //Login accepted
-            res.send({ status: "OK", msg: "Login accepted.", user: usr });
-            //res.redirect("/customerarea/main");
+            let token = jwt.sign({ id: usr.id }, config.authJwtSecret, {expiresIn: 86400});
+            res.send({ status: "OK", msg: "Login accepted.", auth: true, token: token, user: usr });            
           }
         });
     });
@@ -873,7 +875,7 @@ module.exports = {
         if (err) {
           res.send({ status: "error", msg: "Login accepted.", error: err });
         } else {
-          res.send({ status: "OK", msg: "Logout accepted.", user: {} });
+          res.send({ status: "OK", msg: "Logout accepted.", user: {}, token: {} });
         }
       });
     });

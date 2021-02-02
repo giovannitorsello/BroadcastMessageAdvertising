@@ -5,6 +5,9 @@ import { make } from 'vuex-pathify'
 import { IN_BROWSER } from '@/util/globals'
 
 const state = {
+  account: {},
+  token: {},
+  isLogged: false,
   dark: false,
   drawer: {
     image: 0,

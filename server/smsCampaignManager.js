@@ -32,8 +32,7 @@ module.exports = {
         //For debug only
         if (waitTime > 30000) waitTime = 30000;
 
-        //start campaigns execution
-        this.startCampaignManager();
+        //start campaigns execution        
         setInterval(() => {
           this.startCampaignManager();
         }, waitTime);

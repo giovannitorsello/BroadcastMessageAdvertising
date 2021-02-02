@@ -1,42 +1,93 @@
 <template>
-  <v-app>
-    <default-bar />
+  <div>
+    <v-container v-if="!isLogged">
+      <Login></Login>
+    </v-container>
 
-    <default-drawer />
+    <v-app v-if="isLogged">
+      <default-bar />
 
-    <default-view />
+      <default-drawer />
 
-    <default-footer />
+      <default-view />
 
-    <default-settings />
-  </v-app>
+      <default-footer />
+
+      <default-settings />
+    </v-app>
+  </div>
 </template>
 
 <script>
-  export default {
-    name: 'DefaultLayout',
+export default {
+  name: "DefaultLayout",
+  data() {
+    return {
+      isLogged: false,
+    };
+  },
+  created() {
+    /*this.$on('login', (data) => {
+      console.log("Logged in")
+      console.log(data);
+      this.isLogged = true;
+      //this.$emit();
+    });
+    this.$on('logout', (data) => {
+      console.log("Logout from Index.vue");
+      this.isLogged = false;
+    });*/
+  },
 
-    components: {
-      DefaultBar: () => import(
+  components: {
+    Login: () =>
+      import(
         /* webpackChunkName: "default-app-bar" */
-        './AppBar'
+        "./Login"
       ),
-      DefaultDrawer: () => import(
+    DefaultBar: () =>
+      import(
+        /* webpackChunkName: "default-app-bar" */
+        "./AppBar"
+      ),
+    DefaultDrawer: () =>
+      import(
         /* webpackChunkName: "default-drawer" */
-        './Drawer'
+        "./Drawer"
       ),
-      DefaultFooter: () => import(
+    DefaultFooter: () =>
+      import(
         /* webpackChunkName: "default-footer" */
-        './Footer'
+        "./Footer"
       ),
-      DefaultSettings: () => import(
+    DefaultSettings: () =>
+      import(
         /* webpackChunkName: "default-settings" */
-        './Settings'
+        "./Settings"
       ),
-      DefaultView: () => import(
+    DefaultView: () =>
+      import(
         /* webpackChunkName: "default-view" */
-        './View'
+        "./View"
       ),
-    },
-  }
+  },
+  mounted() {
+    this.subscription = this.$store.subscribe((mutation, payload) => {
+      
+      if(payload.user.isLogged) {
+        console.log("Logged in. (From Index.vue)");
+        this.isLogged=true;
+      }
+      else {
+        console.log("Log out. (From Index.vue)");
+        this.isLogged=false;
+      }
+      
+			if (mutation.type === 'vuetify@user') {
+				console.log("Mutation of user")
+			}
+		});
+    
+  },
+};
 </script>

@@ -22,8 +22,9 @@ Vue.config.productionTip = false
 sync(store, router)
 
 new Vue({
+  data: {isLogged: false},
   router,
   vuetify,
   store,
-  render: h => h(App),
+  render: h => h(App)
 }).$mount('#app')

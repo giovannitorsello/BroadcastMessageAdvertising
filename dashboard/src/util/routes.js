@@ -18,8 +18,7 @@ export function error (code = 404) {
 }
 
 export function layout (layout = 'Default', children, path = '') {
-  const dir = kebabCase(layout)
-
+  const dir = kebabCase(layout)  
   return {
     children,
     component: () => import(
@@ -52,7 +51,7 @@ export function redirect (
   }
 }
 
-export function route (name, component, path = '') {
+export function route (name, component, path = '', meta = { requiresAuth: true }) {
   component = Object(component) === component
     ? component
     : { default: name.replace(' ', '') }
@@ -70,5 +69,6 @@ export function route (name, component, path = '') {
     name,
     components,
     path,
+    meta: meta
   }
 }
