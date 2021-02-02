@@ -2,7 +2,11 @@
   <div id="loginform">
     <v-card class="mx-auto my-12 align-center" max-width="374">
       <v-text-field label="Nome utente" v-model="username"></v-text-field>
-      <v-text-field label="Password" v-model="password"></v-text-field>
+      <v-text-field label="Password" 
+        v-model="password" 
+        :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"        
+        :type="show1 ? 'text' : password">
+      </v-text-field>
       <v-btn depressed v-on:click="login">Login</v-btn>
     </v-card>
   </div>
