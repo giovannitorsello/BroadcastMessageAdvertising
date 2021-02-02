@@ -5,7 +5,8 @@
       <v-text-field label="Password" 
         v-model="password" 
         :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"        
-        :type="showPassword ? 'text' : password">
+        :type="showPassword ? 'text' : 'password'"
+         @click:append="showPassword = !showPassword">
       </v-text-field>
       <v-btn depressed v-on:click="login">Login</v-btn>
     </v-card>
