@@ -4,8 +4,8 @@
       <v-text-field label="Nome utente" v-model="username"></v-text-field>
       <v-text-field label="Password" 
         v-model="password" 
-        :append-icon="show1 ? 'mdi-eye' : 'mdi-eye-off'"        
-        :type="show1 ? 'text' : password">
+        :append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"        
+        :type="showPassword ? 'text' : password">
       </v-text-field>
       <v-btn depressed v-on:click="login">Login</v-btn>
     </v-card>
@@ -16,6 +16,7 @@
 export default {
   data() {
     return {
+      showPassword: false,
       username: "",
       password: "",
     };
