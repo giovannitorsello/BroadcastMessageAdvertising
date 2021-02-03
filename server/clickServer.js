@@ -19,33 +19,39 @@ module.exports = {
         var idCustomer = parseInt(hexIdCust, 36);
 
         //Second click
-        if(confirm && confirm==='1'){
-          database.entities.click.findOne({where: {campaignId: idCampaign, customerId: idCustomer}}).then(click => {
-            click.confirm=true;
-            click.save().then(clickSaved=> {
-              res.writeHeader(200, { "Content-Type": "text/html" });
-              res.write("");
-              res.end();    
+        if (confirm && confirm === "1") {
+          database.entities.click
+            .findOne({
+              where: { campaignId: idCampaign, customerId: idCustomer },
+            })
+            .then((click) => {
+              click.confirm = true;
+              click.save().then((clickSaved) => {
+                res.writeHeader(200, { "Content-Type": "text/html" });
+                res.write("");
+                res.end();
+              });
             });
-          })
         }
 
         //First click
-        else if (!confirm) {
+        else if (confirm === "0") {
           //Load page from templates
           templateHTML = fs.readFileSync(
             __dirname + "/templates/messagePage.html",
             { encoding: "utf8", flag: "r" }
           );
-          //update database
+          //First find to avoid double click
           database.entities.click
-            .create({
+            .findOne({
               campaignId: idCampaign,
               customerId: idCustomer,
-              confirm: false
+              confirm: false,
             })
-            .then((clickNew) => {
-              if (clickNew) {
+            .then((clickExist) => {
+              if (clickExist) {
+                //click exist no database update
+                //search campaign and send page
                 database.entities.messageCampaign
                   .findOne({ where: { id: clickNew.campaignId } })
                   .then((camp) => {
@@ -64,6 +70,38 @@ module.exports = {
                     res.writeHeader(200, { "Content-Type": "text/html" });
                     res.write(templateHTML);
                     res.end();
+                  });
+              } else {
+                //create click database
+                database.entities.click
+                  .create({
+                    campaignId: idCampaign,
+                    customerId: idCustomer,
+                    confirm: false,
+                  })
+                  .then((clickNew) => {
+                    if (clickNew) {
+                      //search campaign and send page
+                      database.entities.messageCampaign
+                        .findOne({ where: { id: clickNew.campaignId } })
+                        .then((camp) => {
+                          templateHTML = templateHTML.replace(
+                            "%%LinkConfirm%%",
+                            config.shortDomain + req.url + "/1"
+                          ); //config.shortDomain
+                          templateHTML = templateHTML.replace(
+                            "%%MessagePage1%%",
+                            camp.messagePage1
+                          );
+                          templateHTML = templateHTML.replace(
+                            "%%MessagePage2%%",
+                            camp.messagePage2
+                          );
+                          res.writeHeader(200, { "Content-Type": "text/html" });
+                          res.write(templateHTML);
+                          res.end();
+                        });
+                    }
                   });
               }
             });
