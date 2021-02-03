@@ -41,35 +41,15 @@ module.exports = {
               cust.adm2 = row.Regione;
               cust.adm3 = row.Stato;
               cust.campaignId = idCampaign;
-
-              database.entities.customer
-                .findOne({ where: { mobilephone: cust.mobilephone } })
-                .then((item) => {
-                  if (item === null) {
-                    console.log("Customer try to insert " + cust.mobilephone);
-                    database.entities.customer
-                      .create(cust)
-                      .then(function (objnew) {
-                        if (objnew !== null) {
-                          console.log(
-                            "Customer insert successfully: " +
-                              objnew.mobilephone
-                          );
-                        }
-                      });
-                  } else {
-                    console.log(
-                      "Customer exists: " +
-                        item.mobilephone +
-                        " --> " +
-                        item.firstname +
-                        " " +
-                        item.lastname
-                    );
-                  }
-                });
-
-              if (index === rows.length - 1) {
+              console.log("Customer try to insert " + cust.mobilephone);
+              database.entities.customer.create(cust).then(function (objnew) {
+                if (objnew !== null) {
+                  console.log(
+                    "Customer insert successfully: " + objnew.mobilephone
+                  );
+                }
+              });
+              if (index === arrRows.length - 1) {
                 callback();
               }
             });
@@ -104,7 +84,7 @@ module.exports = {
     const fileContacts =
       process.cwd() + config.paths.cacheFolder + "/contacts.csv";
     const fileClicks = process.cwd() + config.paths.cacheFolder + "/clicks.csv";
-    
+
     //create csv files, zip and callback
     const createCsvWriter = csvWriter.createObjectCsvWriter;
     const csvWriterCampaign = createCsvWriter({
@@ -155,12 +135,12 @@ module.exports = {
         { id: "country", title: "Stato" },
       ],
     });
-    
+
     //forma clicks
     var clickData = [];
     pkgData.clicks.forEach((click, index, arrClick) => {
-      var strConfirm="1 click";
-      if(click.confirm) strConfirm="2 click";
+      var strConfirm = "1 click";
+      if (click.confirm) strConfirm = "2 click";
       clickData.push({
         id: click.customer.id,
         confirm: strConfirm,

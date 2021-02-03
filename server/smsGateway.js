@@ -65,25 +65,30 @@ module.exports = {
       {
         waitForStatus: true, // Wait and check sending status
         waitTries: 1, // Number of attempts
-        waitTime: 20000, // Time in  milliseconds
+        waitTime: 8000, // Time in  milliseconds
       }
     );
 
     if(config.production===true && device.isWorking===true) {
+      var senderNumber="";
+      if(device.objData && device.objData.lines)
+        senderNumber=device.objData.lines[device.selectedLine];
+
       sms
         .send(mobilephone, message)
         .then((response) => {
-          console.log(response);
-          var isSend=sms.isSend()
+          
           console.log(
             "Sending message  " +
               message +
               " -- " +
               device.name +
-              "--" +
+              " -- " +
               device.operator +
-              "--" +
+              " -- " +
               device.selectedLine +
+              " -- " +
+              senderNumber +
               " to " +
               mobilephone
           );
@@ -96,6 +101,7 @@ module.exports = {
     }
     else
     {
+      /*
       console.log(
         "Sending message  " +
           message +
@@ -107,7 +113,76 @@ module.exports = {
           device.selectedLine +
           " to " +
           mobilephone
-      );
+      );*/
+      callback({
+        status: "send",
+        msg: "temporary disabled",
+        response: "developing",
+      });
+    }
+      
+  },
+  sendSMSAntifraud(device, message, mobilephone, callback) {
+    const sms = new HttpSms(
+      "http://"+device.ip+":"+device.port,
+      device.selectedLine,
+      device.login,
+      device.password,
+      {
+        waitForStatus: true, // Wait and check sending status
+        waitTries: 2, // Number of attempts
+        waitTime: 20000, // Time in  milliseconds
+      }
+    );
+    if(device.objData && device.objData.lines)
+        senderNumber=device.objData.lines[device.selectedLine];
+
+    if(config.production===true && device.isWorking===true) {
+      var senderNumber="";
+      if(device.objData && device.objData.lines)
+        senderNumber=device.objData.lines[device.selectedLine];
+
+      sms
+        .send(mobilephone, message)
+        .then((response) => {
+          console.log(
+            "Sending antifraud message  " +
+              message +
+              " -- " +
+              device.name +
+              " -- " +
+              device.operator +
+              " -- " +
+              device.selectedLine +
+              " -- " +
+              senderNumber +
+              " to " +
+              mobilephone
+          );
+          callback(response);
+        })
+        .catch((error) => {
+          console.log(error);
+          callback(error);
+        });
+    }
+    else
+    {
+      /*
+      console.log(
+        "Sending antifraud message  " +
+          message +
+          " -- " +
+          device.name +
+          " -- " +
+          device.operator +
+          " -- " +
+          device.selectedLine +
+          " -- " +
+          senderNumber +
+          " to " +
+          mobilephone
+      );*/
       callback({
         status: "send",
         msg: "temporary disabled",

@@ -106,18 +106,7 @@ module.exports = {
         modelName: "messagecampaign",
       }
     );
-    /*
-    Link.init(
-      {
-        campaignId: { type: Sequelize.INTEGER, allowNull: false },
-        urlOriginal: { type: Sequelize.STRING, allowNull: false },
-      },
-      {
-        sequelize,
-        modelName: "link",
-      }
-    );
-*/
+    
     Click.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
@@ -170,15 +159,11 @@ module.exports = {
     Gateway.sync({ force: false });
     MessageCampaign.sync({ force: false });
     Customer.sync({ force: false });
-    //    Link.sync({ force: false });
     Click.sync({ force: false });
 
     //Association Campaign-Customer
     MessageCampaign.hasMany(Customer, { foreignKey: "campaignId" });
     Customer.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
-    //Association Campaign-Link
-    //MessageCampaign.hasMany(Link, { foreignKey: "campaignId" });
-    //Link.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
 
     //Association Customers-Link
     Customer.hasMany(Click, { foreignKey: "customerId" });
