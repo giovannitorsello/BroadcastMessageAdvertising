@@ -15,6 +15,7 @@ module.exports = {
     this.server = http.createServer((req, res) => {
       if (req.url) {
         [hexIdCamp, hexIdCust, confirm] = req.url.substring(1).split("/");
+        if(hexIdCamp==="favicon.ico") {res.writeHeader(200, { "Content-Type": "text/html" });res.write("");res.end();return;}
         var idCampaign = parseInt(hexIdCamp, 36);
         var idCustomer = parseInt(hexIdCust, 36);
 
@@ -35,7 +36,7 @@ module.exports = {
         }
 
         //First click
-        else if (confirm === "0") {
+        else if (!confirm || confirm === "0") {
           //Load page from templates
           templateHTML = fs.readFileSync(
             __dirname + "/templates/messagePage.html",
@@ -43,17 +44,17 @@ module.exports = {
           );
           //First find to avoid double click
           database.entities.click
-            .findOne({
+            .findOne({where: {
               campaignId: idCampaign,
               customerId: idCustomer,
               confirm: false,
-            })
+            }})
             .then((clickExist) => {
               if (clickExist) {
                 //click exist no database update
                 //search campaign and send page
                 database.entities.messageCampaign
-                  .findOne({ where: { id: clickNew.campaignId } })
+                  .findOne({ where: { id: clickExist.campaignId } })
                   .then((camp) => {
                     templateHTML = templateHTML.replace(
                       "%%LinkConfirm%%",
