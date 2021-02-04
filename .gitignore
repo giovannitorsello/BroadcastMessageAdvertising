@@ -107,3 +107,6 @@ dist
 
 #Config files
 config.json
+
+#datafile
+.csv
