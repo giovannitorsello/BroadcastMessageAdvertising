@@ -288,7 +288,7 @@ module.exports = {
     };
     var message = this.getAntigraudMessageText();
     if (message !== "") {
-      console.log("Next is an antifraud message "+ 
+      console.log("Antifraud message "+ 
       senderDevice.operator +" -- "+ selectedSenderLine +" --> "+
       receiver.operator +" -- "+ selectedReceiverLine);
 
