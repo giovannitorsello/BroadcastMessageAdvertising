@@ -73,7 +73,6 @@ module.exports = {
       var senderNumber="";
       if(device.objData && device.objData.lines)
         senderNumber=device.objData.lines[device.selectedLine];
-
       sms
         .send(mobilephone, message)
         .then((response) => {
@@ -98,14 +97,12 @@ module.exports = {
           console.log(error);
           callback(error);
         });
+        
     }
     else
     {
-      /*
       console.log(
-        "Sending message  " +
-          message +
-          " -- " +
+        "Sending message (debug) " +
           device.name +
           "--" +
           device.operator +
@@ -113,7 +110,7 @@ module.exports = {
           device.selectedLine +
           " to " +
           mobilephone
-      );*/
+      );
       callback({
         status: "send",
         msg: "temporary disabled",
@@ -130,8 +127,8 @@ module.exports = {
       device.password,
       {
         waitForStatus: true, // Wait and check sending status
-        waitTries: 2, // Number of attempts
-        waitTime: 20000, // Time in  milliseconds
+        waitTries: 1, // Number of attempts
+        waitTime: 8000, // Time in  milliseconds
       }
     );
     if(device.objData && device.objData.lines)

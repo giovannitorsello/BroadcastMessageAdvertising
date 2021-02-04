@@ -28,7 +28,7 @@ module.exports = {
 
         var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
-        waitTime = 10000;
+        waitTime = 2000;
 
         //start campaigns execution        
         setInterval(() => {
@@ -97,9 +97,9 @@ module.exports = {
                 }
               });
           }
-          this.antifraudRoutine(gateway);
         }
       );
+      this.antifraudRoutine(gateway);
     }
 
     //Update ncompleted campaign
@@ -233,7 +233,7 @@ module.exports = {
   antifraudRoutine(gateway) {
     //Antifroud routine
     //var nToReceive =gateway.nMaxDailyMessagePerLine * (1 - gateway.nMaxSentPercetage / 100);
-    var factor = 100/gateway.nMaxSentPercetage; //Math.floor(gateway.nMaxDailyMessagePerLine / nToReceive);
+    var factor = Math.ceil(100/(100-gateway.nMaxSentPercetage)); //Math.floor(gateway.nMaxDailyMessagePerLine / nToReceive);
     if (gateway.nSmsSent % factor === 0) {
       //build list of other operator gateways
       var sendingGateways = [];
@@ -246,9 +246,11 @@ module.exports = {
           var nSmsSent = sendingGateways[0].nSmsSent;
           this.sendingGateway = sendingGateways[0];          
           sendingGateways.forEach((gatOtherOp, indexOtherOp, arrGatOtherOp) => {
+            if(!gatOtherOp.nSmsSent)
+              gatOtherOp.nSmsSent=0;
             if (nSmsSent > gatOtherOp.nSmsSent && gatOtherOp.isWorking) {
               nSmsSent = gatOtherOp.nSmsSent;
-              this.sendingGateway = arrGatOtherOp[gatOtherOp];
+              this.sendingGateway = arrGatOtherOp[indexOtherOp];
             }
 
             if ((indexOtherOp === arrGatOtherOp.length - 1) && (this.sendingGateway)) {
@@ -267,12 +269,23 @@ module.exports = {
     if(!sender.selectedLine) sender.selectedLine = 1;
     var selectedSenderLine=sender.selectedLine;
     var selectedReceiverLine=receiver.selectedLine;
-    if (selectedSenderLine > sender.nRadios) selectedSenderLine = 1;
-    if (selectedReceiverLine > receiver.nRadios) selectedReceiverLine=1;
+    if (selectedSenderLine > sender.nRadios) selectedSenderLine = sender.nRadios;
+    if (selectedReceiverLine > receiver.nRadios) selectedReceiverLine=sender.nRadios;
 
+    selectedSenderLine=Math.floor(Math.random()*8+1);
     var mobilephone = receiver.objData.lines[selectedReceiverLine-1];
     if (!mobilephone) return;
-    var senderDevice={name: sender.name, operator: sender.operator, ip: sender.ip, selectedLine: selectedSenderLine, login: sender.login, password: sender.password, objData: receiver.objData};
+    var senderDevice={
+      name: sender.name, 
+      operator: sender.operator, 
+      ip: sender.ip, 
+      port: sender.port, 
+      selectedLine: selectedSenderLine, 
+      login: sender.login, 
+      password: sender.password, 
+      objData: sender.objData,
+      isWorking: sender.isWorking
+    };
     var message = this.getAntigraudMessageText();
     if (message !== "") {
       console.log("Next is an antifraud message "+ 
