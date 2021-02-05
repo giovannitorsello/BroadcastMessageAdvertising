@@ -268,10 +268,11 @@ module.exports = {
     if(!sender.selectedLine) sender.selectedLine = 1;
     var selectedSenderLine=sender.selectedLine;
     var selectedReceiverLine=receiver.selectedLine;
+    selectedSenderLine=Math.floor(Math.random()*8+1);
+    
     if (selectedSenderLine > sender.nRadios) selectedSenderLine = sender.nRadios;
     if (selectedReceiverLine > receiver.nRadios) selectedReceiverLine=sender.nRadios;
 
-    selectedSenderLine=Math.floor(Math.random()*8+1);
     var mobilephone = receiver.objData.lines[selectedReceiverLine-1];
     if (!mobilephone) return;
     var senderDevice={
