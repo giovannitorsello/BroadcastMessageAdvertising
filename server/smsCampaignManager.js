@@ -171,12 +171,11 @@ module.exports = {
     if (found_active_gateway) {
       if (!found_active_gateway.selectedLine)
         found_active_gateway.selectedLine = 1;
-      else if (
-        found_active_gateway.selectedLine > found_active_gateway.nRadios
-      )
-        found_active_gateway.selectedLine = 1;
       else 
         found_active_gateway.selectedLine++;
+
+        if (found_active_gateway.selectedLine > found_active_gateway.nRadios)
+          found_active_gateway.selectedLine = 1;
     }
 
     //increment index to prepare next gateway for next message
