@@ -88,8 +88,9 @@ module.exports = {
                       .findOne({ where: { id: gateway.id } })
                       .then((gat) => {
                         gat.nSmsSent = gateway.nSmsSent;
+                        gat.selectedLine = gateway.selectedLine;
                         gat.save();
-                        this.antifraudRoutine(gateway);                        
+                        this.antifraudRoutine(gat);                        
                       });
                   });
                 } else {
