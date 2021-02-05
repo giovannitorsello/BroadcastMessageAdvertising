@@ -81,7 +81,7 @@ module.exports = {
         adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
         state: { type: Sequelize.STRING, defaultValue: "toContact" }, //toContact, contacted
-        objData: { type: Sequelize.JSON },
+        objData: { type: DataTypes.JSON },
       },
       {
         sequelize,
@@ -135,7 +135,7 @@ module.exports = {
         nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
         isWorking: { type: Sequelize.BOOLEAN, allowNull: true },
-        objData: { type: Sequelize.JSON },
+        objData: { type: DataTypes.JSON },
       },
       {
         sequelize,
