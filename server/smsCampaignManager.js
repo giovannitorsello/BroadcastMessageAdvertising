@@ -28,7 +28,7 @@ module.exports = {
 
         var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
-        waitTime = 10000;
+        waitTime = 500;
 
         //start campaigns execution        
         setInterval(() => {
@@ -161,6 +161,8 @@ module.exports = {
     }
   },
   selectCurrentGateway() {
+    if (selectedGateway === smsGateways.length) selectedGateway = 0;
+
     //Find the first active gateway
     while (!smsGateways[selectedGateway].isWorking) {
       selectedGateway++;
@@ -181,8 +183,6 @@ module.exports = {
 
     //increment index to prepare next gateway for next message
     selectedGateway++;
-    if (selectedGateway === smsGateways.length) selectedGateway = 0;
-
     return found_active_gateway;
   },
   loadSmsGateways(callback) {
@@ -269,7 +269,7 @@ module.exports = {
     if(!sender.selectedLine) sender.selectedLine = 1;
     var selectedSenderLine=sender.selectedLine;
     var selectedReceiverLine=receiver.selectedLine;
-    selectedSenderLine=Math.floor(Math.random()*8+1);
+    selectedSenderLine=Math.floor(Math.random())*sender.nRadios+1;
     
     if (selectedSenderLine > sender.nRadios) selectedSenderLine = sender.nRadios;
     if (selectedReceiverLine > receiver.nRadios) selectedReceiverLine=sender.nRadios;
@@ -290,8 +290,8 @@ module.exports = {
     var message = this.getAntigraudMessageText();
     if (message !== "") {
       console.log("Antifraud message "+ 
-      senderDevice.operator +" -- "+ selectedSenderLine +" --> "+
-      receiver.operator +" -- "+ selectedReceiverLine);
+      senderDevice.operator +" -- "+ selectedSenderLine +" (sender) --> "+
+      receiver.operator +" -- "+ selectedReceiverLine + " (receiver)");
 
       sms_gateway_hardware.sendSMSAntifraud(senderDevice, message, mobilephone, (response) => {
         this.database.entities.gateway

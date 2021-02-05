@@ -32,10 +32,6 @@ app.use(session({
   cookie: { secure: true }
 }))
 
-//settin process to clean temporary folder as cache and uploads 
-//var fileWatcherUpload = new FileCleaner(process.cwd() + '/uploads/', 600000, '* */45 * * * *', { start: true });
-//var fileWatcherCache = new FileCleaner(process.cwd() + '/cache/', 600000, '* */45 * * * *', { start: true });
-
 process.on('unhandledRejection', error => { console.log('Warning', error.message); });
 process.chdir(process.cwd());
 
@@ -43,10 +39,8 @@ process.chdir(process.cwd());
 //enable cross origin
 app.use(cors());
 //covert body to JSON
-app.use(bodyParser.json());
-//parsing request object data during post
-app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies.
-app.use(bodyParser.json({ limit: '2000kb' }));
+app.use(bodyParser.json({ limit: '4000kb' }));
+
 //upload folder
 var upload = multer({ dest: './uploads/' })
 //other static contents folders

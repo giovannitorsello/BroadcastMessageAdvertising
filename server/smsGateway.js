@@ -143,7 +143,7 @@ module.exports = {
         .send(mobilephone, message)
         .then((response) => {
           console.log(
-            "Sending antifraud message  " +
+            "Antifraud message  " +
               message +
               " -- " +
               device.name +
@@ -165,7 +165,6 @@ module.exports = {
     }
     else
     {
-      /*
       console.log(
         "Sending antifraud message  " +
           message +
@@ -179,7 +178,7 @@ module.exports = {
           senderNumber +
           " to " +
           mobilephone
-      );*/
+      );
       callback({
         status: "send",
         msg: "temporary disabled",
