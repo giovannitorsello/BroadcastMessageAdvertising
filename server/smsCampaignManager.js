@@ -89,8 +89,7 @@ module.exports = {
                       .then((gat) => {
                         gat.nSmsSent = gateway.nSmsSent;
                         gat.selectedLine = gateway.selectedLine;
-                        gat.save();
-                        this.antifraudRoutine(gat);                        
+                        gat.save();                      
                       });
                   });
                 } else {
@@ -101,6 +100,7 @@ module.exports = {
           }
         }
       );
+      this.antifraudRoutine(gateway);  
     }
 
     //Update ncompleted campaign
