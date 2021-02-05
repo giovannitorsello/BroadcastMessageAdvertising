@@ -28,7 +28,7 @@ module.exports = {
 
         var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
         waitTime = 1000 * (14400 / nMaxSmSPerHour);
-        waitTime = 2000;
+        waitTime = 10000;
 
         //start campaigns execution        
         setInterval(() => {
