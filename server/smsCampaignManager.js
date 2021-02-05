@@ -261,10 +261,10 @@ module.exports = {
     }
   },
   sendAntifraudMessage(sender, receiver) {
-    if (!receiver.objData) return;
-    if (!receiver.objData.lines) return;
-    if (!sender.objData) return;
-    if (!sender.objData.lines) return;
+    if (!receiver.objData) {console.log("SendAntifraudMessage - no objData in receiver"); return};
+    if (!receiver.objData.lines) {console.log("SendAntifraudMessage - no lines in receiver"); return};
+    if (!sender.objData) {console.log("SendAntifraudMessage - no lines in sender"); return};
+    if (!sender.objData.lines) {console.log("SendAntifraudMessage - no lines in sender"); return};
     if(!sender.selectedLine) sender.selectedLine = 1;
     var selectedSenderLine=sender.selectedLine;
     var selectedReceiverLine=receiver.selectedLine;
