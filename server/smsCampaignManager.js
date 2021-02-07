@@ -8,11 +8,6 @@ var smsContacts = [];
 var selectedGateway = 0;
 var selectedContact = 0;
 var waitTime = 5000;
-var nMaxSmsPerSim = 200;
-var nTotRadios = 8;
-
-//antifraud routine variables
-var gatewayToSentAntifraudMessage = {};
 
 module.exports = {
   app: {},

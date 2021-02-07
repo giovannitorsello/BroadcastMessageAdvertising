@@ -140,7 +140,7 @@ module.exports = {
     if(config.production===true && device.isWorking===true) {
       var senderNumber="";
       if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[line-1];
+        senderNumber=device.objData.lines[line];
 
       sms
         .send(mobilephone, message)
