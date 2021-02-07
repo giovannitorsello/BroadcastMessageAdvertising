@@ -66,7 +66,7 @@ module.exports = {
       {
         waitForStatus: true, // Wait and check sending status
         waitTries: 1, // Number of attempts
-        waitTime: 8000, // Time in  milliseconds
+        waitTime: 5000, // Time in  milliseconds
       }
     );
 
@@ -131,7 +131,7 @@ module.exports = {
       {
         waitForStatus: true, // Wait and check sending status
         waitTries: 1, // Number of attempts
-        waitTime: 8000, // Time in  milliseconds
+        waitTime: 5000, // Time in  milliseconds
       }
     );
     if(device.objData && device.objData.lines)
