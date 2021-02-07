@@ -85,6 +85,7 @@ module.exports = {
 
       sms_gateway_hardware.sendSMS(
         smsGateways[selGat],
+        selectedSenderLine,
         message,
         mobilephone,
         (response) => {
@@ -109,7 +110,7 @@ module.exports = {
                   });
                 } else {
                   cust.state = "toContact";
-                  
+
                   campaign.contacts[selectedContact - 1].state = "toContact";
                   smsGateways[selGat].nSmsSent++;
                   smsGateways[selGat].objData.smsSent[
@@ -346,10 +347,10 @@ module.exports = {
           selectedReceiverLine +
           " (receiver)"
       );
-
-      senderDevice.selectLine = selectedSenderLine + 1;
+      
       sms_gateway_hardware.sendSMSAntifraud(
         senderDevice,
+        selectedSenderLine,
         message,
         mobilephone,
         (response) => {

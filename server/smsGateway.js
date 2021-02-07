@@ -56,10 +56,12 @@ module.exports = {
       console.log(message);
     });
   },
-  sendSMS(device, message, mobilephone, callback) {
+  sendSMS(device, line, message, mobilephone, callback) {    
+    if(line===0) line=1;
+    if(line>device.nRadios) line=device.nRadios;
     const sms = new HttpSms(
       "http://"+device.ip+":"+device.port,
-      device.selectedLine,
+      line,
       device.login,
       device.password,
       {
@@ -72,7 +74,7 @@ module.exports = {
     if(config.production===true && device.isWorking===true) {
       var senderNumber="";
       if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[device.selectedLine];
+        senderNumber=device.objData.lines[line];
       sms
         .send(mobilephone, message)
         .then((response) => {
@@ -85,7 +87,7 @@ module.exports = {
               " -- " +
               device.operator +
               " -- " +
-              device.selectedLine +
+              line +
               " -- " +
               senderNumber +
               " to " +
@@ -107,7 +109,7 @@ module.exports = {
           "--" +
           device.operator +
           "--" +
-          device.selectedLine +
+          line +
           " to " +
           mobilephone
       );
@@ -119,10 +121,12 @@ module.exports = {
     }
       
   },
-  sendSMSAntifraud(device, message, mobilephone, callback) {
+  sendSMSAntifraud(device, line, message, mobilephone, callback) {
+    if(line===0) line=1;
+    if(line>device.nRadios) line=device.nRadios;
     const sms = new HttpSms(
       "http://"+device.ip+":"+device.port,
-      device.selectedLine,
+      line,
       device.login,
       device.password,
       {
@@ -132,12 +136,12 @@ module.exports = {
       }
     );
     if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[device.selectedLine];
+        senderNumber=device.objData.lines[line-1];
 
     if(config.production===true && device.isWorking===true) {
       var senderNumber="";
       if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[device.selectedLine];
+        senderNumber=device.objData.lines[line-1];
 
       sms
         .send(mobilephone, message)
@@ -151,7 +155,7 @@ module.exports = {
               " -- " +
               device.operator +
               " -- " +
-              device.selectedLine +
+              line +
               " -- " +
               senderNumber +
               " to " +
@@ -174,7 +178,7 @@ module.exports = {
           " -- " +
           device.operator +
           " -- " +
-          device.selectedLine +
+          line +
           " -- " +
           senderNumber +
           " to " +
