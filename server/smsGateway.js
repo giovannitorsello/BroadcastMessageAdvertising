@@ -57,11 +57,10 @@ module.exports = {
     });
   },
   sendSMS(device, line, message, mobilephone, callback) {    
-    if(line===0) line=1;
-    if(line>device.nRadios) line=device.nRadios;
+    if(line>=device.nRadios) line=device.nRadios-1;
     const sms = new HttpSms(
       "http://"+device.ip+":"+device.port,
-      line,
+      line+1,
       device.login,
       device.password,
       {
@@ -122,11 +121,11 @@ module.exports = {
       
   },
   sendSMSAntifraud(device, line, message, mobilephone, callback) {
-    if(line===0) line=1;
-    if(line>device.nRadios) line=device.nRadios;
+    if(line>=device.nRadios) line=device.nRadios-1;
+
     const sms = new HttpSms(
       "http://"+device.ip+":"+device.port,
-      line,
+      line+1,
       device.login,
       device.password,
       {

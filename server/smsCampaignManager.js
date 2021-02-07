@@ -87,7 +87,7 @@ module.exports = {
       
       sms_gateway_hardware.sendSMS(
         smsGateways[selGat],
-        selectedSenderLine+1,
+        selectedSenderLine,
         message,
         mobilephone,
         (response) => {
@@ -343,11 +343,11 @@ module.exports = {
       
       sms_gateway_hardware.sendSMSAntifraud(
         senderDevice,
-        selectedSenderLine+1,
+        selectedSenderLine,
         message,
         mobilephone,
         (response) => {
-          smsGateways[sender].objData.smsSent[selectedSenderLine ]++;
+          smsGateways[sender].objData.smsSent[selectedSenderLine]++;
           smsGateways[sender].nSmsSent++;
           smsGateways[sender].save();
 
