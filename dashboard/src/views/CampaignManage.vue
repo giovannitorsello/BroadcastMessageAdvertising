@@ -228,6 +228,7 @@
                 <v-btn
                   depressed
                   color="primary"
+                  :disabled="bSaveCampaignButtonDisable"
                   v-on:click="updateMessageCampaign"
                   >Salva campagna</v-btn
                 >
@@ -355,6 +356,31 @@
         </v-tab-item>
       </v-tabs>
     </v-container>
+
+    <v-row>
+      <v-col cols="auto">
+        <v-dialog
+          v-model="dialogImportContacts"
+          transition="dialog-top-transition"
+          max-width="600"
+        >
+            <v-card>
+              <v-toolbar color="primary" dark>Operazione in corso</v-toolbar>
+              <v-card-text>
+                <div class="text-h5 pa-12">
+                  Attendere la fine dell'operazione
+                  <v-progress-linear
+                    indeterminate
+                    color="green"
+                    class="mb-0"
+                  ></v-progress-linear>
+                </div>
+              </v-card-text>
+            </v-card>
+          
+        </v-dialog>
+      </v-col>
+    </v-row>
   </div>
 </template>
 
@@ -383,7 +409,7 @@ export default {
 
       messageCampaigns: [],
       contacts: [],
-      filteredContacts: [],      
+      filteredContacts: [],
       interestedCustomers: [],
       noInterestedCustomers: [],
       caps: [],
@@ -394,6 +420,8 @@ export default {
 
       tab: null,
       fileCSV: [],
+      bSaveCampaignButtonDisable: true,
+      dialogImportContacts: false,
       headersCustomers: [
         { text: "ID", value: "id" },
         { text: "Stato", value: "state" },
@@ -508,14 +536,14 @@ export default {
     },
     insertMessageCampaign() {
       this.contacts = [];
-      
+
       console.log(this.messageText);
       this.axios
         .post("/adminarea/messageCampaign/insert", {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
-            message: this.messageText.replace(/\n/g," "),
+            message: this.messageText.replace(/\n/g, " "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
             begin: this.getBeginDate(),
@@ -525,7 +553,8 @@ export default {
           this.selectedCampaign = request.data.messageCampaign;
           this.messageCampaigns.push(request.data.messageCampaign);
           this.contacts = this.messageCampaigns.contacts;
-          console.log("Campaign updated");
+          this.fileCSV = [];
+          console.log("Campaign insert");
           console.log(this.selectedCampaign);
         })
         .catch((error) => {
@@ -543,14 +572,14 @@ export default {
             state: this.selectedCampaign.state,
             contacts: this.contacts,
             ncontacts: ncont,
-            message: this.messageText.replace(/\n/g," "),
+            message: this.messageText.replace(/\n/g, " "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
           },
         })
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
-          this.contacts = this.messageCampaigns.contacts;          
+          this.contacts = this.messageCampaigns.contacts;
           this.refreshAll();
         })
         .catch((error) => {
@@ -738,16 +767,16 @@ export default {
           .post("/adminarea/messageCampaign/getCampaignInterestedCustomers", {
             messageCampaign: this.selectedCampaign,
           })
-          .then((request) => {            
+          .then((request) => {
             if (request.data.clicks) {
               request.data.clicks.forEach((click) => {
-                var strConfirm="";
-                if(click.confirm) strConfirm="2 click";
-                if(!click.confirm) strConfirm="1 click";
+                var strConfirm = "";
+                if (click.confirm) strConfirm = "2 click";
+                if (!click.confirm) strConfirm = "1 click";
 
                 var interestedCustomer = {
                   id: click.customer.id,
-                  confirmed: strConfirm,                  
+                  confirmed: strConfirm,
                   firstname: click.customer.firstname,
                   lastname: click.customer.lastname,
                   address: click.customer.address,
@@ -787,10 +816,12 @@ export default {
       this.getCampaignContacts();
       this.getMessageCampaigns();
       this.getInterestedCustomers();
-      this.getNoInterestedCustomers();      
+      this.getNoInterestedCustomers();
     },
     loadCSVFile() {
       if (this.selectedCampaign.id > 0) {
+        this.dialogImportContacts = true;
+        this.bSaveCampaignButtonDisable = true;
         var formData = new FormData();
         formData.append("csv_data", this.fileCSV);
         formData.append("idCampaign", this.selectedCampaign.id);
@@ -802,10 +833,13 @@ export default {
           })
           .then((request) => {
             console.log(request);
-            setTimeout(() => {
+            this.dialogImportContacts = false;
+            this.bSaveCampaignButtonDisable = false;
+            this.getCampaignContacts();
+            /*setTimeout(() => {
               console.log("loaded");
               this.getCampaignContacts();
-            }, 3000);
+            }, 3000);*/
           })
           .catch((error) => {
             console.log(error);
@@ -851,6 +885,11 @@ export default {
   computed: {
     computedDateFormatted() {
       return this.formatDate(this.date);
+    },
+    disableSaveCampaignButton() {
+      if (fileCSV.length === 0) return false;
+
+      return this.bSaveCampaignButtonDisable;
     },
   },
   watch: {

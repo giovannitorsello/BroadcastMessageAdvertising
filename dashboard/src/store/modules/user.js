@@ -5,8 +5,8 @@ import { make } from 'vuex-pathify'
 import { IN_BROWSER } from '@/util/globals'
 
 const state = {
-  account: {},
-  token: {},
+  account: [],
+  token: "",
   isLogged: false,
   dark: false,
   drawer: {
@@ -46,12 +46,14 @@ const actions = {
   },
   update: ({ state }) => {
     if (!IN_BROWSER) return
-
     localStorage.setItem('vuetify@user', JSON.stringify(state))
   },
 }
 
 const getters = {
+  account: state => {return state.user;},
+  token: state => {return state.token;},
+  isLogged: state => {return state.isLogged;},
   dark: (state, getters) => {
     return (
       state.dark ||

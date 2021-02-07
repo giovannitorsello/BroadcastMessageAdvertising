@@ -39,7 +39,7 @@ process.chdir(process.cwd());
 //enable cross origin
 app.use(cors());
 //covert body to JSON
-app.use(bodyParser.json({ limit: '4000kb' }));
+app.use(bodyParser.json({ limit: '40000kb' }));
 
 //upload folder
 var upload = multer({ dest: './uploads/' })

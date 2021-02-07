@@ -26,18 +26,7 @@ export default {
       isLogged: false,
     };
   },
-  created() {
-    /*this.$on('login', (data) => {
-      console.log("Logged in")
-      console.log(data);
-      this.isLogged = true;
-      //this.$emit();
-    });
-    this.$on('logout', (data) => {
-      console.log("Logout from Index.vue");
-      this.isLogged = false;
-    });*/
-  },
+  created() {},
 
   components: {
     Login: () =>
@@ -74,20 +63,20 @@ export default {
   mounted() {
     this.subscription = this.$store.subscribe((mutation, payload) => {
       
-      if(payload.user.isLogged) {
-        console.log("Logged in. (From Index.vue)");
-        this.isLogged=true;
+      if (mutation.type === "user/isLogged") {
+        if (payload.user.isLogged) {
+          console.log("Logged in.");
+          this.isLogged = true;
+        } else {
+          console.log("Logout.");
+          this.isLogged = false;
+        }
       }
-      else {
-        console.log("Log out. (From Index.vue)");
-        this.isLogged=false;
+
+      if (mutation.type === "vuetify@user") {
+        console.log("Mutation of user");
       }
-      
-			if (mutation.type === 'vuetify@user') {
-				console.log("Mutation of user")
-			}
-		});
-    
+    });
   },
 };
 </script>

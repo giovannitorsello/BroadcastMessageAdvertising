@@ -861,11 +861,12 @@ module.exports = {
         .findOne({ where: { username: user, password: pass } })
         .then(function (usr) {
           if (usr == null) {
+            use={id: "0", token: ""};            
             res.send({ status: "error", msg: "Login error", user: usr });
           } else {
             //Login accepted
             let token = jwt.sign({ id: usr.id }, config.authJwtSecret, {expiresIn: 86400});
-            res.send({ status: "OK", msg: "Login accepted.", auth: true, token: token, user: usr });            
+            res.send({ status: "OK", msg: "Login accepted.", user: usr, auth: true, token: token });            
           }
         });
     });

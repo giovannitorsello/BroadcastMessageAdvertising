@@ -46,14 +46,12 @@ export default {
               token: localStorage.getItem("jwt")
             },
           })
-          .then((response) => {
-            console.log("Logout.");
+          .then((response) => {            
             localStorage.setItem("user","");
             localStorage.setItem("jwt", "");
             thisComponent.$store.commit('user/account', {});
             thisComponent.$store.commit('user/token', {});
             thisComponent.$store.commit('user/isLogged', false);            
-            //thisComponent.$parent.$parent.$parent.$parent.$emit("logout", response);            
           })
           .catch((error) => {
             console.log(error);

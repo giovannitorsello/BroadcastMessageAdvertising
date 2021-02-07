@@ -17,9 +17,6 @@ const store = new Vuex.Store({
 
 store.subscribe(mutation => {
   if (!mutation.type.startsWith('user/')) return
-
-  store.dispatch('user/account', mutation)
-  store.dispatch('user/token', mutation)
   store.dispatch('user/update', mutation)
 })
 
