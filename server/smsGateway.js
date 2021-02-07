@@ -69,6 +69,8 @@ module.exports = {
         waitTime: 5000, // Time in  milliseconds
       }
     );
+    if(device.objData && device.objData.lines)
+        senderNumber=device.objData.lines[line];
 
     if(config.production===true && device.isWorking===true) {
       var senderNumber="";
@@ -135,13 +137,11 @@ module.exports = {
       }
     );
     if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[line-1];
+        senderNumber=device.objData.lines[line];
 
     if(config.production===true && device.isWorking===true) {
       var senderNumber="";
-      if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[line];
-
+      
       sms
         .send(mobilephone, message)
         .then((response) => {
