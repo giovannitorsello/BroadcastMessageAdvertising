@@ -247,30 +247,28 @@ module.exports = {
   antifraudRoutine(receiverGateway,selectedReceiverLine) {
     //Antifroud routine
     
-    var gateway = smsGateways[receiverGateway];
-    var sentSmsSIM =
-      gateway.objData.smsSent[selectedReceiverLine];
-    var receivedSmsSIM =
-      gateway.objData.smsReceived[selectedReceiverLine];
+    var receiverDevice = smsGateways[receiverGateway];
+    var sentSmsSIM = receiverDevice.objData.smsSent[selectedReceiverLine];
+    var receivedSmsSIM = receiverDevice.objData.smsReceived[selectedReceiverLine];
 
     var percentage = 100 - Math.ceil((100 * receivedSmsSIM) / sentSmsSIM);
     if (percentage > smsGateways[receiverGateway].nMaxSentPercetage) {
       var nSmsSent = 0;
-      var sendingGateway = 0;
+      var senderGateway = 0;
       smsGateways.forEach((gat, index, arrGat) => {
-        if (gat.operator != gateway.operator && gat.isWorking) {
+        if (gat.operator != receiverDevice.operator && gat.isWorking) {
           // select other gateway
           if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
             //search minimum messages
             nSmsSent = gat.nSmsSent;
-            sendingGateway = index;
+            senderGateway = index;
           }
         }
         if (
           index === arrGat.length - 1 &&
-          smsGateways[sendingGateway].isWorking
+          smsGateways[senderGateway].isWorking
         ) {
-          this.sendAntifraudMessage(sendingGateway, receiverGateway);
+          this.sendAntifraudMessage(senderGateway, receiverGateway);
         }
       });
     }
