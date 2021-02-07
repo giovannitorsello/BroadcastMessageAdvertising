@@ -24,7 +24,7 @@ module.exports = {
     this.loadSmsGateways((gateways) => {
       smsGateways = gateways;
       this.loadCampaings((campaigns) => {
-        this.smsCampaigns = campaigns;               
+        this.smsCampaigns = campaigns;
         //start campaigns execution
         setInterval(() => {
           this.startCampaignManager();
@@ -104,14 +104,16 @@ module.exports = {
                       smsGateways[selGat].selectedLine - 1
                     ]++;
                     smsGateways[selGat].save().then((gateSaved) => {
-                      
-
                       this.antifraudRoutine(selGat);
                     });
                   });
                 } else {
                   cust.state = "toContact";
                   campaign.contacts[selectedContact - 1].state = "toContact";
+                  smsGateways[selGat].nSmsSent++;
+                  smsGateways[selGat].objData.smsSent[
+                    smsGateways[selGat].selectedLine - 1
+                  ]++;
                 }
               });
           }
@@ -186,10 +188,7 @@ module.exports = {
 
     //select line with less sent sms
     while (i < smsGateways.length) {
-      if (
-        nSmsSent >=
-          smsGateways[i].nSmsSent && smsGateways[i].isWorking
-      ) {
+      if (nSmsSent >= smsGateways[i].nSmsSent && smsGateways[i].isWorking) {
         nSmsSent = smsGateways[i].nSmsSent;
         selGat = i;
       }
@@ -259,9 +258,11 @@ module.exports = {
     var sentSmsSIM =
       gateway.objData.smsSent[smsGateways[receiverGateway].selectedLine - 1];
     var receivedSmsSIM =
-      gateway.objData.smsReceived[smsGateways[receiverGateway].selectedLine - 1];
+      gateway.objData.smsReceived[
+        smsGateways[receiverGateway].selectedLine - 1
+      ];
 
-    var percentage=100-Math.ceil(100*receivedSmsSIM/sentSmsSIM);
+    var percentage = 100 - Math.ceil((100 * receivedSmsSIM) / sentSmsSIM);
     if (percentage > smsGateways[receiverGateway].nMaxSentPercetage) {
       var nSmsSent = 0;
       var sendingGateway = 0;

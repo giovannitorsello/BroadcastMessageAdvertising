@@ -21,7 +21,6 @@ module.exports = {
   entities: {
     user: User,
     customer: Customer,
-    //link: Link,
     click: Click,
     messageCampaign: MessageCampaign,
     gateway: Gateway,
@@ -36,7 +35,7 @@ module.exports = {
         setTimeout(function () {
           console.log("Init database successfull");
           callback();
-        }, 5000);
+        }, 2000);
         this.seq = sequelize;
         sequelize.options.logging = false;
       })

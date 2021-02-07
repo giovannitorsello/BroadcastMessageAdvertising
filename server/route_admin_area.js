@@ -700,7 +700,7 @@ module.exports = {
                     res.send({
                       status: "OK",
                       msg: "Customers found",
-                      customers: results,
+                      customers: results
                     });
                   });
               }
