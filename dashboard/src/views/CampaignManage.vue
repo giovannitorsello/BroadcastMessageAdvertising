@@ -357,6 +357,7 @@
       </v-tabs>
     </v-container>
 
+    <!--Dialog for upload file-->
     <v-row>
       <v-col cols="auto">
         <v-dialog
@@ -376,8 +377,7 @@
                   ></v-progress-linear>
                 </div>
               </v-card-text>
-            </v-card>
-          
+            </v-card>          
         </v-dialog>
       </v-col>
     </v-row>
@@ -536,14 +536,12 @@ export default {
     },
     insertMessageCampaign() {
       this.contacts = [];
-
-      console.log(this.messageText);
       this.axios
         .post("/adminarea/messageCampaign/insert", {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
-            message: this.messageText.replace(/\n/g, " "),
+            message: this.messageText.replace(/\n/g, " "),  //useful to remove carriage return
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
             begin: this.getBeginDate(),

@@ -142,6 +142,7 @@ module.exports = {
       sms
         .send(mobilephone, message)
         .then((response) => {
+          
           console.log(
             "Antifraud message  " +
               message +
@@ -165,7 +166,7 @@ module.exports = {
     }
     else
     {
-      console.log(
+       console.log(
         "Sending antifraud message  " +
           message +
           " -- " +
@@ -178,7 +179,7 @@ module.exports = {
           senderNumber +
           " to " +
           mobilephone
-      );
+      ); 
       callback({
         status: "send",
         msg: "temporary disabled",

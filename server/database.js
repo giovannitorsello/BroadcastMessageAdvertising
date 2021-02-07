@@ -130,6 +130,7 @@ module.exports = {
         password: { type: Sequelize.STRING, allowNull: true },
         longitude: { type: Sequelize.STRING, allowNull: true },
         latitude: { type: Sequelize.STRING, allowNull: true },
+        selectedLine: { type: Sequelize.INTEGER, defaultValue: 1 },
         nSmsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
         nSmsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },

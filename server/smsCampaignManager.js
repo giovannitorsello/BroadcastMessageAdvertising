@@ -24,18 +24,16 @@ module.exports = {
     this.loadSmsGateways((gateways) => {
       smsGateways = gateways;
       this.loadCampaings((campaigns) => {
-        this.smsCampaigns = campaigns;
-
-        var nMaxSmSPerHour = config.maxSmsPerSimPerHour * nTotRadios;
-        waitTime = 1000 * (14400 / nMaxSmSPerHour);
-        waitTime = 500;
-
-        //start campaigns execution        
+        this.smsCampaigns = campaigns;               
+        //start campaigns execution
         setInterval(() => {
           this.startCampaignManager();
-        }, waitTime);
+        }, config.waitTime);
       });
     });
+  },
+  getGateways() {
+    return smsGateways;
   },
   startCampaignManager() {
     this.smsCampaigns.forEach((campaign) => {
@@ -50,27 +48,45 @@ module.exports = {
     //Select next contact in couch database
     // Gateways selection
     var contact = this.selectCurrentContact(campaign);
-    var gateway = this.selectCurrentGateway();
+    var selecteGateway = this.selectCurrentGateway();
     var dateCampaign = Date.parse(campaign.begin);
     var now = new Date().getTime();
     //Controllo su data ed ora di inizio
     if (now > dateCampaign && campaign.state === "active") {
-      this.sendMessage(campaign, gateway, contact);
+      this.sendMessage(campaign, selecteGateway, contact);
     }
   },
-  sendMessage(campaign, gateway, contact) {
+  sendMessage(campaign, selGat, contact) {
+    if (!smsGateways[selGat]) return;
     if (!campaign) return;
     if (!contact) return;
     var database = this.database;
-    var ip = gateway.ip;
+    //var gat = JSON.parse(JSON.stringify(gateway));
     var mobilephone = contact.mobilephone;
     //console.log("try to send message to:" + contact.mobilephone);
     var message = this.formatMessage(campaign, contact);
-    if (message !== "" && contact.state === "toContact" && campaign.state === "active") {
+    if (
+      message !== "" &&
+      contact.state === "toContact" &&
+      campaign.state === "active"
+    ) {
+      //Line selection
+      var senderDevice = smsGateways[selGat];
+      var selectedSenderLine = 0,
+        nMessSent = senderDevice.objData.smsSent[0];
+      while (
+        nMessSent >= senderDevice.objData.smsSent[selectedSenderLine] &&
+        selectedSenderLine < senderDevice.objData.smsSent.length
+      ) {
+        nMessSent = senderDevice.objData.smsSent[selectedSenderLine];
+        selectedSenderLine++;
+      }
+      smsGateways[selGat].selectedLine = selectedSenderLine;
+
       sms_gateway_hardware.sendSMS(
-        gateway,
+        smsGateways[selGat],
         message,
-        contact.mobilephone,
+        mobilephone,
         (response) => {
           if (response.status) {
             database.entities.customer
@@ -83,14 +99,15 @@ module.exports = {
                   cust.state = "contacted";
                   campaign.contacts[selectedContact - 1].state = "contacted";
                   cust.save().then((custSaved) => {
-                    gateway.nSmsSent++;
-                    database.entities.gateway
-                      .findOne({ where: { id: gateway.id } })
-                      .then((gat) => {
-                        gat.nSmsSent = gateway.nSmsSent;
-                        gat.selectedLine = gateway.selectedLine;
-                        gat.save();                      
-                      });
+                    smsGateways[selGat].nSmsSent++;
+                    smsGateways[selGat].objData.smsSent[
+                      smsGateways[selGat].selectedLine - 1
+                    ]++;
+                    smsGateways[selGat].save().then((gateSaved) => {
+                      
+
+                      this.antifraudRoutine(selGat);
+                    });
                   });
                 } else {
                   cust.state = "toContact";
@@ -100,7 +117,6 @@ module.exports = {
           }
         }
       );
-      this.antifraudRoutine(gateway);  
     }
 
     //Update ncompleted campaign
@@ -113,7 +129,10 @@ module.exports = {
             //aggiornamento contattati
             campaign.ncompleted = countContacted;
             camp.ncompleted = countContacted;
-            if (camp.ncompleted === camp.ncontacts) {camp.state = "complete"; campaign.state= "complete";}
+            if (camp.ncompleted === camp.ncontacts) {
+              camp.state = "complete";
+              campaign.state = "complete";
+            }
 
             //calcolo orario di fine presunto
             var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
@@ -161,35 +180,32 @@ module.exports = {
     }
   },
   selectCurrentGateway() {
-    if (selectedGateway === smsGateways.length) selectedGateway = 0;
+    var i = 0,
+      selGat = 0,
+      nSmsSent = smsGateways[selGat].nSmsSent;
 
-    //Find the first active gateway
-    while (!smsGateways[selectedGateway].isWorking) {
-      selectedGateway++;
-      if (selectedGateway === smsGateways.length) selectedGateway = 0;
+    //select line with less sent sms
+    while (i < smsGateways.length) {
+      if (
+        nSmsSent >=
+          smsGateways[i].nSmsSent && smsGateways[i].isWorking
+      ) {
+        nSmsSent = smsGateways[i].nSmsSent;
+        selGat = i;
+      }
+      i++;
     }
-    var found_active_gateway = smsGateways[selectedGateway];
-
-    //Adjiust line in device
-    if (found_active_gateway) {
-      if (!found_active_gateway.selectedLine)
-        found_active_gateway.selectedLine = 1;
-      else 
-        found_active_gateway.selectedLine++;
-
-        if (found_active_gateway.selectedLine > found_active_gateway.nRadios)
-          found_active_gateway.selectedLine = 1;
-    }
-
-    //increment index to prepare next gateway for next message
-    selectedGateway++;
-    return found_active_gateway;
+    return selGat;
   },
   loadSmsGateways(callback) {
     var gateways = [];
     this.database.entities.gateway.findAll().then((results) => {
-      if (results.length > 0) gateways = results;
-      else {
+      if (results.length > 0) {
+        gateways = results;
+        gateways.forEach((gat) => {
+          gat.selectedLine = 0; //Line= line starts from 1 will be incremented in selectGateway function
+        });
+      } else {
         gateways = config.smsGateways;
         gateways.forEach((gat) => {
           gat.id = "";
@@ -213,7 +229,10 @@ module.exports = {
       if (camps) {
         camps.forEach((camp) => {
           this.database.entities.customer
-            .findAll({ where: { campaignId: camp.id },  order: [['state', 'DESC']] })
+            .findAll({
+              where: { campaignId: camp.id },
+              order: [["state", "DESC"]],
+            })
             .then((contacts) => {
               camp.contacts = contacts;
               camp.ncontacts = contacts.length;
@@ -230,85 +249,117 @@ module.exports = {
       this.smsCampaigns = campaigns;
     });
   },
-  antifraudRoutine(gateway) {
+  antifraudRoutine(receiverGateway) {
     //Antifroud routine
     //var nToReceive =gateway.nMaxDailyMessagePerLine * (1 - gateway.nMaxSentPercetage / 100);
-    var factor = Math.ceil(100/(100-gateway.nMaxSentPercetage)); //Math.floor(gateway.nMaxDailyMessagePerLine / nToReceive);
-    if (gateway.nSmsSent % factor === 0) {
-      //build list of other operator gateways
-      var sendingGateways = [];
+    //var factor = Math.ceil(
+    //  100 / (100 - smsGateways[receiverGateway].nMaxSentPercetage)
+    //); //Math.floor(gateway.nMaxDailyMessagePerLine / nToReceive);
+    var gateway = smsGateways[receiverGateway];
+    var sentSmsSIM =
+      gateway.objData.smsSent[smsGateways[receiverGateway].selectedLine - 1];
+    var receivedSmsSIM =
+      gateway.objData.smsReceived[smsGateways[receiverGateway].selectedLine - 1];
+
+    var percentage=100-Math.ceil(100*receivedSmsSIM/sentSmsSIM);
+    if (percentage > smsGateways[receiverGateway].nMaxSentPercetage) {
+      var nSmsSent = 0;
+      var sendingGateway = 0;
       smsGateways.forEach((gat, index, arrGat) => {
         if (gat.operator != gateway.operator && gat.isWorking) {
-          sendingGateways.push(gat);
+          // select other gateway
+          if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
+            //search minimum messages
+            nSmsSent = gat.nSmsSent;
+            sendingGateway = index;
+          }
         }
-        if ((index === arrGat.length - 1) && sendingGateways.length>0) {
-          //find gateway with less messages sent (gateway more free)
-          var nSmsSent = sendingGateways[0].nSmsSent;
-          this.sendingGateway = sendingGateways[0];          
-          sendingGateways.forEach((gatOtherOp, indexOtherOp, arrGatOtherOp) => {
-            if(!gatOtherOp.nSmsSent)
-              gatOtherOp.nSmsSent=0;
-            if (nSmsSent > gatOtherOp.nSmsSent && gatOtherOp.isWorking) {
-              nSmsSent = gatOtherOp.nSmsSent;
-              this.sendingGateway = arrGatOtherOp[indexOtherOp];
-            }
-
-            if ((indexOtherOp === arrGatOtherOp.length - 1) && (this.sendingGateway)) {
-              this.sendAntifraudMessage(this.sendingGateway,gateway);
-            }
-          });
+        if (
+          index === arrGat.length - 1 &&
+          smsGateways[sendingGateway].isWorking
+        ) {
+          this.sendAntifraudMessage(sendingGateway, receiverGateway);
         }
       });
     }
   },
   sendAntifraudMessage(sender, receiver) {
-    if (!receiver.objData) {console.log("SendAntifraudMessage - no objData in receiver"); return};
-    if (!receiver.objData.lines) {console.log("SendAntifraudMessage - no lines in receiver"); return};
-    if (!sender.objData) {console.log("SendAntifraudMessage - no lines in sender"); return};
-    if (!sender.objData.lines) {console.log("SendAntifraudMessage - no lines in sender"); return};
-    if(!sender.selectedLine) sender.selectedLine = 1;
-    var selectedSenderLine=sender.selectedLine;
-    var selectedReceiverLine=receiver.selectedLine;
-    selectedSenderLine=Math.floor(Math.random())*sender.nRadios+1;
-    
-    if (selectedSenderLine > sender.nRadios) selectedSenderLine = sender.nRadios;
-    if (selectedReceiverLine > receiver.nRadios) selectedReceiverLine=sender.nRadios;
+    if (!smsGateways[receiver].objData) {
+      console.log("SendAntifraudMessage - no objData in receiver");
+      return;
+    }
+    if (!smsGateways[receiver].objData.lines) {
+      console.log("SendAntifraudMessage - no lines in receiver");
+      return;
+    }
+    if (!smsGateways[sender].objData) {
+      console.log("SendAntifraudMessage - no lines in sender");
+      return;
+    }
+    if (!smsGateways[sender].objData.lines) {
+      console.log("SendAntifraudMessage - no lines in sender");
+      return;
+    }
+    var selectedSenderLine = 1;
+    var selectedReceiverLine = 1;
+    var senderDevice = smsGateways[sender];
+    var receiverDevice = smsGateways[receiver];
 
-    var mobilephone = receiver.objData.lines[selectedReceiverLine-1];
+    //select line with less sent sms
+    var selectedSenderLine = 0,
+      nMessSent = senderDevice.objData.smsSent[0];
+    while (
+      nMessSent >= senderDevice.objData.smsSent[selectedSenderLine] &&
+      selectedSenderLine < senderDevice.objData.smsSent.length
+    ) {
+      nMessSent = senderDevice.objData.smsSent[selectedSenderLine];
+      selectedSenderLine++;
+    }
+
+    //select line with less received sms
+    var selectedReceiverLine = 0,
+      nMessRecv = receiverDevice.objData.smsReceived[0];
+    while (
+      nMessRecv >= receiverDevice.objData.smsReceived[selectedReceiverLine] &&
+      selectedReceiverLine < receiverDevice.objData.smsReceived.length
+    ) {
+      nMessRecv = receiverDevice.objData.smsReceived[selectedReceiverLine];
+      selectedReceiverLine++;
+    }
+
+    var mobilephone =
+      smsGateways[receiver].objData.lines[selectedReceiverLine - 1];
     if (!mobilephone) return;
-    var senderDevice={
-      name: sender.name, 
-      operator: sender.operator, 
-      ip: sender.ip, 
-      port: sender.port, 
-      selectedLine: selectedSenderLine, 
-      login: sender.login, 
-      password: sender.password, 
-      objData: sender.objData,
-      isWorking: sender.isWorking
-    };
+
     var message = this.getAntigraudMessageText();
     if (message !== "") {
-      console.log("Antifraud message "+ 
-      senderDevice.operator +" -- "+ selectedSenderLine +" (sender) --> "+
-      receiver.operator +" -- "+ selectedReceiverLine + " (receiver)");
+      console.log(
+        "Antifraud message " +
+          senderDevice.operator +
+          " -- " +
+          selectedSenderLine +
+          " (sender) --> " +
+          receiverDevice.operator +
+          " -- " +
+          selectedReceiverLine +
+          " (receiver)"
+      );
 
-      sms_gateway_hardware.sendSMSAntifraud(senderDevice, message, mobilephone, (response) => {
-        this.database.entities.gateway
-          .findOne({ where: { id: sender.id } })
-          .then((gat) => {
-            gat.nSmsSent++;
-            gat.save();
-          });
+      senderDevice.selectLine = selectedSenderLine + 1;
+      sms_gateway_hardware.sendSMSAntifraud(
+        senderDevice,
+        message,
+        mobilephone,
+        (response) => {
+          smsGateways[sender].objData.smsSent[selectedSenderLine - 1]++;
+          smsGateways[sender].nSmsSent++;
+          smsGateways[sender].save();
 
-        this.database.entities.gateway
-          .findOne({ where: { id: receiver.id } })
-          .then((gat) => {
-            gat.nSmsReceived++;
-            gat.save();
-          });
-        
-      });
+          smsGateways[receiver].objData.smsReceived[selectedReceiverLine - 1]++;
+          smsGateways[receiver].nSmsReceived++;
+          smsGateways[receiver].save();
+        }
+      );
     }
   },
   getAntigraudMessageText() {
