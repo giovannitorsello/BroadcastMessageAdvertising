@@ -100,7 +100,7 @@ module.exports = {
                     smsGateways[selGat].nSmsSent++;
                     smsGateways[selGat].objData.smsSent[selectedSenderLine]++;
                     smsGateways[selGat].save().then((gateSaved) => {
-                      this.antifraudRoutine(selGat,selectedSenderLine);
+                      this.antifraudRoutine(selGat,selectedSenderLine, respose => {console.log("Antifraud execute.")});
                     });
                   });
                 } else {
@@ -239,9 +239,8 @@ module.exports = {
       this.smsCampaigns = campaigns;
     });
   },
-  antifraudRoutine(receiverGateway,selectedReceiverLine) {
+  antifraudRoutine(receiverGateway,selectedReceiverLine,callback) {
     //Antifroud routine
-    
     var receiverDevice = smsGateways[receiverGateway];
     var sentSmsSIM = receiverDevice.objData.smsSent[selectedReceiverLine];
     var receivedSmsSIM = receiverDevice.objData.smsReceived[selectedReceiverLine];
@@ -263,12 +262,14 @@ module.exports = {
           index === arrGat.length - 1 &&
           smsGateways[senderGateway].isWorking
         ) {
-          this.sendAntifraudMessage(senderGateway, receiverGateway);
+          this.sendAntifraudMessage(senderGateway, receiverGateway, response => {callback(response);});
         }
       });
     }
+    else
+      callback({});
   },
-  sendAntifraudMessage(sender, receiver) {
+  sendAntifraudMessage(sender, receiver,callback) {
     if (!smsGateways[receiver].objData) {
       console.log("SendAntifraudMessage - no objData in receiver");
       return;
@@ -349,6 +350,8 @@ module.exports = {
           smsGateways[receiver].objData.smsReceived[selectedReceiverLine]++;
           smsGateways[receiver].nSmsReceived++;
           smsGateways[receiver].save();
+
+          callback(response);
         }
       );
     }
