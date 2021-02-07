@@ -109,6 +109,7 @@ module.exports = {
                   });
                 } else {
                   cust.state = "toContact";
+                  
                   campaign.contacts[selectedContact - 1].state = "toContact";
                   smsGateways[selGat].nSmsSent++;
                   smsGateways[selGat].objData.smsSent[
