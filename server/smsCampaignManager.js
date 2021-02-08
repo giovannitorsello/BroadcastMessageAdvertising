@@ -22,9 +22,9 @@ module.exports = {
         this.smsCampaigns = campaigns;
         //start campaigns execution
         setInterval(() => {
-          setImmediate(() =>{
-            this.startCampaignManager();
-          })          
+          setImmediate(() => {
+            return Promise.all([this.startCampaignManager()]);
+          });
         }, config.waitTime);
       });
     });
@@ -32,30 +32,36 @@ module.exports = {
   getGateways() {
     return smsGateways;
   },
-  startCampaignManager(callback) {
-    this.smsCampaigns.forEach((campaign) => {
-      //controllo campagna attiva
-      if (campaign.state === "active") {
-        //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare        
-        this.sendNextMessage(campaign, response =>{
-          console.log("Message sent");
-        });
-      }
+  startCampaignManager() {
+    return new Promise((resolve, reject) => {
+      this.smsCampaigns.forEach((campaign, index, arrCamp) => {
+        //controllo campagna attiva
+        if (campaign.state === "active") {
+          //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
+          this.sendNextMessage(campaign, (response) => {
+            console.log("Message sent");
+          });
+        }
+        if(index===arrCamp.length-1)
+          resolve();
+      });
     });
   },
-  sendNextMessage(campaign, callback) {    
-      //Select next contact in couch database
-      // Gateways selection
-      var dateCampaign = Date.parse(campaign.begin);
-      var now = new Date().getTime();
-      //Controllo su data ed ora di inizio
-      if (now > dateCampaign && campaign.state === "active") {
-        var contact = this.selectCurrentContact(campaign);
-        var selecteGateway = this.selectCurrentGateway();
-        this.sendMessage(campaign, selecteGateway, contact, response => { callback(response)});
-      }
+  sendNextMessage(campaign, callback) {
+    //Select next contact in couch database
+    // Gateways selection
+    var dateCampaign = Date.parse(campaign.begin);
+    var now = new Date().getTime();
+    //Controllo su data ed ora di inizio
+    if (now > dateCampaign && campaign.state === "active") {
+      var contact = this.selectCurrentContact(campaign);
+      var selecteGateway = this.selectCurrentGateway();
+      this.sendMessage(campaign, selecteGateway, contact, (response) => {
+        callback(response);
+      });
+    }
   },
-  sendMessage(campaign, selGat, contact,callback) {
+  sendMessage(campaign, selGat, contact, callback) {
     if (!smsGateways[selGat]) return;
     if (!campaign) return;
     if (!contact) return;
