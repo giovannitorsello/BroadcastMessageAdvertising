@@ -42,8 +42,7 @@ module.exports = {
             console.log("Message sent");
           });
         }
-        if(index===arrCamp.length-1)
-          resolve();
+        if (index === arrCamp.length - 1) resolve();
       });
     });
   },
@@ -106,7 +105,7 @@ module.exports = {
                   response.status === "sending"
                 ) {
                   cust.state = "contacted";
-                  campaign.contacts[selectedContact - 1].state = "contacted";
+                  contact.state = "contacted";
                   cust.save().then((custSaved) => {
                     smsGateways[selGat].nSmsSent++;
                     smsGateways[selGat].objData.smsSent[selectedSenderLine]++;
@@ -116,7 +115,37 @@ module.exports = {
                         selectedSenderLine,
                         (respose) => {
                           console.log("Antifraud execute.");
-                          callback(response);
+                          //Update ncompleted campaign
+                          database.entities.customer
+                            .count({
+                              where: {
+                                campaignId: campaign.id,
+                                state: "contacted",
+                              },
+                            })
+                            .then((countContacted) => {
+                              database.entities.messageCampaign
+                                .findOne({ where: { id: campaign.id } })
+                                .then((camp) => {
+                                  //aggiornamento contattati
+                                  campaign.ncompleted = countContacted;
+                                  camp.ncompleted = countContacted;
+                                  if (camp.ncompleted === camp.ncontacts) {
+                                    camp.state = "complete";
+                                    campaign.state = "complete";
+                                  }
+
+                                  //calcolo orario di fine presunto
+                                  var nMillis =
+                                    (camp.ncontacts - camp.ncompleted) *
+                                    waitTime;
+                                  var now = new Date().getTime();
+                                  var endTime = new Date(now + nMillis);
+                                  camp.end = endTime;
+                                  camp.save();
+                                  callback(response);
+                                });
+                            });                          
                         }
                       );
                     });
@@ -129,31 +158,6 @@ module.exports = {
         }
       );
     }
-
-    //Update ncompleted campaign
-    database.entities.customer
-      .count({ where: { campaignId: campaign.id, state: "contacted" } })
-      .then((countContacted) => {
-        database.entities.messageCampaign
-          .findOne({ where: { id: campaign.id } })
-          .then((camp) => {
-            //aggiornamento contattati
-            campaign.ncompleted = countContacted;
-            camp.ncompleted = countContacted;
-            if (camp.ncompleted === camp.ncontacts) {
-              camp.state = "complete";
-              campaign.state = "complete";
-            }
-
-            //calcolo orario di fine presunto
-            var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
-            var now = new Date().getTime();
-            var endTime = new Date(now + nMillis);
-            camp.end = endTime;
-
-            camp.save();
-          });
-      });
   },
   formatMessage(campaign, contact) {
     if (
