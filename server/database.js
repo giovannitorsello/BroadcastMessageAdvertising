@@ -105,7 +105,7 @@ module.exports = {
         modelName: "messagecampaign",
       }
     );
-    
+
     Click.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
@@ -181,27 +181,37 @@ module.exports = {
     this.entities.customer
       .findAll({ where: { campaignId: campaign.id } })
       .then((custs) => {
-        if (custs) {
-          contacts = custs;
-          this.entities.click
-            .findAll({
-              where: { campaignId: campaign.id },
-              include: [this.entities.customer],
-            })
-            .then((cs) => {
-              if (cs) {
-                clicks = cs;
-                pkgData = {
-                  campaign: campaign,
-                  contacts: contacts,
-                  clicks: clicks,
-                };
-                utility.createCampaignPackage(pkgData, (data) => {
-                  callback(data);
+        this.entities.customer
+          .findAll({
+            where: database.sequelize.literal(
+              "customer.campaignId=" + campaign.id + " AND clicks.id IS null"
+            ),
+            include: [database.entities.click],
+          })
+          .then((notInterestedContacts) => {
+            if (notInterestedContacts) {
+              contacts = custs;
+              this.entities.click
+                .findAll({
+                  where: { campaignId: campaign.id },
+                  include: [this.entities.customer],
+                })
+                .then((cs) => {
+                  if (cs) {
+                    clicks = cs;
+                    pkgData = {
+                      campaign: campaign,
+                      contacts: contacts,
+                      clicks: clicks,
+                      notInterestedContacts: notInterestedContacts
+                    };
+                    utility.createCampaignPackage(pkgData, (data) => {
+                      callback(data);
+                    });
+                  }
                 });
-              }
-            });
-        }
+            }
+          });
       });
   },
 };

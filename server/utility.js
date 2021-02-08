@@ -84,6 +84,8 @@ module.exports = {
     const fileContacts =
       process.cwd() + config.paths.cacheFolder + "/contacts.csv";
     const fileClicks = process.cwd() + config.paths.cacheFolder + "/clicks.csv";
+    const fileNotIntersted =
+      process.cwd() + config.paths.cacheFolder + "/clicks.csv";
 
     //create csv files, zip and callback
     const createCsvWriter = csvWriter.createObjectCsvWriter;
@@ -112,10 +114,10 @@ module.exports = {
         { id: "mobilephone", title: "Telefono" },
         { id: "address", title: "Indirizzo" },
         { id: "postcode", title: "Cap" },
-        { id: "adm1", title: "Citta" },
-        { id: "adm2", title: "Provincia" },
-        { id: "adm3", title: "Regione" },
-        { id: "country", title: "Stato" },
+        { id: "city", title: "Citta" },
+        { id: "adm1", title: "Provincia" },
+        { id: "adm2", title: "Regione" },
+        { id: "adm3", title: "Stato" },
       ],
     });
     const csvWriterClicks = createCsvWriter({
@@ -129,10 +131,27 @@ module.exports = {
         { id: "mobilephone", title: "Telfono" },
         { id: "address", title: "Indirizzo" },
         { id: "postcode", title: "Cap" },
-        { id: "adm1", title: "Citta" },
-        { id: "adm2", title: "Provincia" },
-        { id: "adm3", title: "Regione" },
-        { id: "country", title: "Stato" },
+        { id: "city", title: "Citta" },
+        { id: "adm1", title: "Provincia" },
+        { id: "adm2", title: "Regione" },
+        { id: "adm3", title: "Stato" },
+      ],
+    });
+    const csvWriterNonInterested = createCsvWriter({
+      fieldDelimiter: config.csvSeparator,
+      path: fileNotIntersted,
+      header: [
+        { id: "id", title: "Id" },
+        { id: "state", title: "Contattato?" },
+        { id: "firstname", title: "Nome" },
+        { id: "lastname", title: "Cognome" },
+        { id: "mobilephone", title: "Telefono" },
+        { id: "address", title: "Indirizzo" },
+        { id: "postcode", title: "Cap" },
+        { id: "city", title: "Citta" },
+        { id: "adm1", title: "Provincia" },
+        { id: "adm2", title: "Regione" },
+        { id: "adm3", title: "Stato" },
       ],
     });
 
@@ -149,6 +168,7 @@ module.exports = {
         mobilephone: click.customer.mobilephone,
         address: click.customer.address,
         postcode: click.customer.postcode,
+        city: click.customer.city,
         adm1: click.customer.adm1,
         adm2: click.customer.adm2,
         adm3: click.customer.adm3,
@@ -158,23 +178,34 @@ module.exports = {
       if (index === pkgData.clicks.length - 1)
         csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
           csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-            csvWriterClicks.writeRecords(clickData).then(() => {
-              //zip all files
-              // creating archives
-              var zip = new admZip();
+            csvWriterNonInterested
+              .writeRecords(pkgData.notInterestedContacts)
+              .then(() => {
+                csvWriterClicks.writeRecords(clickData).then(() => {
+                  //zip all files
+                  // creating archives
+                  var zip = new admZip();
 
-              // add file directly
-              zip.addLocalFile(fileCampaign);
-              zip.addLocalFile(fileContacts);
-              zip.addLocalFile(fileClicks);
-
-              filenameZip =
-                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-              zip.writeZip(
-                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
-              );
-              callback({ fileArchive: filenameZip });
-            });
+                  // add file directly
+                  zip.addLocalFile(fileCampaign);
+                  zip.addLocalFile(fileContacts);
+                  zip.addLocalFile(fileClicks);
+                  zip.addLocalFile(fileNotIntersted);
+                  
+                  filenameZip =
+                    pkgData.campaign.name +
+                    "__" +
+                    pkgData.campaign.end +
+                    ".zip";
+                  zip.writeZip(
+                    process.cwd() +
+                      config.paths.downloadFolder +
+                      "/" +
+                      filenameZip
+                  );
+                  callback({ fileArchive: filenameZip });
+                });
+              });
           });
         });
     });
@@ -182,20 +213,24 @@ module.exports = {
     if (pkgData.clicks.length === 0) {
       csvWriterCampaign.writeRecords([pkgData.campaign]).then(() => {
         csvWriterContacts.writeRecords(pkgData.contacts).then(() => {
-          //zip all files
-          // creating archives
-          var zip = new admZip();
+          csvWriterNonInterested
+            .writeRecords(pkgData.notInterestedContacts)
+            .then(() => {
+              //zip all files
+              // creating archives
+              var zip = new admZip();
 
-          // add file directly
-          zip.addLocalFile(fileCampaign);
-          zip.addLocalFile(fileContacts);
-
-          filenameZip =
-            pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
-          zip.writeZip(
-            process.cwd() + config.paths.downloadFolder + "/" + filenameZip
-          );
-          callback({ fileArchive: filenameZip });
+              // add file directly
+              zip.addLocalFile(fileCampaign);
+              zip.addLocalFile(fileContacts);
+              zip.addLocalFile(fileNotIntersted);
+              filenameZip =
+                pkgData.campaign.name + "__" + pkgData.campaign.end + ".zip";
+              zip.writeZip(
+                process.cwd() + config.paths.downloadFolder + "/" + filenameZip
+              );
+              callback({ fileArchive: filenameZip });
+            });
         });
       });
     }

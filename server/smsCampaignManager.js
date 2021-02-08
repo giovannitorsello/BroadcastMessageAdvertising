@@ -60,14 +60,11 @@ module.exports = {
       });
     }
   },
-  sendMessage(campaign, selGat, contact, callback) {
-    if (!smsGateways[selGat]) return;
+  sendMessage(campaign, iDevice, contact, callback) {
+    if (!smsGateways[iDevice]) return;
     if (!campaign) return;
     if (!contact) return;
-    var database = this.database;
-    //var gat = JSON.parse(JSON.stringify(gateway));
     var mobilephone = contact.mobilephone;
-    //console.log("try to send message to:" + contact.mobilephone);
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
@@ -75,85 +72,28 @@ module.exports = {
       campaign.state === "active"
     ) {
       //Line selection
-      var senderDevice = smsGateways[selGat];
-      var i = 0;
-      selectedSenderLine = 0;
-      var nMessSent = senderDevice.objData.smsSent[0];
-
-      while (i < senderDevice.objData.smsSent.length) {
-        if (senderDevice.objData.isWorking[i]) {
-          if (nMessSent >= senderDevice.objData.smsSent[i]) {
-            nMessSent = senderDevice.objData.smsSent[i];
-            selectedSenderLine = i;
-          }
-        }
-        i++;
-      }
+      var senderDevice = smsGateways[iDevice];
+      var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
 
       sms_gateway_hardware.sendSMS(
-        smsGateways[selGat],
+        senderDevice,
         selectedSenderLine,
         message,
         mobilephone,
         (response) => {
-          if (response.status) {
-            database.entities.customer
-              .findOne({ where: { id: contact.id } })
-              .then((cust) => {
-                if (
-                  response.status === "send" ||
-                  response.status === "sending"
-                ) {
-                  cust.state = "contacted";
-                  contact.state = "contacted";
-                  cust.save().then((custSaved) => {
-                    smsGateways[selGat].nSmsSent++;
-                    smsGateways[selGat].objData.smsSent[selectedSenderLine]++;
-                    smsGateways[selGat].save().then((gateSaved) => {
-                      this.antifraudRoutine(
-                        selGat,
-                        selectedSenderLine,
-                        (respose) => {
-                          console.log("Antifraud execute.");
-                          //Update ncompleted campaign
-                          database.entities.customer
-                            .count({
-                              where: {
-                                campaignId: campaign.id,
-                                state: "contacted",
-                              },
-                            })
-                            .then((countContacted) => {
-                              database.entities.messageCampaign
-                                .findOne({ where: { id: campaign.id } })
-                                .then((camp) => {
-                                  //aggiornamento contattati
-                                  campaign.ncompleted = countContacted;
-                                  camp.ncompleted = countContacted;
-                                  if (camp.ncompleted === camp.ncontacts) {
-                                    camp.state = "complete";
-                                    campaign.state = "complete";
-                                  }
-
-                                  //calcolo orario di fine presunto
-                                  var nMillis =
-                                    (camp.ncontacts - camp.ncompleted) *
-                                    waitTime;
-                                  var now = new Date().getTime();
-                                  var endTime = new Date(now + nMillis);
-                                  camp.end = endTime;
-                                  camp.save();
-                                  callback(response);
-                                });
-                            });                          
-                        }
-                      );
-                    });
-                  });
-                } else {
-                  cust.state = "toContact";
-                }
-              });
+          if (
+            response.status &&
+            (response.status === "send" || response.status === "sending")
+          ) {
+            contact.state = "contacted";
+            contact.save();
+            smsGateways[iDevice].nSmsSent++;
+            smsGateways[iDevice].objData.smsSent[selectedSenderLine]++;
+            smsGateways[iDevice].save();
+            this.antifraudRoutine(iDevice, selectedSenderLine, (respose) => {
+              console.log("Antifraud execute.");
+              this.updateCampaignData(campaign, response => callback(response));
+            });
           }
         }
       );
@@ -195,8 +135,8 @@ module.exports = {
     }
   },
   selectCurrentGateway() {
-    var i = 0,
-      selGat = 0;
+    var i = 0;
+    var selGat = 0;
     var nSmsSent = smsGateways[selGat].nSmsSent;
 
     //select line with less sent sms
@@ -262,125 +202,59 @@ module.exports = {
     });
   },
   antifraudRoutine(receiverGateway, selectedReceiverLine, callback) {
-    //Antifroud routine
-    var receiverDevice = smsGateways[receiverGateway];
-    var sentSmsSIM = receiverDevice.objData.smsSent[selectedReceiverLine];
-    var receivedSmsSIM =
-      receiverDevice.objData.smsReceived[selectedReceiverLine];
-
-    var percentage = 100 - Math.ceil((100 * receivedSmsSIM) / sentSmsSIM);
-    if (percentage > smsGateways[receiverGateway].nMaxSentPercetage) {
-      var nSmsSent = 0;
-      var senderGateway = 0;
-      smsGateways.forEach((gat, index, arrGat) => {
-        if (gat.operator != receiverDevice.operator && gat.isWorking) {
-          // select other gateway
-          if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
-            //search minimum messages
-            nSmsSent = gat.nSmsSent;
-            senderGateway = index;
-          }
-        }
-        if (
-          index === arrGat.length - 1 &&
-          smsGateways[senderGateway].isWorking
-        ) {
-          this.sendAntifraudMessage(
-            senderGateway,
-            receiverGateway,
-            (response) => {
-              callback(response);
-            }
-          );
-        }
-      });
-    } else callback({});
-  },
-  sendAntifraudMessage(sender, receiver, callback) {
-    if (!smsGateways[receiver].objData) {
-      console.log("SendAntifraudMessage - no objData in receiver");
-      return;
-    }
-    if (!smsGateways[receiver].objData.lines) {
-      console.log("SendAntifraudMessage - no lines in receiver");
-      return;
-    }
-    if (!smsGateways[sender].objData) {
-      console.log("SendAntifraudMessage - no lines in sender");
-      return;
-    }
-    if (!smsGateways[sender].objData.lines) {
-      console.log("SendAntifraudMessage - no lines in sender");
-      return;
-    }
-    var selectedSenderLine = 1;
-    var selectedReceiverLine = 1;
-    var senderDevice = smsGateways[sender];
-    var receiverDevice = smsGateways[receiver];
-
-    //select line with less sent sms
-    var selectedSenderLine = 0,
-      i = 0;
-    var nMessSent = senderDevice.objData.smsSent[0];
-    while (i < senderDevice.objData.smsSent.length) {
-      if (senderDevice.objData.isWorking[i]) {
-        if (nMessSent >= senderDevice.objData.smsSent[i]) {
-          nMessSent = senderDevice.objData.smsSent[i];
-          selectedSenderLine = i;
-        }
-      }
-      i++;
-    }
-
-    //select line with less received sms
-    var selectedReceiverLine = 0,
-      i = 0;
-    var nMessRecv = receiverDevice.objData.smsReceived[0];
-    while (i < receiverDevice.objData.smsReceived.length) {
-      if (receiverDevice.objData.isWorking[i]) {
-        if (nMessRecv >= receiverDevice.objData.smsReceived[i]) {
-          nMessRecv = receiverDevice.objData.smsReceived[i];
-          selectedReceiverLine = i;
-        }
-      }
-      i++;
-    }
-
-    var mobilephone = smsGateways[receiver].objData.lines[selectedReceiverLine];
-    if (!mobilephone) return;
-
-    var message = this.getAntigraudMessageText();
-    if (message !== "") {
-      console.log(
-        "Antifraud message " +
-          senderDevice.operator +
-          " -- " +
-          selectedSenderLine +
-          " (sender) --> " +
-          receiverDevice.operator +
-          " -- " +
-          selectedReceiverLine +
-          " (receiver)"
-      );
-
-      sms_gateway_hardware.sendSMSAntifraud(
-        senderDevice,
-        selectedSenderLine,
-        message,
-        mobilephone,
+    if (this.isOutOfAntifroudBalance(receiverGateway, selectedReceiverLine)) {
+      var senderGateway = this.getSenderForAntifraudBalance(receiverGateway);
+      this.sendAntifraudMessage(
+        receiverGateway,
+        selectedReceiverLine,
+        senderGateway,
         (response) => {
-          smsGateways[sender].objData.smsSent[selectedSenderLine]++;
-          smsGateways[sender].nSmsSent++;
-          smsGateways[sender].save();
-
-          smsGateways[receiver].objData.smsReceived[selectedReceiverLine]++;
-          smsGateways[receiver].nSmsReceived++;
-          smsGateways[receiver].save();
-
           callback(response);
         }
       );
-    }
+    } else callback({});
+  },
+  sendAntifraudMessage(
+    receiverGateway,
+    selectedReceiverLine,
+    senderGateway,
+    callback
+  ) {
+    var selectedSenderLine = this.getDeviceLineWithLessSent(senderGateway);
+    var senderDevice = smsGateways[senderGateway];
+    var receiverDevice = smsGateways[receiverGateway];
+    var mobilephone = receiverDevice.objData.lines[selectedReceiverLine];
+    var message = this.getAntigraudMessageText();
+
+    console.log(
+      "Antifraud message " +
+        senderDevice.operator +
+        " -- " +
+        selectedSenderLine +
+        " (sender) --> " +
+        receiverDevice.operator +
+        " -- " +
+        selectedReceiverLine +
+        " (receiver)"
+    );
+
+    sms_gateway_hardware.sendSMSAntifraud(
+      senderDevice,
+      selectedSenderLine,
+      message,
+      mobilephone,
+      (response) => {
+        senderDevice.objData.smsSent[selectedSenderLine]++;
+        senderDevice.nSmsSent++;
+        senderDevice.save();
+
+        receiverDevice.objData.smsReceived[selectedReceiverLine]++;
+        receiverDevice.nSmsReceived++;
+        receiverDevice.save();
+
+        callback(response);
+      }
+    );
   },
   getAntigraudMessageText() {
     var antifraudMessageTexts = config.antifraudMessageTexts;
@@ -388,5 +262,94 @@ module.exports = {
       Math.random() * (config.antifraudMessageTexts.length - 1)
     );
     return antifraudMessageTexts[nRand];
+  },
+  getDeviceLineWithLessSent(iDevice) {
+    var device = smsGateways[iDevice];
+    var selectedLine = 0,
+      i = 0;
+    var nMessSent = device.objData.smsSent[0];
+    while (i < device.objData.smsSent.length) {
+      if (device.objData.isWorking[i]) {
+        if (nMessSent >= device.objData.smsSent[i]) {
+          nMessSent = device.objData.smsSent[i];
+          selectedLine = i;
+        }
+      }
+      i++;
+    }
+    return selectedLine;
+  },
+  getDeviceLineWithLessReceived(iDevice) {
+    var device = smsGateways[iDevice];
+    var selectedLine = 0,
+      i = 0;
+    var nMessReceived = device.objData.smsReceived[0];
+    while (i < device.objData.smsReceived.length) {
+      if (device.objData.isWorking[i]) {
+        if (nMessReceived >= device.objData.smsReceived[i]) {
+          nMessReceived = device.objData.smsReceived[i];
+          selectedLine = i;
+        }
+      }
+      i++;
+    }
+    return selectedLine;
+  },
+  isOutOfAntifroudBalance(iDevice, iLine) {
+    var device = smsGateways[iDevice];
+    var sentSms = device.objData.smsSent[iLine];
+    var receivedSms = device.objData.smsReceived[iLine];
+    var percentage = 100 - Math.ceil((100 * receivedSms) / sentSms);
+    if (percentage > device.nMaxSentPercetage) return true;
+    else return false;
+  },
+  getSenderForAntifraudBalance(iDevice) {
+    var receiverDevice = smsGateways[iDevice];
+    var nSmsSent = 0,
+      senderGateway = 0;
+    smsGateways.forEach((gat, index, arrGat) => {
+      if (gat.operator != receiverDevice.operator && gat.isWorking) {
+        // select other gateway
+        if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
+          //search minimum messages
+          nSmsSent = gat.nSmsSent;
+          senderGateway = index;
+        }
+      }
+      if (index === arrGat.length - 1 && smsGateways[senderGateway].isWorking) {
+        return senderGateway;
+      }
+    });
+    return senderGateway;
+  },
+  updateCampaignData(campaign, callback) {
+    this.database.entities.customer
+      .count({
+        where: {
+          campaignId: campaign.id,
+          state: "contacted",
+        },
+      })
+      .then((countContacted) => {
+        this.database.entities.messageCampaign
+          .findOne({ where: { id: campaign.id } })
+          .then((camp) => {
+            //aggiornamento contattati
+            campaign.ncompleted = countContacted;
+            camp.ncompleted = countContacted;
+            if (camp.ncompleted === camp.ncontacts) {
+              camp.state = "complete";
+              campaign.state = "complete";
+            }
+
+            //calcolo orario di fine presunto
+            var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
+            var now = new Date().getTime();
+            var endTime = new Date(now + nMillis);
+            camp.end = endTime;
+            camp.save();
+            callback({});
+          });
+      });
   },
 };
