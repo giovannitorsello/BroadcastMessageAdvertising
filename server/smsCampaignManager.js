@@ -22,7 +22,9 @@ module.exports = {
         this.smsCampaigns = campaigns;
         //start campaigns execution
         setInterval(() => {
-          this.startCampaignManager();
+          setImmediate(() =>{
+            this.startCampaignManager();
+          })          
         }, config.waitTime);
       });
     });
