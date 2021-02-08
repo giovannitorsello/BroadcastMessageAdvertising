@@ -9,6 +9,7 @@ const uuid = require("uuid");
 var moment = require("moment");
 const couchdb = require("./couchdb.js");
 const database = require("./database.js");
+const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 
 module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
@@ -235,4 +236,15 @@ module.exports = {
       });
     }
   },
+  runService(scriptFilename, configData) {
+    return new Promise((resolve, reject) => {
+      const worker = new Worker(scriptFilename, {workerData: configData});
+      worker.on('message', resolve);
+      worker.on('error', reject);
+      worker.on('exit', (code) => {
+        if (code !== 0)
+          reject(new Error(`Worker stopped with exit code ${code}`));
+      })
+    })
+  }
 };

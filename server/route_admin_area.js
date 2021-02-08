@@ -14,15 +14,12 @@ const jwt = require('jsonwebtoken');
 
 const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
-var smsCampaignManager = require("./smsCampaignManager.js");
-var clickServer = require("./clickServer.js");
 
 module.exports = {
-  load_routes(app, database) {
-    shortner.load(app, database);
-    pingServer.startServer(app, database);
-    clickServer.setup(app, database);
-    smsCampaignManager.setup(app,database);
+  
+  load_routes(app, database, smsCampaignServerWorker, clickServerWorker) {
+    var app=app;
+    //pingServer.startServer(app, database);
 
     /////////////////////GENERAL UTILITIES //////////////////////
     app.post("/adminarea/find_obj_by_field", function (req, res) {
@@ -711,8 +708,11 @@ module.exports = {
     });
 
     ///////////////////// Gateways ////////////////////////
-    app.post("/adminarea/gateway/getall", function (req, res) {
-      res.send({ status: "OK", msg: "Gateways found", gateways: smsCampaignManager.getGateways() });
+    app.post("/adminarea/gateway/getAll", function (req, res) {
+      smsCampaignServerWorker.postMessage("/gateways/getAll");
+      smsCampaignServerWorker.once('message', results => {        
+        res.send({ status: "OK", msg: "Gateways found", gateways: results });
+      })      
     });
 
     ///////////////////// User ///////////////////////////////

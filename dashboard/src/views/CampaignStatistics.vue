@@ -65,7 +65,7 @@ export default {
   methods: {
     getGateways() {
       this.axios
-        .post("/adminarea/gateway/getall")
+        .post("/adminarea/gateway/getAll")
         .then((request) => {
           console.log(request.data.gateways);
           if (request.data.gateways) {

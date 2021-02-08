@@ -1,5 +1,6 @@
 const config = require("./config.js").load();
-const { fork } = require("child_process");
+var database = require("./database.js");
+const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 const sms_gateway_hardware = require("./smsGateway.js");
 
 var smsGateways = [];
@@ -9,21 +10,19 @@ var selectedGateway = 0;
 var selectedContact = 0;
 var waitTime = 5000;
 
-module.exports = {
-  app: {},
+campaignServer = {  
   database: {},
 
-  setup(app, db) {
-    this.app = app;
+  setup(db) {    
     this.database = db;
     this.loadSmsGateways((gateways) => {
-      smsGateways = gateways;
+      smsGateways = gateways;      
       this.loadCampaings((campaigns) => {
         this.smsCampaigns = campaigns;
         //start campaigns execution
         setInterval(() => {
           setImmediate(() => {
-            return Promise.all([this.startCampaignManager()]);
+            this.startCampaignManager();
           });
         }, config.waitTime);
       });
@@ -33,17 +32,14 @@ module.exports = {
     return smsGateways;
   },
   startCampaignManager() {
-    return new Promise((resolve, reject) => {
-      this.smsCampaigns.forEach((campaign, index, arrCamp) => {
-        //controllo campagna attiva
-        if (campaign.state === "active") {
-          //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
-          this.sendNextMessage(campaign, (response) => {
-            console.log("Message sent");
-          });
-        }
-        if (index === arrCamp.length - 1) resolve();
-      });
+    this.smsCampaigns.forEach((campaign, index, arrCamp) => {
+      //controllo campagna attiva
+      if (campaign.state === "active") {
+        //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
+        this.sendNextMessage(campaign, (response) => {
+          console.log("Message sent");
+        });
+      }      
     });
   },
   sendNextMessage(campaign, callback) {
@@ -92,7 +88,9 @@ module.exports = {
             smsGateways[iDevice].save();
             this.antifraudRoutine(iDevice, selectedSenderLine, (respose) => {
               console.log("Antifraud execute.");
-              this.updateCampaignData(campaign, response => callback(response));
+              this.updateCampaignData(campaign, (response) =>
+                callback(response)
+              );
             });
           }
         }
@@ -153,10 +151,7 @@ module.exports = {
     var gateways = [];
     this.database.entities.gateway.findAll().then((results) => {
       if (results.length > 0) {
-        gateways = results;
-        gateways.forEach((gat) => {
-          gat.selectedLine = 0; //Line= line starts from 1 will be incremented in selectGateway function
-        });
+        gateways = results;        
       } else {
         gateways = config.smsGateways;
         gateways.forEach((gat) => {
@@ -353,3 +348,16 @@ module.exports = {
       });
   },
 };
+
+if (!isMainThread) {
+  database.setup(this, () => {
+    campaignServer.setup(database);
+  });
+
+  parentPort.on("message", message => {
+    if(message=="/campaigns/getAll") parentPort.postMessage(this.smsCampaigns);
+    else if(message=="/gateways/getAll") parentPort.postMessage(JSON.parse(JSON.stringify(smsGateways)));
+    else if(message=="/process/exit") {parentPort.postMessage("sold!");parentPort.close();}
+  });
+
+}

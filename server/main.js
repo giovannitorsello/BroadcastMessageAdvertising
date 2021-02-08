@@ -5,6 +5,7 @@ const https = require("https");
 const http = require("http");
 var session = require("express-session");
 const { Sequelize, Model, DataTypes } = require("sequelize");
+const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 
 var express = require("express");
 var multer = require("multer");
@@ -16,6 +17,7 @@ var database = require("./database.js");
 
 //file per route sezioni
 var routes_admin_area = require("./route_admin_area.js");
+const utility = require("./utility.js");
 //var routes_cust_area = require("./route_customer_area.js");
 
 var pingServerProcess = null;
@@ -62,8 +64,25 @@ const options = {
 
 app.listen(config.server.http_port);
 
-//Init componets and utilities.
+var clickServerWorker={};
+async function runClickServer() {
+  clickServerWorker = await utility.runService("./server/clickServer.js", {});
+  console.log(clickServerWorker);
+}
+
+var smsCampaignServerWorker={};
+async function runSmsCampaignServer() {
+  smsCampaignServerWorker = await utility.runService("./server/smsCampaignServer.js", {});
+  console.log(smsCampaignServerWorker);
+}
+
+//Init components and utilities.
 database.setup(app, function () {
+  //start click server
+  //runClickServer().catch(err => console.error(err))
+  //runSmsCampaignServer().catch(err => console.error(err))
+  clickServerWorker=new Worker("./server/clickServer.js");
+  smsCampaignServerWorker=new Worker("./server/smsCampaignServer.js");
   //Loading route for customer area
-  routes_admin_area.load_routes(app, database);
+  routes_admin_area.load_routes(app, database, smsCampaignServerWorker, clickServerWorker);
 });
