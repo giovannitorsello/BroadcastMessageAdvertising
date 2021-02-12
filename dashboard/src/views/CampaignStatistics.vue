@@ -60,7 +60,7 @@ export default {
   mounted() {
     setInterval(() => {
       this.getGateways();
-    }, 2000);
+    }, 10000);
   },
   methods: {
     getGateways() {

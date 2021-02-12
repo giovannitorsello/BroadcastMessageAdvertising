@@ -201,7 +201,7 @@
           </v-row>
         </v-tab-item>
 
-        <v-tab href="#uploadcontacts">
+        <v-tab href="#uploadcontacts" :click="getContacts">
           <v-card flat>
             <v-card-text>Contatti</v-card-text>
           </v-card>
@@ -236,6 +236,9 @@
             </v-row>
             <v-row>
               <v-col>
+                <v-btn color="primary" v-on:click="getContacts"
+                  >Aggiorna la tabella</v-btn
+                >
                 <v-data-table
                   :headers="headersCustomers"
                   :items="contacts"
@@ -319,6 +322,9 @@
           id="interestedcustomers"
           key="interestedcustomers"
         >
+          <v-btn color="primary" v-on:click="getInterestedContacts"
+            >Aggiorna la tabella</v-btn
+          >
           <v-row>
             <v-col>
               <v-data-table
@@ -342,6 +348,9 @@
           id="noclickcustomers"
           key="noclickcustomers"
         >
+          <v-btn color="primary" v-on:click="getNoInterestedContacts"
+            >Aggiorna la tabella</v-btn
+          >
           <v-row>
             <v-col>
               <v-data-table
@@ -365,19 +374,19 @@
           transition="dialog-top-transition"
           max-width="600"
         >
-            <v-card>
-              <v-toolbar color="primary" dark>Operazione in corso</v-toolbar>
-              <v-card-text>
-                <div class="text-h5 pa-12">
-                  Attendere la fine dell'operazione
-                  <v-progress-linear
-                    indeterminate
-                    color="green"
-                    class="mb-0"
-                  ></v-progress-linear>
-                </div>
-              </v-card-text>
-            </v-card>          
+          <v-card>
+            <v-toolbar color="primary" dark>Operazione in corso</v-toolbar>
+            <v-card-text>
+              <div class="text-h5 pa-12">
+                Attendere la fine dell'operazione
+                <v-progress-linear
+                  indeterminate
+                  color="green"
+                  class="mb-0"
+                ></v-progress-linear>
+              </div>
+            </v-card-text>
+          </v-card>
         </v-dialog>
       </v-col>
     </v-row>
@@ -460,10 +469,15 @@ export default {
   mounted() {
     this.beginDate = new Date().toLocaleDateString("it-IT");
     this.beginTime = new Date().toLocaleTimeString("it-IT");
+    this.getCaps();
+    this.getCities();
+    this.getProvinces();
+    this.getStates();
+    this.getCountries();
     this.refreshAll();
     setInterval(() => {
       this.refreshAll();
-    }, 30000);
+    }, 10000);
   },
   methods: {
     startCampaign(messageCampaign) {
@@ -541,7 +555,7 @@ export default {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
-            message: this.messageText.replace(/\n/g, " "),  //useful to remove carriage return
+            message: this.messageText.replace(/\n/g, " "), //useful to remove carriage return
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
             begin: this.getBeginDate(),
@@ -746,7 +760,7 @@ export default {
           console.log(error);
         });
     },
-    getCampaignContacts() {
+    getContacts() {
       this.axios
         .post("/adminarea/messageCampaign/getCampaignCustomers", {
           messageCampaign: this.selectedCampaign,
@@ -758,7 +772,8 @@ export default {
           console.log(error);
         });
     },
-    getInterestedCustomers() {
+    getInterestedContacts() {
+      console.log("Get interested");
       this.interestedCustomers = [];
       if (this.selectedCampaign && this.selectedCampaign.id > 0)
         this.axios
@@ -789,7 +804,7 @@ export default {
             console.log(error);
           });
     },
-    getNoInterestedCustomers() {
+    getNoInterestedContacts() {
       this.interestedCustomers = [];
       if (this.selectedCampaign && this.selectedCampaign.id > 0)
         this.axios
@@ -806,15 +821,7 @@ export default {
           });
     },
     refreshAll() {
-      this.getCaps();
-      this.getCities();
-      this.getProvinces();
-      this.getStates();
-      this.getCountries();
-      this.getCampaignContacts();
       this.getMessageCampaigns();
-      this.getInterestedCustomers();
-      this.getNoInterestedCustomers();
     },
     loadCSVFile() {
       if (this.selectedCampaign.id > 0) {
@@ -829,15 +836,9 @@ export default {
               "Content-Type": "multipart/form-data",
             },
           })
-          .then((request) => {
-            console.log(request);
+          .then((request) => {            
             this.dialogImportContacts = false;
-            this.bSaveCampaignButtonDisable = false;
-            this.getCampaignContacts();
-            /*setTimeout(() => {
-              console.log("loaded");
-              this.getCampaignContacts();
-            }, 3000);*/
+            this.bSaveCampaignButtonDisable = false;            
           })
           .catch((error) => {
             console.log(error);
