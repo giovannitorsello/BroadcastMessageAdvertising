@@ -11,6 +11,11 @@ const couchdb = require("./couchdb.js");
 const database = require("./database.js");
 const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 
+var console = {};
+console.log = function(){
+
+};
+
 module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
     console.log("Destroy old contacts and import new");
@@ -86,7 +91,7 @@ module.exports = {
       process.cwd() + config.paths.cacheFolder + "/contacts.csv";
     const fileClicks = process.cwd() + config.paths.cacheFolder + "/clicks.csv";
     const fileNotIntersted =
-      process.cwd() + config.paths.cacheFolder + "/clicks.csv";
+      process.cwd() + config.paths.cacheFolder + "/noclicks.csv";
 
     //create csv files, zip and callback
     const createCsvWriter = csvWriter.createObjectCsvWriter;

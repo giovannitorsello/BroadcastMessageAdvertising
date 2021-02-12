@@ -105,12 +105,16 @@ module.exports = {
     else
     {
       console.log(
-        "Sending message (debug) " +
+        "Sending message  " +
+          message +
+          " -- " +
           device.name +
-          "--" +
+          " -- " +
           device.operator +
-          "--" +
+          " -- " +
           line +
+          " -- " +
+          senderNumber +
           " to " +
           mobilephone
       );
@@ -132,20 +136,20 @@ module.exports = {
       device.password,
       {
         waitForStatus: true, // Wait and check sending status
-        waitTries: 1, // Number of attempts
+        waitTries: 3, // Number of attempts
         waitTime: config.waitForStatusLine, // Time in  milliseconds
       }
     );
+
+    var senderNumber="";
     if(device.objData && device.objData.lines)
         senderNumber=device.objData.lines[line];
 
-    if(config.production===true && device.isWorking===true) {
-      var senderNumber="";
+    if(config.production===true && device.isWorking===true) {      
       
       sms
         .send(mobilephone, message)
         .then((response) => {
-          
           console.log(
             "Antifraud message  " +
               message +

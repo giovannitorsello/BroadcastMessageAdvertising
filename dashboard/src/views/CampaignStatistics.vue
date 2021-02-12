@@ -11,7 +11,7 @@
           <template v-slot:item="row">
             <tr>
               <td>{{ row.item.id }}</td>
-              <td>{{ row.item.name }}</td>
+              <td>{{ row.item.name }} - {{ row.item.operator }}</td>
               <td>
                 <div>
                   {{ row.item.nSmsSent }}

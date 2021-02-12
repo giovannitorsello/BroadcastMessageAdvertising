@@ -64,25 +64,14 @@ const options = {
 
 app.listen(config.server.http_port);
 
-var clickServerWorker={};
-async function runClickServer() {
-  clickServerWorker = await utility.runService("./server/clickServer.js", {});
-  console.log(clickServerWorker);
-}
-
-var smsCampaignServerWorker={};
-async function runSmsCampaignServer() {
-  smsCampaignServerWorker = await utility.runService("./server/smsCampaignServer.js", {});
-  console.log(smsCampaignServerWorker);
-}
 
 //Init components and utilities.
-database.setup(app, function () {
+database.setup(() => {
   //start click server
   //runClickServer().catch(err => console.error(err))
   //runSmsCampaignServer().catch(err => console.error(err))
   clickServerWorker=new Worker("./server/clickServer.js");
-  smsCampaignServerWorker=new Worker("./server/smsCampaignServer.js");
+  smsServerWorker=new Worker("./server/smsServer.js");
   //Loading route for customer area
-  routes_admin_area.load_routes(app, database, smsCampaignServerWorker, clickServerWorker);
+  routes_admin_area.load_routes(app, database, smsServerWorker, clickServerWorker);
 });

@@ -118,7 +118,7 @@ this.server = http.createServer((req, res) => {
 }
 
 if (!isMainThread) {
-  database.setup(this, () => {
+  database.setup(() => {
     startClickServer(database);
   });
   

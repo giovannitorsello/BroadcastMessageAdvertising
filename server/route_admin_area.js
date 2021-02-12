@@ -10,15 +10,14 @@ const http = require("https");
 const { Sequelize, Model, DataTypes } = require("sequelize");
 const path = require("path");
 const axios = require("axios");
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
 
 module.exports = {
-  
   load_routes(app, database, smsCampaignServerWorker, clickServerWorker) {
-    var app=app;
+    var app = app;
     //pingServer.startServer(app, database);
 
     /////////////////////GENERAL UTILITIES //////////////////////
@@ -289,7 +288,7 @@ module.exports = {
     /////////////////////Message campaign ////////////////////
     app.post("/adminarea/messageCampaign/insert", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
-      var camp = {};            
+      var camp = {};
       camp.id = "";
       camp.name = messageCampaign.name;
       camp.message = messageCampaign.message;
@@ -312,9 +311,8 @@ module.exports = {
             msg: "Message campaign not insert",
             messageCampaign: {},
           });
-        }       
+        }
       });
-
     });
 
     app.post("/adminarea/messageCampaign/update", function (req, res) {
@@ -329,37 +327,37 @@ module.exports = {
             camp.messagePage1 = messageCampaign_updated.messagePage1;
             camp.messagePage2 = messageCampaign_updated.messagePage2;
             customers = messageCampaign_updated.contacts;
-            if(customers) camp.ncontacts=customers.length;
-            else camp.ncontacts=0;
-            camp.ncompleted=0;
-            
+            if (customers) camp.ncontacts = customers.length;
+            else camp.ncontacts = 0;
+            camp.ncompleted = 0;
+
             camp.save().then(function (campNew) {
               if (campNew !== null) {
-                smsCampaignManager.reloadActiveCampaings();
                 //delete all old customers
                 database.entities.customer.destroy({
                   where: { campaignId: campNew.id },
                 });
 
                 //replace with new customers
-                
+
                 if (customers) {
                   customers.forEach((cust) => {
                     cust.id = "";
                     database.entities.customer.create(cust);
                   });
                 }
-
                 campNew.contacts = messageCampaign_updated.contacts;
-                res.send({
-                  status: "OK",
-                  msg: "Message campaign update successfully",
-                  messageCampaign: campNew,
-                  customers: customers
-                });
 
-                //Finally reload all campaigns
-                smsCampaignManager.reloadActiveCampaings();
+                //Reload campaigns in smsServer
+                smsCampaignServerWorker.postMessage("/campaigns/reload");
+                smsCampaignServerWorker.once("message", (results) => {
+                  res.send({
+                    status: "OK",
+                    msg: "Message campaign update successfully",
+                    messageCampaign: campNew,
+                    customers: customers,
+                  });
+                });
               } else {
                 res.send({
                   status: "error",
@@ -382,12 +380,14 @@ module.exports = {
 
             obj.save().then(function (campNew) {
               if (campNew !== null) {
-                smsCampaignManager.reloadActiveCampaings();
-
-                res.send({
-                  status: "OK",
-                  msg: "Message campaign started successfully",
-                  messageCampaign: campNew,
+                //Reload campaign in smsServer
+                smsCampaignServerWorker.postMessage("/campaigns/reload");
+                smsCampaignServerWorker.once("message", (results) => {
+                  res.send({
+                    status: "OK",
+                    msg: "Message campaign started successfully",
+                    messageCampaign: campNew,
+                  });
                 });
               } else {
                 res.send({
@@ -412,12 +412,14 @@ module.exports = {
 
               obj.save().then(function (campNew) {
                 if (campNew !== null) {
-                  smsCampaignManager.reloadActiveCampaings();
-                  res.send({
-                    status: "OK",
-                    msg: "Message campaign paused successfully",
-                    messageCampaign: campNew,
-                    fileArchive: fileArchive,
+                  smsCampaignServerWorker.postMessage("/campaigns/reload");
+                  smsCampaignServerWorker.once("message", (results) => {
+                    res.send({
+                      status: "OK",
+                      msg: "Message campaign paused successfully",
+                      messageCampaign: campNew,
+                      fileArchive: fileArchive,
+                    });
                   });
                 } else {
                   res.send({
@@ -451,11 +453,13 @@ module.exports = {
               });
               messageCampaignToDel.destroy();
 
-              smsCampaignManager.reloadActiveCampaings();
-              res.send({
-                status: "OK",
-                msg: "Campaign deleted successfully",
-                fileArchive: fileArchive,
+              smsCampaignServerWorker.postMessage("/campaigns/reload");
+              smsCampaignServerWorker.once("message", (results) => {
+                res.send({
+                  status: "OK",
+                  msg: "Campaign deleted successfully",
+                  fileArchive: fileArchive,
+                });
               });
             });
           } else {
@@ -515,7 +519,8 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/messageCampaign/getCampaignClicks",
+    app.post(
+      "/adminarea/messageCampaign/getCampaignClicks",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.click
@@ -537,7 +542,8 @@ module.exports = {
       }
     );
 
-    app.post("/adminarea/messageCampaign/getCampaignCustomers",
+    app.post(
+      "/adminarea/messageCampaign/getCampaignCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         if (messageCampaign && messageCampaign.id)
@@ -560,7 +566,8 @@ module.exports = {
       }
     );
 
-    app.post("/adminarea/messageCampaign/getCampaignCustomersContacted",
+    app.post(
+      "/adminarea/messageCampaign/getCampaignCustomersContacted",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.customer
@@ -584,7 +591,8 @@ module.exports = {
       }
     );
 
-    app.post("/adminarea/messageCampaign/getCampaignCustomersToContact",
+    app.post(
+      "/adminarea/messageCampaign/getCampaignCustomersToContact",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.customer
@@ -608,7 +616,8 @@ module.exports = {
       }
     );
 
-    app.post("/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
+    app.post(
+      "/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         var customersNoClick = [];
@@ -638,7 +647,8 @@ module.exports = {
       }
     );
 
-    app.post("/adminarea/messageCampaign/getCampaignInterestedCustomers",
+    app.post(
+      "/adminarea/messageCampaign/getCampaignInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.click
@@ -694,10 +704,11 @@ module.exports = {
                 database.entities.customer
                   .findAll({ where: { campaignId: idCampaign } })
                   .then((results) => {
+                    console.log("File csv successfully imported.")
                     res.send({
                       status: "OK",
                       msg: "Customers found",
-                      customers: results
+                      customers: results,
                     });
                   });
               }
@@ -710,9 +721,9 @@ module.exports = {
     ///////////////////// Gateways ////////////////////////
     app.post("/adminarea/gateway/getAll", function (req, res) {
       smsCampaignServerWorker.postMessage("/gateways/getAll");
-      smsCampaignServerWorker.once('message', results => {        
+      smsCampaignServerWorker.once("message", (results) => {
         res.send({ status: "OK", msg: "Gateways found", gateways: results });
-      })      
+      });
     });
 
     ///////////////////// User ///////////////////////////////
@@ -851,7 +862,9 @@ module.exports = {
     //////////////////////Login and Logout //////////////////////////////
     //Get login by post
     app.post("/adminarea/login", function (req, res) {
-      if(!req.body.user) {res.send({ status: "error", msg: "Login error", user: usr });};
+      if (!req.body.user) {
+        res.send({ status: "error", msg: "Login error", user: usr });
+      }
       var user = req.body.user.username;
       var pass = req.body.user.password;
 
@@ -859,12 +872,20 @@ module.exports = {
         .findOne({ where: { username: user, password: pass } })
         .then(function (usr) {
           if (usr == null) {
-            use={id: "0", token: ""};            
+            use = { id: "0", token: "" };
             res.send({ status: "error", msg: "Login error", user: usr });
           } else {
             //Login accepted
-            let token = jwt.sign({ id: usr.id }, config.authJwtSecret, {expiresIn: 86400});
-            res.send({ status: "OK", msg: "Login accepted.", user: usr, auth: true, token: token });            
+            let token = jwt.sign({ id: usr.id }, config.authJwtSecret, {
+              expiresIn: 86400,
+            });
+            res.send({
+              status: "OK",
+              msg: "Login accepted.",
+              user: usr,
+              auth: true,
+              token: token,
+            });
           }
         });
     });
@@ -874,7 +895,12 @@ module.exports = {
         if (err) {
           res.send({ status: "error", msg: "Login accepted.", error: err });
         } else {
-          res.send({ status: "OK", msg: "Logout accepted.", user: {}, token: {} });
+          res.send({
+            status: "OK",
+            msg: "Logout accepted.",
+            user: {},
+            token: {},
+          });
         }
       });
     });

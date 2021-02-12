@@ -1,36 +1,43 @@
 const config = require("./config.js").load();
 var database = require("./database.js");
-const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} = require("worker_threads");
 const sms_gateway_hardware = require("./smsGateway.js");
 
-var smsGateways = [];
-var smsCampaigns = [];
-var smsContacts = [];
-var selectedGateway = 0;
-var selectedContact = 0;
-var waitTime = 5000;
+class SmsServer
+{
+  smsGateways= [];
+  smsCampaigns= [];
+  smsContacts= [];
+  selectedGateway= 0;
+  selectedContact= 0;
+  waitTime= 5000;
+  nTotRadios = 0;
+  
 
-campaignServer = {  
-  database: {},
+  constructor() {
+    database.setup(() => {
+      this.init();
+    })    
+  }
 
-  setup(db) {    
-    this.database = db;
+  init() {    
     this.loadSmsGateways((gateways) => {
-      smsGateways = gateways;      
+      this.smsGateways = gateways;
       this.loadCampaings((campaigns) => {
         this.smsCampaigns = campaigns;
-        //start campaigns execution
-        setInterval(() => {
-          setImmediate(() => {
-            this.startCampaignManager();
-          });
-        }, config.waitTime);
       });
     });
-  },
+  }
+
   getGateways() {
     return smsGateways;
-  },
+  }
+
   startCampaignManager() {
     this.smsCampaigns.forEach((campaign, index, arrCamp) => {
       //controllo campagna attiva
@@ -39,9 +46,10 @@ campaignServer = {
         this.sendNextMessage(campaign, (response) => {
           console.log("Message sent");
         });
-      }      
+      }
     });
-  },
+  }
+
   sendNextMessage(campaign, callback) {
     //Select next contact in couch database
     // Gateways selection
@@ -55,9 +63,10 @@ campaignServer = {
         callback(response);
       });
     }
-  },
+  }
+
   sendMessage(campaign, iDevice, contact, callback) {
-    if (!smsGateways[iDevice]) return;
+    if (!this.smsGateways[iDevice]) return;
     if (!campaign) return;
     if (!contact) return;
     var mobilephone = contact.mobilephone;
@@ -68,7 +77,7 @@ campaignServer = {
       campaign.state === "active"
     ) {
       //Line selection
-      var senderDevice = smsGateways[iDevice];
+      var senderDevice = this.smsGateways[iDevice];
       var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
 
       sms_gateway_hardware.sendSMS(
@@ -83,9 +92,9 @@ campaignServer = {
           ) {
             contact.state = "contacted";
             contact.save();
-            smsGateways[iDevice].nSmsSent++;
-            smsGateways[iDevice].objData.smsSent[selectedSenderLine]++;
-            smsGateways[iDevice].save();
+            this.smsGateways[iDevice].nSmsSent++;
+            this.smsGateways[iDevice].objData.smsSent[selectedSenderLine]++;
+            this.smsGateways[iDevice].save();
             this.antifraudRoutine(iDevice, selectedSenderLine, (respose) => {
               console.log("Antifraud execute.");
               this.updateCampaignData(campaign, (response) =>
@@ -96,7 +105,8 @@ campaignServer = {
         }
       );
     }
-  },
+  }
+
   formatMessage(campaign, contact) {
     if (
       campaign &&
@@ -108,74 +118,80 @@ campaignServer = {
     ) {
       var hexidContact = parseInt(contact.id).toString(36);
       var hexidCampaign = parseInt(campaign.id).toString(36);
-      link = config.shortDomain + "/" + hexidCampaign + "/" + hexidContact;
+      var link = config.shortDomain + "/" + hexidCampaign + "/" + hexidContact;
       var message = campaign.message;
       return message + " " + link;
     }
     return "";
-  },
+  }
+
   selectCurrentContact(campaign) {
     if (!campaign.contacts) {
       database.entities.customer
         .findAll({ where: { campaignId: campaign.id } })
         .then((custs) => {
           campaign.contacts = custs;
-          selectedContact = 0;
-          var currContact = campaign.contacts[selectedContact];
-          selectedContact++;
+          this.selectedContact = 0;
+          var currContact = campaign.contacts[this.selectedContact];
+          this.selectedContact++;
           return currContact;
         });
     } else {
-      var currContact = campaign.contacts[selectedContact];
-      selectedContact++;
-      if (selectedContact > campaign.ncontacts) selectedContact = 0;
+      var currContact = campaign.contacts[this.selectedContact];
+      this.selectedContact++;
+      if (this.selectedContact > campaign.ncontacts) this.selectedContact = 0;
       return currContact;
     }
-  },
+  }
+
   selectCurrentGateway() {
     var i = 0;
     var selGat = 0;
-    var nSmsSent = smsGateways[selGat].nSmsSent;
+    var nSmsSent = this.smsGateways[selGat].nSmsSent;
 
     //select line with less sent sms
-    while (i < smsGateways.length) {
-      if (nSmsSent >= smsGateways[i].nSmsSent && smsGateways[i].isWorking) {
-        nSmsSent = smsGateways[i].nSmsSent;
+    while (i < this.smsGateways.length) {
+      if (nSmsSent >= this.smsGateways[i].nSmsSent && this.smsGateways[i].isWorking) {
+        nSmsSent = this.smsGateways[i].nSmsSent;
         selGat = i;
       }
       i++;
     }
     return selGat;
-  },
+  }
+
   loadSmsGateways(callback) {
     var gateways = [];
-    this.database.entities.gateway.findAll().then((results) => {
+    database.entities.gateway.findAll().then((results) => {
       if (results.length > 0) {
-        gateways = results;        
+        gateways = results;
       } else {
         gateways = config.smsGateways;
         gateways.forEach((gat) => {
           gat.id = "";
-          this.database.entities.gateway.create(gat);
+          database.entities.gateway.create(gat);
         });
       }
 
-      //Calculate total number of radios
-      nTotRadios = 0;
+      
       for (var i = 0; i < gateways.length; i++) {
-        nTotRadios += gateways[i].nRadios;
+        this.nTotRadios += gateways[i].nRadios;
       }
 
       callback(gateways);
+    })
+    .catch( error=> {
+      console.log(error);
     });
-  },
+  }
+
   loadCampaings(callback) {
     var campaigns = [];
     //Charge active campaign
-    this.database.entities.messageCampaign.findAll().then((camps) => {
+    database.entities.messageCampaign.findAll().then((camps) => {
       if (camps) {
         camps.forEach((camp) => {
-          this.database.entities.customer
+          database.entities.customer
             .findAll({
               where: { campaignId: camp.id },
               order: [["state", "DESC"]],
@@ -189,13 +205,15 @@ campaignServer = {
         });
       }
     });
-  },
+  }
+
   reloadActiveCampaings(callback) {
     //Charge active campaign and their
     this.loadCampaings((campaigns) => {
       this.smsCampaigns = campaigns;
     });
-  },
+  }
+
   antifraudRoutine(receiverGateway, selectedReceiverLine, callback) {
     if (this.isOutOfAntifroudBalance(receiverGateway, selectedReceiverLine)) {
       var senderGateway = this.getSenderForAntifraudBalance(receiverGateway);
@@ -208,7 +226,8 @@ campaignServer = {
         }
       );
     } else callback({});
-  },
+  }
+
   sendAntifraudMessage(
     receiverGateway,
     selectedReceiverLine,
@@ -216,8 +235,8 @@ campaignServer = {
     callback
   ) {
     var selectedSenderLine = this.getDeviceLineWithLessSent(senderGateway);
-    var senderDevice = smsGateways[senderGateway];
-    var receiverDevice = smsGateways[receiverGateway];
+    var senderDevice = this.smsGateways[senderGateway];
+    var receiverDevice = this.smsGateways[receiverGateway];
     var mobilephone = receiverDevice.objData.lines[selectedReceiverLine];
     var message = this.getAntigraudMessageText();
 
@@ -250,16 +269,18 @@ campaignServer = {
         callback(response);
       }
     );
-  },
+  }
+
   getAntigraudMessageText() {
     var antifraudMessageTexts = config.antifraudMessageTexts;
     var nRand = Math.floor(
       Math.random() * (config.antifraudMessageTexts.length - 1)
     );
     return antifraudMessageTexts[nRand];
-  },
+  }
+
   getDeviceLineWithLessSent(iDevice) {
-    var device = smsGateways[iDevice];
+    var device = this.smsGateways[iDevice];
     var selectedLine = 0,
       i = 0;
     var nMessSent = device.objData.smsSent[0];
@@ -273,9 +294,10 @@ campaignServer = {
       i++;
     }
     return selectedLine;
-  },
+  }
+
   getDeviceLineWithLessReceived(iDevice) {
-    var device = smsGateways[iDevice];
+    var device = this.smsGateways[iDevice];
     var selectedLine = 0,
       i = 0;
     var nMessReceived = device.objData.smsReceived[0];
@@ -289,20 +311,22 @@ campaignServer = {
       i++;
     }
     return selectedLine;
-  },
+  }
+
   isOutOfAntifroudBalance(iDevice, iLine) {
-    var device = smsGateways[iDevice];
+    var device = this.smsGateways[iDevice];
     var sentSms = device.objData.smsSent[iLine];
     var receivedSms = device.objData.smsReceived[iLine];
     var percentage = 100 - Math.ceil((100 * receivedSms) / sentSms);
     if (percentage > device.nMaxSentPercetage) return true;
     else return false;
-  },
+  }
+
   getSenderForAntifraudBalance(iDevice) {
-    var receiverDevice = smsGateways[iDevice];
+    var receiverDevice = this.smsGateways[iDevice];
     var nSmsSent = 0,
       senderGateway = 0;
-    smsGateways.forEach((gat, index, arrGat) => {
+    this.smsGateways.forEach((gat, index, arrGat) => {
       if (gat.operator != receiverDevice.operator && gat.isWorking) {
         // select other gateway
         if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
@@ -311,14 +335,15 @@ campaignServer = {
           senderGateway = index;
         }
       }
-      if (index === arrGat.length - 1 && smsGateways[senderGateway].isWorking) {
+      if (index === arrGat.length - 1 && this.smsGateways[senderGateway].isWorking) {
         return senderGateway;
       }
     });
     return senderGateway;
-  },
+  }
+
   updateCampaignData(campaign, callback) {
-    this.database.entities.customer
+    database.entities.customer
       .count({
         where: {
           campaignId: campaign.id,
@@ -326,7 +351,7 @@ campaignServer = {
         },
       })
       .then((countContacted) => {
-        this.database.entities.messageCampaign
+        database.entities.messageCampaign
           .findOne({ where: { id: campaign.id } })
           .then((camp) => {
             //aggiornamento contattati
@@ -338,7 +363,7 @@ campaignServer = {
             }
 
             //calcolo orario di fine presunto
-            var nMillis = (camp.ncontacts - camp.ncompleted) * waitTime;
+            var nMillis = (camp.ncontacts - camp.ncompleted) * this.waitTime;
             var now = new Date().getTime();
             var endTime = new Date(now + nMillis);
             camp.end = endTime;
@@ -346,18 +371,32 @@ campaignServer = {
             callback({});
           });
       });
-  },
+  }
+
+  startServer() {
+    if (!isMainThread) {
+      parentPort.on("message", (message) => {
+        if (message == "/campaigns/getAll")
+          parentPort.postMessage(this.smsCampaigns);
+        else if (message == "/campaigns/reload") {
+          this.reloadActiveCampaings();
+          parentPort.postMessage(this.smsCampaigns);
+        }
+        else if (message == "/gateways/getAll")
+          parentPort.postMessage(JSON.parse(JSON.stringify(this.smsGateways)));
+        else if (message == "/process/exit") {
+          parentPort.postMessage("sold!");
+          parentPort.close();
+        }
+      });
+
+      setInterval(() => {
+        this.startCampaignManager();
+      }, config.waitTime);
+    }
+  }
 };
 
-if (!isMainThread) {
-  database.setup(this, () => {
-    campaignServer.setup(database);
-  });
-
-  parentPort.on("message", message => {
-    if(message=="/campaigns/getAll") parentPort.postMessage(this.smsCampaigns);
-    else if(message=="/gateways/getAll") parentPort.postMessage(JSON.parse(JSON.stringify(smsGateways)));
-    else if(message=="/process/exit") {parentPort.postMessage("sold!");parentPort.close();}
-  });
-
-}
+const smsServerIstance=new SmsServer();
+module.exports = smsServerIstance;
+smsServerIstance.startServer();

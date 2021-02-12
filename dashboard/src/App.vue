@@ -11,8 +11,8 @@
   export default {
     name: 'App',
     metaInfo: {
-      title: 'App',
-      titleTemplate: '%s | Material Dashboard Free',
+      title: 'BMA',
+      titleTemplate: '%s | Wifinetcom SRL',
       htmlAttrs: { lang: 'en' },
       meta: [
         { charset: 'utf-8' },

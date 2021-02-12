@@ -1,2 +1,2 @@
 Id;NomeCampagna;Messaggio;Inizio;Fine;Stato;NumeroContatti;NumeroCompletati
-24;Prova;Testo Serale 40;Sun Feb 07 2021 20:55:33 GMT+0100 (Ora standard dell’Europa centrale);Mon Feb 08 2021 00:02:10 GMT+0100 (Ora standard dell’Europa centrale);disabled;10997;10997
+1;Prova;Testo di prova;12/2/2021, 11:12:43;12/2/2021, 12:50:28;active;264;0

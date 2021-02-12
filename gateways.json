@@ -1,0 +1,100 @@
+{
+    "smsGateways": [{
+            "id": "1",
+            "name": "GOIP8_1",
+            "operator": "Vodafone",
+            "nRadios": "8",
+            "ip": "10.10.10.121",
+            "port": "80",
+            "login": "admin",
+            "password": "admin",
+            "isWorking": true,
+            "location": "",
+            "longitude": "",
+            "latitude": "",
+            "nSmsSent": "0",
+            "nSmsReceived": "0",
+            "nMaxDailyMessagePerLine": "200",
+            "nMaxSentPercetage": "70",
+            "objData": {
+                "lines": ["3487929876", "3423614325", "3420911108", "3461111185", "3458604474", "3484238161", "3420998993", "3451540059"],
+                "smsSent": [0, 0, 0, 0, 0, 0, 0, 0],
+                "smsReceived": [0, 0, 0, 0, 0, 0, 0, 0],
+                "isWorking": [1, 1, 1, 1, 1, 1, 0, 1]
+            }
+        },
+        {
+            "id": "2",
+            "name": "GOIP8_2",
+            "operator": "Very",
+            "nRadios": "8",
+            "ip": "10.10.10.122",
+            "port": "80",
+            "login": "admin",
+            "password": "admin",
+            "isWorking": false,
+            "location": "",
+            "longitude": "",
+            "latitude": "",
+            "nSmsSent": "0",
+            "nSmsReceived": "0",
+            "nMaxDailyMessagePerLine": "200",
+            "nMaxSentPercetage": "20",
+            "objData": {
+                "lines": ["3249986693", "3209411604", "3209415648", "", "3209513247", "3209491978", "3208978029", "3208887973"],
+                "smsSent": [0, 0, 0, 0, 0, 0, 0, 0],
+                "smsReceived": [0, 0, 0, 0, 0, 0, 0, 0],
+                "isWorking": [1, 1, 1, 0, 1, 1, 1, 1]
+            }
+        },
+        {
+            "id": "3",
+            "name": "GOIP8_3",
+            "operator": "Kena Mobile",
+            "nRadios": "8",
+            "ip": "10.10.10.123",
+            "port": "80",
+            "login": "admin",
+            "password": "admin",
+            "isWorking": true,
+            "location": "",
+            "longitude": "",
+            "latitude": "",
+            "nSmsSent": "0",
+            "nSmsReceived": "0",
+            "nMaxDailyMessagePerLine": "200",
+            "nMaxSentPercetage": "70",
+            "objData": {
+                "lines": ["3500592741", "3500592739", "3500413553", "3500592725", "3500592855", "3500592865", "3500592856", "3500592736"],
+                "smsSent": [0, 0, 0, 0, 0, 0, 0, 0],
+                "smsReceived": [0, 0, 0, 0, 0, 0, 0, 0],
+                "isWorking": [1, 1, 1, 1, 1, 1, 1, 1]
+            }
+        },
+        {
+            "id": "4",
+            "name": "GOIP8_4",
+            "operator": "HO Mobile",
+            "nRadios": "8",
+            "ip": "10.10.10.124",
+            "port": "80",
+            "login": "admin",
+            "password": "admin",
+            "isWorking": true,
+            "location": "",
+            "longitude": "",
+            "latitude": "",
+            "nSmsSent": "0",
+            "nSmsReceived": "0",
+            "nMaxDailyMessagePerLine": "200",
+            "nMaxSentPercetage": "70",
+            "objData": {
+                "lines": ["3792388107", "3792388134", "3792388148", "3792384046", "3792384061", "3792384072", "3792388150", "3792384107"],
+                "smsSent": [0, 0, 0, 0, 0, 0, 0, 0],
+                "smsReceived": [0, 0, 0, 0, 0, 0, 0, 0],
+                "isWorking": [1, 1, 1, 1, 1, 1, 1, 1]
+            }
+        }
+
+    ]
+}

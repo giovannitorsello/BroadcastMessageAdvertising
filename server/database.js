@@ -26,18 +26,18 @@ module.exports = {
     gateway: Gateway,
     config: Config,
   },
-  setup(app, callback) {
+  setup(callback) {
     sequelize
       .authenticate()
       .then(() => {
         this.init_entities();
+        this.seq = sequelize;
+        sequelize.options.logging = false;
         console.log("Connection has been established successfully.");
         setTimeout(function () {
           console.log("Init database successfull");
-          callback();
+          callback(this.seq);
         }, 2000);
-        this.seq = sequelize;
-        sequelize.options.logging = false;
       })
       .catch((err) => {
         console.error("Unable to connect to the database:", err);
@@ -181,37 +181,41 @@ module.exports = {
     this.entities.customer
       .findAll({ where: { campaignId: campaign.id } })
       .then((custs) => {
-        this.entities.customer
-          .findAll({
-            where: database.sequelize.literal(
-              "customer.campaignId=" + campaign.id + " AND clicks.id IS null"
-            ),
-            include: [database.entities.click],
-          })
-          .then((notInterestedContacts) => {
-            if (notInterestedContacts) {
-              contacts = custs;
-              this.entities.click
-                .findAll({
-                  where: { campaignId: campaign.id },
-                  include: [this.entities.customer],
-                })
-                .then((cs) => {
-                  if (cs) {
-                    clicks = cs;
-                    pkgData = {
-                      campaign: campaign,
-                      contacts: contacts,
-                      clicks: clicks,
-                      notInterestedContacts: notInterestedContacts
-                    };
-                    utility.createCampaignPackage(pkgData, (data) => {
-                      callback(data);
-                    });
-                  }
-                });
-            }
-          });
+        if (custs) {
+          contacts = custs;
+          this.entities.click
+            .findAll({
+              where: { campaignId: campaign.id },
+              include: [this.entities.customer],
+            })
+            .then((cs) => {
+              if (cs) {
+                clicks = cs;
+                this.entities.customer
+                  .findAll({
+                    where: this.sequelize.literal(
+                      "customer.campaignId=" +
+                        campaign.id +
+                        " AND clicks.id IS null"
+                    ),
+                    include: [this.entities.click],
+                  })
+                  .then((notInterestedContacts) => {
+                    if (notInterestedContacts) {
+                      pkgData = {
+                        campaign: campaign,
+                        contacts: contacts,
+                        clicks: clicks,
+                        notInterestedContacts: notInterestedContacts,
+                      };
+                      utility.createCampaignPackage(pkgData, (data) => {
+                        callback(data);
+                      });
+                    }
+                  });
+              }
+            });
+        }
       });
   },
 };
