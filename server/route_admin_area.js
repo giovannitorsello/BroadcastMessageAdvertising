@@ -326,36 +326,18 @@ module.exports = {
             camp.message = messageCampaign_updated.message;
             camp.messagePage1 = messageCampaign_updated.messagePage1;
             camp.messagePage2 = messageCampaign_updated.messagePage2;
-            customers = messageCampaign_updated.contacts;
-            if (customers) camp.ncontacts = customers.length;
-            else camp.ncontacts = 0;
+            camp.ncontacts = messageCampaign_updated.ncontacts;
             camp.ncompleted = 0;
 
             camp.save().then(function (campNew) {
-              if (campNew !== null) {
-                //delete all old customers
-                database.entities.customer.destroy({
-                  where: { campaignId: campNew.id },
-                });
-
-                //replace with new customers
-
-                if (customers) {
-                  customers.forEach((cust) => {
-                    cust.id = "";
-                    database.entities.customer.create(cust);
-                  });
-                }
-                campNew.contacts = messageCampaign_updated.contacts;
-
+              if (campNew) {
                 //Reload campaigns in smsServer
                 smsCampaignServerWorker.postMessage("/campaigns/reload");
                 smsCampaignServerWorker.once("message", (results) => {
                   res.send({
                     status: "OK",
                     msg: "Message campaign update successfully",
-                    messageCampaign: campNew,
-                    customers: customers,
+                    messageCampaign: campNew
                   });
                 });
               } else {
@@ -495,21 +477,11 @@ module.exports = {
         .findOne({ where: { id: messageCampaign.id } })
         .then(function (camp) {
           if (camp) {
-            database.entities.customer
-              .findAll({ where: { campaignId: messageCampaign.id } })
-              .then(function (contacts) {
-                messageCampaign.contacts = contacts;
-                database.entities.click
-                  .findAll({ where: { campaignId: messageCampaign.id } })
-                  .then(function (clicks) {
-                    messageCampaign.clicks = clicks;
-                    res.send({
-                      status: "OK",
-                      msg: "Campaign found",
-                      messageCampaign: messageCampaign,
-                    });
-                  });
-              });
+            res.send({
+              status: "OK",
+              msg: "Campaign found",
+              messageCampaign: camp,
+            });
           } else
             res.send({
               status: "OK",
@@ -683,10 +655,11 @@ module.exports = {
           res.send({
             status: "Error",
             msg: "Error in campaign id",
-            customers: {},
+            ncontacts: 0,
           });
           return;
         }
+
         var newPath =
           path.join(__dirname, "uploads") + "/" + files.csv_data.name;
         var rawData = fs.readFileSync(oldPath);
@@ -696,21 +669,21 @@ module.exports = {
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
+            //delete all old customers
+            database.entities.customer.destroy({
+              where: { campaignId: idCampaign },
+            });
             utility.import_Contacts_From_Csv(
               idCampaign,
               newPath,
               database,
-              () => {
-                database.entities.customer
-                  .findAll({ where: { campaignId: idCampaign } })
-                  .then((results) => {
-                    console.log("File csv successfully imported.")
-                    res.send({
-                      status: "OK",
-                      msg: "Customers found",
-                      customers: results,
-                    });
-                  });
+              (nImported) => {
+                console.log("File csv successfully imported.");
+                res.send({
+                  status: "OK",
+                  msg: "Contacts found",
+                  ncontacts: nImported,
+                });
               }
             );
           }

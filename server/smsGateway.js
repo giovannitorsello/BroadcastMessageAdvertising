@@ -64,7 +64,7 @@ module.exports = {
       device.login,
       device.password,
       {
-        waitForStatus: true, // Wait and check sending status
+        waitForStatus: false, // Wait and check sending status
         waitTries: 2, // Number of attempts
         waitTime: config.waitForStatusLine, // Time in  milliseconds
       }
@@ -135,7 +135,7 @@ module.exports = {
       device.login,
       device.password,
       {
-        waitForStatus: true, // Wait and check sending status
+        waitForStatus: false, // Wait and check sending status
         waitTries: 3, // Number of attempts
         waitTime: config.waitForStatusLine, // Time in  milliseconds
       }

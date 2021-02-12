@@ -3,7 +3,7 @@
     <v-container>
       <p>
         Campagna selezionata. {{ selectedCampaign.name }} --
-        {{ selectedCampaign.ncontacts }}
+        {{ ncontacts }}
       </p>
       <v-tabs v-model="tab">
         <v-tab href="#startstop">
@@ -201,7 +201,7 @@
           </v-row>
         </v-tab-item>
 
-        <v-tab href="#uploadcontacts" :click="getContacts">
+        <v-tab href="#uploadcontacts">
           <v-card flat>
             <v-card-text>Contatti</v-card-text>
           </v-card>
@@ -223,17 +223,7 @@
                 ></v-file-input>
               </v-col>
             </v-row>
-            <v-row>
-              <v-col>
-                <v-btn
-                  depressed
-                  color="primary"
-                  :disabled="bSaveCampaignButtonDisable"
-                  v-on:click="updateMessageCampaign"
-                  >Salva campagna</v-btn
-                >
-              </v-col>
-            </v-row>
+            
             <v-row>
               <v-col>
                 <v-btn color="primary" v-on:click="getContacts"
@@ -415,7 +405,7 @@ export default {
       selectedProvince: "",
       selectedCountry: "",
       selectedCampaign: { name: "", contacts: [], message: {} },
-
+      ncontacts: 0,
       messageCampaigns: [],
       contacts: [],
       filteredContacts: [],
@@ -532,8 +522,7 @@ export default {
           .then((request) => {
             if (request.data.messageCampaign) {
               this.selectedCampaign = request.data.messageCampaign;
-              if (this.selectedCampaign.contacts)
-                this.contacts = this.selectedCampaign.contacts;
+              this.ncontacts=this.selectedCampaign.ncontacts;
 
               if (this.selectedCampaign.message)
                 this.messageText = this.selectedCampaign.message;
@@ -574,8 +563,6 @@ export default {
         });
     },
     updateMessageCampaign() {
-      var ncont = 0;
-      if (this.contacts) ncont = this.contacts.length;
       this.axios
         .post("/adminarea/messageCampaign/update", {
           messageCampaign: {
@@ -583,7 +570,7 @@ export default {
             name: this.selectedCampaign.name,
             state: this.selectedCampaign.state,
             contacts: this.contacts,
-            ncontacts: ncont,
+            ncontacts: this.ncontacts,
             message: this.messageText.replace(/\n/g, " "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
@@ -591,8 +578,7 @@ export default {
         })
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
-          this.contacts = this.messageCampaigns.contacts;
-          this.refreshAll();
+          this.ncontacts=this.selectedCampaign.ncontacts;
         })
         .catch((error) => {
           console.log(error);
@@ -838,7 +824,9 @@ export default {
           })
           .then((request) => {            
             this.dialogImportContacts = false;
-            this.bSaveCampaignButtonDisable = false;            
+            this.contacts=[];
+            this.ncontacts=request.data.ncontacts;
+            this.refreshAll();               
           })
           .catch((error) => {
             console.log(error);

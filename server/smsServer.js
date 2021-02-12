@@ -8,24 +8,22 @@ const {
 } = require("worker_threads");
 const sms_gateway_hardware = require("./smsGateway.js");
 
-class SmsServer
-{
-  smsGateways= [];
-  smsCampaigns= [];
-  smsContacts= [];
-  selectedGateway= 0;
-  selectedContact= 0;
-  waitTime= 5000;
+class SmsServer {
+  smsGateways = [];
+  smsCampaigns = [];
+  smsContacts = [];
+  selectedGateway = 0;
+  selectedContact = 0;
+  waitTime = 15000;
   nTotRadios = 0;
-  
 
   constructor() {
     database.setup(() => {
       this.init();
-    })    
+    });
   }
 
-  init() {    
+  init() {
     this.loadSmsGateways((gateways) => {
       this.smsGateways = gateways;
       this.loadCampaings((campaigns) => {
@@ -43,9 +41,7 @@ class SmsServer
       //controllo campagna attiva
       if (campaign.state === "active") {
         //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
-        this.sendNextMessage(campaign, (response) => {
-          console.log("Message sent");
-        });
+          this.sendNextMessage(campaign, (response) => console.log(response));
       }
     });
   }
@@ -151,7 +147,10 @@ class SmsServer
 
     //select line with less sent sms
     while (i < this.smsGateways.length) {
-      if (nSmsSent >= this.smsGateways[i].nSmsSent && this.smsGateways[i].isWorking) {
+      if (
+        nSmsSent >= this.smsGateways[i].nSmsSent &&
+        this.smsGateways[i].isWorking
+      ) {
         nSmsSent = this.smsGateways[i].nSmsSent;
         selGat = i;
       }
@@ -162,27 +161,28 @@ class SmsServer
 
   loadSmsGateways(callback) {
     var gateways = [];
-    database.entities.gateway.findAll().then((results) => {
-      if (results.length > 0) {
-        gateways = results;
-      } else {
-        gateways = config.smsGateways;
-        gateways.forEach((gat) => {
-          gat.id = "";
-          database.entities.gateway.create(gat);
-        });
-      }
+    database.entities.gateway
+      .findAll()
+      .then((results) => {
+        if (results.length > 0) {
+          gateways = results;
+        } else {
+          gateways = config.smsGateways;
+          gateways.forEach((gat) => {
+            gat.id = "";
+            database.entities.gateway.create(gat);
+          });
+        }
 
-      
-      for (var i = 0; i < gateways.length; i++) {
-        this.nTotRadios += gateways[i].nRadios;
-      }
+        for (var i = 0; i < gateways.length; i++) {
+          if (gateways[i].isWorking) this.nTotRadios += gateways[i].nRadios;
+        }
 
-      callback(gateways);
-    })
-    .catch( error=> {
-      console.log(error);
-    });
+        callback(gateways);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   }
 
   loadCampaings(callback) {
@@ -335,7 +335,10 @@ class SmsServer
           senderGateway = index;
         }
       }
-      if (index === arrGat.length - 1 && this.smsGateways[senderGateway].isWorking) {
+      if (
+        index === arrGat.length - 1 &&
+        this.smsGateways[senderGateway].isWorking
+      ) {
         return senderGateway;
       }
     });
@@ -381,8 +384,7 @@ class SmsServer
         else if (message == "/campaigns/reload") {
           this.reloadActiveCampaings();
           parentPort.postMessage(this.smsCampaigns);
-        }
-        else if (message == "/gateways/getAll")
+        } else if (message == "/gateways/getAll")
           parentPort.postMessage(JSON.parse(JSON.stringify(this.smsGateways)));
         else if (message == "/process/exit") {
           parentPort.postMessage("sold!");
@@ -395,8 +397,8 @@ class SmsServer
       }, config.waitTime);
     }
   }
-};
+}
 
-const smsServerIstance=new SmsServer();
+const smsServerIstance = new SmsServer();
 module.exports = smsServerIstance;
 smsServerIstance.startServer();

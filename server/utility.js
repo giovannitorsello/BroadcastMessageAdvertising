@@ -9,17 +9,20 @@ const uuid = require("uuid");
 var moment = require("moment");
 const couchdb = require("./couchdb.js");
 const database = require("./database.js");
-const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} = require("worker_threads");
 
 var console = {};
-console.log = function(){
-
-};
+console.log = function () {};
 
 module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
     console.log("Destroy old contacts and import new");
-
+    var nImported = 0;
     //Delete old contacts
     database.entities.customer
       .destroy({ where: { campaignId: idCampaign } })
@@ -48,16 +51,15 @@ module.exports = {
               cust.adm3 = row.Stato;
               cust.campaignId = idCampaign;
               console.log("Customer try to insert " + cust.mobilephone);
-              database.entities.customer.create(cust).then(function (objnew) {
+              if(cust.firstname)
+              database.entities.customer.create(cust).then((objnew) => {
                 if (objnew !== null) {
-                  console.log(
-                    "Customer insert successfully: " + objnew.mobilephone
-                  );
+                  nImported++;
+                }
+                if (index === arrRows.length - 1) {
+                  callback(nImported);
                 }
               });
-              if (index === arrRows.length - 1) {
-                callback();
-              }
             });
           });
       });
@@ -197,7 +199,7 @@ module.exports = {
                   zip.addLocalFile(fileContacts);
                   zip.addLocalFile(fileClicks);
                   zip.addLocalFile(fileNotIntersted);
-                  
+
                   filenameZip =
                     pkgData.campaign.name +
                     "__" +
@@ -243,13 +245,13 @@ module.exports = {
   },
   runService(scriptFilename, configData) {
     return new Promise((resolve, reject) => {
-      const worker = new Worker(scriptFilename, {workerData: configData});
-      worker.on('message', resolve);
-      worker.on('error', reject);
-      worker.on('exit', (code) => {
+      const worker = new Worker(scriptFilename, { workerData: configData });
+      worker.on("message", resolve);
+      worker.on("error", reject);
+      worker.on("exit", (code) => {
         if (code !== 0)
           reject(new Error(`Worker stopped with exit code ${code}`));
-      })
-    })
-  }
+      });
+    });
+  },
 };
