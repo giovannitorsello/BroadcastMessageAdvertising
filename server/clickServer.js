@@ -113,6 +113,7 @@ this.server = http.createServer((req, res) => {
 
   this.server.listen(config.clickServer.port, config.clickServer.ip, () => {    
     var msg= `Click server is running at http://${config.clickServer.ip}:${config.clickServer.port}/`
+    console.log(msg);
     parentPort.postMessage({status: "OK", msg: msg});
   });
 }
