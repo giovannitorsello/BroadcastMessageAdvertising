@@ -563,6 +563,7 @@ export default {
         });
     },
     updateMessageCampaign() {
+      console.log(this.selectedCampaign);
       this.axios
         .post("/adminarea/messageCampaign/update", {
           messageCampaign: {
@@ -570,7 +571,7 @@ export default {
             name: this.selectedCampaign.name,
             state: this.selectedCampaign.state,
             contacts: this.contacts,
-            ncontacts: this.ncontacts,
+            ncontacts: this.selectedCampaign.ncontacts,
             message: this.messageText.replace(/\n/g, " "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
@@ -826,7 +827,8 @@ export default {
             this.dialogImportContacts = false;
             this.contacts=[];
             this.ncontacts=request.data.ncontacts;
-            this.refreshAll();               
+            this.selectedCampaign.ncontacts=request.data.ncontacts;
+            this.updateMessageCampaign();          
           })
           .catch((error) => {
             console.log(error);
