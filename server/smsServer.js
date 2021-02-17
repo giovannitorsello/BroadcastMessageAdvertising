@@ -284,13 +284,13 @@ class SmsServer {
       }
     );
 
-    //SOLVE Bug of non equilibrum in first and heavy loaded device
-    
+    /*
+    //SOLVE Bug of non equilibrum in first and heavy loaded device    
     if (this.isOutOfAntifroudBalance(senderGateway, selectedSenderLine)){
       var senderGateway2 = this.getSenderForAntifraudBalance(senderGateway);      
       this.sendAntifraudMessage(senderGateway,selectedSenderLine,senderGateway2,(response) => {});
     }
-
+    */
   }
 
   getAntifraudMessageText() {
