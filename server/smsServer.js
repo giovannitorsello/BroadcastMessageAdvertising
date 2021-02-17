@@ -41,7 +41,7 @@ class SmsServer {
       //controllo campagna attiva
       if (campaign.state === "active") {
         //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
-          this.sendNextMessage(campaign, (response) => console.log(response));
+        this.sendNextMessage(campaign, (response) => console.log(response));
       }
     });
   }
@@ -76,6 +76,7 @@ class SmsServer {
       var senderDevice = this.smsGateways[iDevice];
       var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
 
+      if(senderDevice.objData.isWorking[selectedSenderLine])
       sms_gateway_hardware.sendSMS(
         senderDevice,
         selectedSenderLine,
@@ -90,13 +91,20 @@ class SmsServer {
             contact.save();
             this.smsGateways[iDevice].nSmsSent++;
             this.smsGateways[iDevice].objData.smsSent[selectedSenderLine]++;
-            this.smsGateways[iDevice].save();
-            this.antifraudRoutine(iDevice, selectedSenderLine, (respose) => {
-              console.log("Antifraud execute.");
-              this.updateCampaignData(campaign, (response) =>
-                callback(response)
-              );
-            });
+            this.smsGateways[iDevice]
+              .save({ fields: ["nSmsSent", "objData"] })
+              .then((savedgateway) => {                
+                this.antifraudRoutine(
+                  iDevice,
+                  selectedSenderLine,
+                  (respose) => {
+                    console.log("Antifraud execute.");
+                    this.updateCampaignData(campaign, (response) =>
+                      callback(response)
+                    );
+                  }
+                );
+              });
           }
         }
       );
@@ -166,19 +174,25 @@ class SmsServer {
       .then((results) => {
         if (results.length > 0) {
           gateways = results;
+          for (var i = 0; i < gateways.length; i++) {
+            if (gateways[i].isWorking) this.nTotRadios += gateways[i].nRadios;
+            callback(gateways);
+          }
         } else {
           gateways = config.smsGateways;
-          gateways.forEach((gat) => {
+          gateways.forEach((gat, index, array) => {
             gat.id = "";
-            database.entities.gateway.create(gat);
+            database.entities.gateway
+              .create(gat)
+              .then((savedgateway) => {              
+                if (index === array.length - 1) 
+                  this.loadSmsGateways(callback);
+              })
+              .catch((error) => {
+                console.log(error);
+              });
           });
         }
-
-        for (var i = 0; i < gateways.length; i++) {
-          if (gateways[i].isWorking) this.nTotRadios += gateways[i].nRadios;
-        }
-
-        callback(gateways);
       })
       .catch((error) => {
         console.log(error);
@@ -225,7 +239,7 @@ class SmsServer {
           callback(response);
         }
       );
-    } else callback({});
+    } else callback("done");
   }
 
   sendAntifraudMessage(
@@ -238,7 +252,7 @@ class SmsServer {
     var senderDevice = this.smsGateways[senderGateway];
     var receiverDevice = this.smsGateways[receiverGateway];
     var mobilephone = receiverDevice.objData.lines[selectedReceiverLine];
-    var message = this.getAntigraudMessageText();
+    var message = this.getAntifraudMessageText();
 
     console.log(
       "Antifraud message " +
@@ -251,27 +265,35 @@ class SmsServer {
         selectedReceiverLine +
         " (receiver)"
     );
-
+    
+    if(senderDevice.objData.isWorking[selectedSenderLine] && receiverDevice.objData.isWorking[selectedReceiverLine])
     sms_gateway_hardware.sendSMSAntifraud(
       senderDevice,
       selectedSenderLine,
       message,
       mobilephone,
       (response) => {
-        senderDevice.objData.smsSent[selectedSenderLine]++;
         senderDevice.nSmsSent++;
-        senderDevice.save();
+        senderDevice.objData.smsSent[selectedSenderLine]++;
+        senderDevice.save({ fields: ["nSmsSent", "objData"] });
 
-        receiverDevice.objData.smsReceived[selectedReceiverLine]++;
         receiverDevice.nSmsReceived++;
-        receiverDevice.save();
-
+        receiverDevice.objData.smsReceived[selectedReceiverLine]++;
+        receiverDevice.save({ fields: ["nSmsSent", "objData"] });
         callback(response);
       }
     );
+
+    //SOLVE Bug of non equilibrum in first and heavy loaded device
+    
+    if (this.isOutOfAntifroudBalance(senderGateway, selectedSenderLine)){
+      var senderGateway2 = this.getSenderForAntifraudBalance(senderGateway);      
+      this.sendAntifraudMessage(senderGateway,selectedSenderLine,senderGateway2,(response) => {});
+    }
+
   }
 
-  getAntigraudMessageText() {
+  getAntifraudMessageText() {
     var antifraudMessageTexts = config.antifraudMessageTexts;
     var nRand = Math.floor(
       Math.random() * (config.antifraudMessageTexts.length - 1)
@@ -285,7 +307,7 @@ class SmsServer {
       i = 0;
     var nMessSent = device.objData.smsSent[0];
     while (i < device.objData.smsSent.length) {
-      if (device.objData.isWorking[i]) {
+      if (device.objData.isWorking[i]===1) {
         if (nMessSent >= device.objData.smsSent[i]) {
           nMessSent = device.objData.smsSent[i];
           selectedLine = i;
@@ -317,6 +339,12 @@ class SmsServer {
     var device = this.smsGateways[iDevice];
     var sentSms = device.objData.smsSent[iLine];
     var receivedSms = device.objData.smsReceived[iLine];
+    
+    //avoid zero division
+    if(sentSms===0) return false;    
+    // bypass if is not working
+    if(device.objData.isWorking[iLine]===0) return false;
+    
     var percentage = 100 - Math.ceil((100 * receivedSms) / sentSms);
     if (percentage > device.nMaxSentPercetage) return true;
     else return false;
@@ -324,22 +352,18 @@ class SmsServer {
 
   getSenderForAntifraudBalance(iDevice) {
     var receiverDevice = this.smsGateways[iDevice];
-    var nSmsSent = 0,
-      senderGateway = 0;
+    var nSmsSent = 0, senderGateway = 0;
     this.smsGateways.forEach((gat, index, arrGat) => {
-      if (gat.operator != receiverDevice.operator && gat.isWorking) {
+      if ((gat.operator != receiverDevice.operator) && (gat.isWorking)) {
         // select other gateway
         if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
           //search minimum messages
           nSmsSent = gat.nSmsSent;
           senderGateway = index;
         }
-      }
-      if (
-        index === arrGat.length - 1 &&
-        this.smsGateways[senderGateway].isWorking
-      ) {
-        return senderGateway;
+        if (index === arrGat.length - 1) {
+          return senderGateway;
+        }
       }
     });
     return senderGateway;
@@ -371,7 +395,7 @@ class SmsServer {
             var endTime = new Date(now + nMillis);
             camp.end = endTime;
             camp.save();
-            callback({});
+            callback("Update campaign done");
           });
       });
   }

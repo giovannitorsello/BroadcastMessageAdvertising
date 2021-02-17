@@ -21,6 +21,7 @@
     "http": "0.0.1-security",
     "https": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
+    "jssip": "^3.7.1",
     "locutus": "^2.0.14",
     "mariadb": "^2.5.2",
     "moment": "^2.29.1",

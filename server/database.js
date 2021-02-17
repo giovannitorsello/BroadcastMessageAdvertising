@@ -135,7 +135,11 @@ module.exports = {
         nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
         isWorking: { type: Sequelize.BOOLEAN, allowNull: true },
-        objData: { type: DataTypes.JSON },
+        objData: {
+          type: Sequelize.JSON,
+          allowNull: false,
+          defaultValue: {}
+        },
       },
       {
         sequelize,

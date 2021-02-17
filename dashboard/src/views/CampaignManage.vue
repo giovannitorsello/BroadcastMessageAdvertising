@@ -467,7 +467,7 @@ export default {
     this.refreshAll();
     setInterval(() => {
       this.refreshAll();
-    }, 10000);
+    }, 30000);
   },
   methods: {
     startCampaign(messageCampaign) {
