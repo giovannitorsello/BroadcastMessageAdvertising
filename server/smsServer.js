@@ -354,7 +354,8 @@ class SmsServer {
     var receiverDevice = this.smsGateways[iDevice];
     var nSmsSent = 0, senderGateway = 0;
     this.smsGateways.forEach((gat, index, arrGat) => {
-      if ((gat.operator != receiverDevice.operator) && (gat.isWorking)) {
+      //(gat.operator != receiverDevice.operator) && 
+      if (gat.isWorking) {
         // select other gateway
         if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
           //search minimum messages
