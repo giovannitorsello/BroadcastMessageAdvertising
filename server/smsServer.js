@@ -16,6 +16,7 @@ class SmsServer {
   selectedContact = 0;
   waitTime = 15000;
   nTotRadios = 0;
+  nAntifroudMessage = 0;
 
   constructor() {
     database.setup(() => {
@@ -237,6 +238,7 @@ class SmsServer {
         senderGateway,
         (response) => {
           callback(response);
+          this.nAntifroudMessage++;
         }
       );
     } else callback("done");
@@ -351,10 +353,15 @@ class SmsServer {
   }
 
   getSenderForAntifraudBalance(iDevice) {
+    var bDifferentOperator=false;
     var receiverDevice = this.smsGateways[iDevice];
     var nSmsSent = 0, senderGateway = 0;
     this.smsGateways.forEach((gat, index, arrGat) => {
-      //(gat.operator != receiverDevice.operator) && 
+      
+      if(this.nAntifroudMessage%2===0) bDifferentOperator=true
+      var bTestSameOperator=(gat.operator != receiverDevice.operator);
+      
+      if((bDifferentOperator&&bTestSameOperator) || !bDifferentOperator)
       if (gat.isWorking) {
         // select other gateway
         if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
