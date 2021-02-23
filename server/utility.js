@@ -2,6 +2,7 @@ const config = require("./config.js").load();
 var randtoken = require("rand-token");
 const csvParser = require("csv-parser");
 const csvWriter = require("csv-writer");
+const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 const admZip = require("adm-zip");
 const es = require("event-stream");
 const fs = require("fs");
@@ -9,6 +10,10 @@ const uuid = require("uuid");
 var moment = require("moment");
 const couchdb = require("./couchdb.js");
 const database = require("./database.js");
+
+//Mysql connection for bulk import
+var mysql = require("mysql");
+
 const {
   Worker,
   isMainThread,
@@ -23,6 +28,7 @@ module.exports = {
   import_Contacts_From_Csv(idCampaign, filename, database, callback) {
     console.log("Destroy old contacts and import new");
     var nImported = 0;
+    var customers = [];
     //Delete old contacts
     database.entities.customer
       .destroy({ where: { campaignId: idCampaign } })
@@ -31,10 +37,83 @@ module.exports = {
         fs.createReadStream(filename)
           .pipe(csvParser({ separator: config.csvSeparator }))
           .on("data", (data) => {
-            rows.push(data);
+            var cust = {};
+            cust.id = "";
+            cust.uid = this.makeUuid();
+            cust.firstname = data.Nome;
+            cust.lastname = data.Cognome;
+            cust.email = data.Email;
+            cust.mobilephone = data.Telefono;
+            cust.address = data.Indirizzo;
+            cust.postcode = data.CAP;
+            cust.city = data.Citta;
+            cust.adm1 = data.Provincia;
+            cust.adm2 = data.Regione;
+            cust.adm3 = data.Stato;
+            cust.campaignId = idCampaign;
+            cust.state = "toContact";
+            cust.objData = {};
+            console.log("Customer try to insert " + cust.mobilephone);
+            if (cust.firstname) {
+              customers.push(cust);
+            }
           })
           .on("end", () => {
-            console.log("CSV file successfully processed: " + filename);
+            console.log("Read CSV successfully processed: " + filename);
+            var filename_import =
+              config.database.secureimportfolder +
+              "/import_customers.csv";
+
+            //save data in csv standard file
+            const csvWriter = createCsvWriter({
+              path: filename_import,
+              header: [
+                { id: "firstname", title: "firstname" },
+                { id: "lastname", title: "lastname" },
+                { id: "email", title: "email" },
+                { id: "mobilephone", title: "mobilephone" },
+                { id: "address", title: "address" },
+                { id: "postcode", title: "postcode" },
+                { id: "city", title: "city" },
+                { id: "adm1", title: "adm1" },
+                { id: "adm2", title: "adm2" },
+                { id: "adm3", title: "adm3" },
+                { id: "campaignId", title: "campaignId" },
+                { id: "state", title: "state" },
+              ],
+            });
+            csvWriter.writeRecords(customers).then(() => {
+              console.log(
+                "Write CSV successfully processed: " + filename_import
+              );
+              /*var conn_db = mysql.createConnection("mysql://bma:bma@localhost:3306/bma?allowLoadLocalInfile=true");
+              conn_db.connect( err => {
+                console.log(err);
+                //bulk import in database
+                var sql =
+                "LOAD DATA INFILE '" +
+                filename_import +
+                "' INTO TABLE bma.customers  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 ROWS "+
+                " (firstname,lastname,email,mobilephone,address,postcode,city,adm1,adm2,adm3,campaignId,state)";
+                conn_db.query(sql, function (err, results, fields) {
+                  console.log(err);
+                  console.log(results);
+                  conn_db.end();
+                  callback(results.affectedRows);
+                });
+              })*/
+              
+              var sql =
+                "LOAD DATA INFILE '" +
+                filename_import +
+                "' INTO TABLE bma.customers  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 ROWS "+
+                " (firstname,lastname,email,mobilephone,address,postcode,city,adm1,adm2,adm3,campaignId,state)";
+              database.insert_bulk(sql, results => {
+                  console.log("CSV successfully imported in database");                  
+                  callback(results[1]);
+                })
+            });
+            /*
             rows.forEach((row, index, arrRows) => {
               var cust = {};
               cust.id = "";
@@ -52,6 +131,7 @@ module.exports = {
               cust.campaignId = idCampaign;
               console.log("Customer try to insert " + cust.mobilephone);
               if(cust.firstname)
+              /*
               database.entities.customer.create(cust).then((objnew) => {
                 if (objnew !== null) {
                   nImported++;
@@ -60,7 +140,7 @@ module.exports = {
                   callback(nImported);
                 }
               });
-            });
+            });*/
           });
       });
   },

@@ -68,6 +68,7 @@ module.exports = {
 
     Customer.init(
       {
+        id: {type: Sequelize.INTEGER,autoIncrement: true,primaryKey: true},
         firstname: { type: Sequelize.STRING, allowNull: false },
         lastname: { type: Sequelize.STRING, allowNull: true },
         email: { type: Sequelize.STRING, allowNull: true },
@@ -138,7 +139,7 @@ module.exports = {
         objData: {
           type: Sequelize.JSON,
           allowNull: false,
-          defaultValue: {}
+          defaultValue: {},
         },
       },
       {
@@ -174,7 +175,12 @@ module.exports = {
     Click.belongsTo(Customer, { foreignKey: "customerId" });
   },
   execute_raw_query(sql, callback) {
-    this.seq.query(sql, { type: QueryTypes.SELECT }).then((results) => {
+    sequelize.query(sql, { type: QueryTypes.SELECT }).then((results) => {
+      callback(results);
+    });
+  },
+  insert_bulk(sql, callback) {
+    sequelize.query(sql, { type: QueryTypes.INSERT }).then((results) => {
       callback(results);
     });
   },

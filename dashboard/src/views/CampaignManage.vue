@@ -92,6 +92,7 @@
                 v-on:click="insertMessageCampaign"
                 >Inserisci campagna</v-btn
               >
+               <v-btn color="primary" v-on:click="getCampaigns">Aggiorna la tabella</v-btn>
             </v-col>
           </v-row>
           <v-row>
@@ -464,10 +465,7 @@ export default {
     this.getProvinces();
     this.getStates();
     this.getCountries();
-    this.refreshAll();
-    setInterval(() => {
-      this.refreshAll();
-    }, 30000);
+    this.refreshAll();    
   },
   methods: {
     startCampaign(messageCampaign) {
@@ -588,6 +586,9 @@ export default {
     filterContactsCampaign() {
       this.contacts = this.filteredContacts;
       this.updateMessageCampaign();
+    },
+    getCampaigns() {
+      this.refreshAll();
     },
     getMessageCampaigns() {
       this.messageCampaigns = [];
