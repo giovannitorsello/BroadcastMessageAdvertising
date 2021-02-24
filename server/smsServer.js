@@ -33,6 +33,27 @@ class SmsServer {
     });
   }
 
+  resetCounters() {
+    var iGat = 0;    
+    //select line with less sent sms
+    while (iGat < this.smsGateways.length) {
+      this.smsGateways[iGat].nSmsSent=0;
+      this.smsGateways[iGat].nSmsReceived=0;
+      var iLine=0;
+      while (iLine<this.smsGateways[iGat].objData.lines.length) {
+        this.smsGateways[iGat].objData.smsSent[iLine]=0;
+        this.smsGateways[iGat].objData.smsReceived[iLine]=0;
+        if(this.smsGateways[iGat].objData.lines[iLine]!=="") 
+          this.smsGateways[iGat].objData.isWorking[iLine]=1;
+        if(this.smsGateways[iGat].objData.lines[iLine]==="") 
+          this.smsGateways[iGat].objData.isWorking[iLine]=0;
+        this.smsGateways[iGat].save();
+        iLine++;
+      }
+      iGat++;
+    }
+  }
+
   getGateways() {
     return smsGateways;
   }
@@ -156,8 +177,7 @@ class SmsServer {
 
     //select line with less sent sms
     while (i < this.smsGateways.length) {
-      if (
-        nSmsSent >= this.smsGateways[i].nSmsSent &&
+      if (nSmsSent >= this.smsGateways[i].nSmsSent &&
         this.smsGateways[i].isWorking
       ) {
         nSmsSent = this.smsGateways[i].nSmsSent;
@@ -285,14 +305,6 @@ class SmsServer {
         callback(response);
       }
     );
-
-    /*
-    //SOLVE Bug of non equilibrum in first and heavy loaded device    
-    if (this.isOutOfAntifroudBalance(senderGateway, selectedSenderLine)){
-      var senderGateway2 = this.getSenderForAntifraudBalance(senderGateway);      
-      this.sendAntifraudMessage(senderGateway,selectedSenderLine,senderGateway2,(response) => {});
-    }
-    */
   }
 
   getAntifraudMessageText() {
@@ -317,6 +329,12 @@ class SmsServer {
       }
       i++;
     }
+
+    if((device.objData.smsSent[selectedLine] >= device.nMaxDailyMessagePerLine) && (device.objData.isWorking[selectedLine])){
+      device.objData.isWorking[selectedLine]=false;
+      device.save();
+    }
+
     return selectedLine;
   }
 
@@ -418,6 +436,10 @@ class SmsServer {
           parentPort.postMessage(this.smsCampaigns);
         } else if (message == "/gateways/getAll")
           parentPort.postMessage(JSON.parse(JSON.stringify(this.smsGateways)));
+        else if (message == "/gateways/resetCounters") {
+          this.resetCounters();
+          parentPort.postMessage(JSON.parse(JSON.stringify(this.smsGateways)));
+        }
         else if (message == "/process/exit") {
           parentPort.postMessage("sold!");
           parentPort.close();

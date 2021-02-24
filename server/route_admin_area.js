@@ -699,6 +699,13 @@ module.exports = {
       });
     });
 
+    app.post("/adminarea/gateway/resetCounters", function (req, res) {
+      smsCampaignServerWorker.postMessage("/gateways/resetCounters");
+      smsCampaignServerWorker.once("message", (results) => {
+        res.send({ status: "OK", msg: "Gateways found", gateways: results });
+      });
+    });
+
     ///////////////////// User ///////////////////////////////
     app.post("/adminarea/user/get_by_id", function (req, res) {
       var userId = req.body.idUser;

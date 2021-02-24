@@ -16,7 +16,7 @@
                 <div>
                   {{ row.item.nSmsSent }}
                   <br />
-                  <span                    
+                  <span
                     v-for="(sms, i) in row.item.objData.smsSent"
                     v-bind:key="i"
                     >|{{ sms }}|</span
@@ -27,7 +27,7 @@
                 <div>
                   {{ row.item.nSmsReceived }}
                   <br />
-                  <span                    
+                  <span
                     v-for="(sms, i) in row.item.objData.smsReceived"
                     v-bind:key="i"
                     >|{{ sms }}|</span
@@ -38,6 +38,16 @@
             </tr>
           </template>
         </v-data-table>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col>
+        <v-btn color="primary" v-on:click="getGateways"
+          >Aggiorna</v-btn
+        >
+        <v-btn color="primary" v-on:click="resetCounters"
+          >Azzera i contatori</v-btn
+        >
       </v-col>
     </v-row>
   </v-container>
@@ -63,6 +73,19 @@ export default {
     }, 10000);
   },
   methods: {
+    resetCounters() {
+      this.axios
+        .post("/adminarea/gateway/resetCounters")
+        .then((request) => {
+          console.log(request.data.gateways);
+          if (request.data.gateways) {
+            this.gateways = request.data.gateways;
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     getGateways() {
       this.axios
         .post("/adminarea/gateway/getAll")
