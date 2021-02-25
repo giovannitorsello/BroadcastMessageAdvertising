@@ -92,7 +92,9 @@
                 v-on:click="insertMessageCampaign"
                 >Inserisci campagna</v-btn
               >
-               <v-btn color="primary" v-on:click="getCampaigns">Aggiorna la tabella</v-btn>
+              <v-btn color="primary" v-on:click="getCampaigns"
+                >Aggiorna la tabella</v-btn
+              >
             </v-col>
           </v-row>
           <v-row>
@@ -116,6 +118,18 @@
                     <td>{{ row.item.ncompleted }}</td>
                     <td>{{ row.item.begin }}</td>
                     <td>{{ row.item.end }}</td>
+                    <td>
+                      <v-btn
+                        class="mx-4"
+                        fab
+                        dark
+                        x-small
+                        color="green"
+                        @click="cleanContact(row.item)"
+                      >
+                        <v-icon dark>fas fa-search</v-icon>
+                      </v-btn>
+                    </td>
                     <td>
                       <v-btn
                         class="mx-4"
@@ -224,7 +238,7 @@
                 ></v-file-input>
               </v-col>
             </v-row>
-            
+
             <v-row>
               <v-col>
                 <v-btn color="primary" v-on:click="getContacts"
@@ -465,7 +479,7 @@ export default {
     this.getProvinces();
     this.getStates();
     this.getCountries();
-    this.refreshAll();    
+    this.refreshAll();
   },
   methods: {
     startCampaign(messageCampaign) {
@@ -520,7 +534,7 @@ export default {
           .then((request) => {
             if (request.data.messageCampaign) {
               this.selectedCampaign = request.data.messageCampaign;
-              this.ncontacts=this.selectedCampaign.ncontacts;
+              this.ncontacts = this.selectedCampaign.ncontacts;
 
               if (this.selectedCampaign.message)
                 this.messageText = this.selectedCampaign.message;
@@ -534,6 +548,19 @@ export default {
             console.log(error);
           });
       }
+    },
+    cleanContacts(campaign) {
+      this.axios
+        .post("/adminarea/messageCampaign/cleanContacts", {
+          messageCampaign: messageCampaign,
+        })
+        .then((request) => {
+          this.selectedCampaign = request.data.messageCampaign;
+          this.getMessageCampaigns();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     },
     insertMessageCampaign() {
       this.contacts = [];
@@ -577,7 +604,7 @@ export default {
         })
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
-          this.ncontacts=this.selectedCampaign.ncontacts;
+          this.ncontacts = this.selectedCampaign.ncontacts;
         })
         .catch((error) => {
           console.log(error);
@@ -824,12 +851,12 @@ export default {
               "Content-Type": "multipart/form-data",
             },
           })
-          .then((request) => {            
+          .then((request) => {
             this.dialogImportContacts = false;
-            this.contacts=[];
-            this.ncontacts=request.data.ncontacts;
-            this.selectedCampaign.ncontacts=request.data.ncontacts;
-            this.updateMessageCampaign();          
+            this.contacts = [];
+            this.ncontacts = request.data.ncontacts;
+            this.selectedCampaign.ncontacts = request.data.ncontacts;
+            this.updateMessageCampaign();
           })
           .catch((error) => {
             console.log(error);

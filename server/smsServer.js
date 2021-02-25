@@ -33,9 +33,23 @@ class SmsServer {
     });
   }
 
+  checkgatewayIsWorking(iGateway) {
+    var gateway=this.smsGateways[iGateway];
+    var iLine = 0, bIsWorking=false;
+    while (iLine<this.smsGateways[iGateway].objData.lines.length) {
+      bIsWorking=bIsWorking || this.smsGateways[iGateway].objData.isWorkingSms[iLine];      
+      iLine++;
+    }
+    
+    if(bIsWorking!==gateway.isWorkingSms){
+      gateway.isWorking=bIsWorking;
+      gateway.save();
+    }
+  }
+
+
   resetCounters() {
     var iGat = 0;    
-    //select line with less sent sms
     while (iGat < this.smsGateways.length) {
       this.smsGateways[iGat].nSmsSent=0;
       this.smsGateways[iGat].nSmsReceived=0;
@@ -44,12 +58,15 @@ class SmsServer {
         this.smsGateways[iGat].objData.smsSent[iLine]=0;
         this.smsGateways[iGat].objData.smsReceived[iLine]=0;
         if(this.smsGateways[iGat].objData.lines[iLine]!=="") 
-          this.smsGateways[iGat].objData.isWorking[iLine]=1;
+          this.smsGateways[iGat].objData.isWorkingSms[iLine]=1;
         if(this.smsGateways[iGat].objData.lines[iLine]==="") 
-          this.smsGateways[iGat].objData.isWorking[iLine]=0;
+          this.smsGateways[iGat].objData.isWorkingSms[iLine]=0;
+        
+        this.checkgatewayIsWorking(iGat);
         this.smsGateways[iGat].save();
         iLine++;
       }
+      
       iGat++;
     }
   }
@@ -77,7 +94,7 @@ class SmsServer {
     if (now > dateCampaign && campaign.state === "active") {
       var contact = this.selectCurrentContact(campaign);
       var selecteGateway = this.selectCurrentGateway();
-      this.sendMessage(campaign, selecteGateway, contact, (response) => {
+      this.sendMessage(campaign, selecteGateway, contact, (response) => {        
         callback(response);
       });
     }
@@ -98,7 +115,7 @@ class SmsServer {
       var senderDevice = this.smsGateways[iDevice];
       var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
 
-      if(senderDevice.objData.isWorking[selectedSenderLine])
+      if(senderDevice.objData.isWorkingSms[selectedSenderLine])
       sms_gateway_hardware.sendSMS(
         senderDevice,
         selectedSenderLine,
@@ -177,8 +194,9 @@ class SmsServer {
 
     //select line with less sent sms
     while (i < this.smsGateways.length) {
+      this.checkgatewayIsWorking(i);
       if (nSmsSent >= this.smsGateways[i].nSmsSent &&
-        this.smsGateways[i].isWorking
+        this.smsGateways[i].isWorkingSms
       ) {
         nSmsSent = this.smsGateways[i].nSmsSent;
         selGat = i;
@@ -196,7 +214,7 @@ class SmsServer {
         if (results.length > 0) {
           gateways = results;
           for (var i = 0; i < gateways.length; i++) {
-            if (gateways[i].isWorking) this.nTotRadios += gateways[i].nRadios;
+            if (gateways[i].isWorkingSms) this.nTotRadios += gateways[i].nRadios;
             callback(gateways);
           }
         } else {
@@ -288,7 +306,7 @@ class SmsServer {
         " (receiver)"
     );
     
-    if(senderDevice.objData.isWorking[selectedSenderLine] && receiverDevice.objData.isWorking[selectedReceiverLine])
+    if(senderDevice.objData.isWorkingSms[selectedSenderLine] && receiverDevice.objData.isWorkingSms[selectedReceiverLine])
     sms_gateway_hardware.sendSMSAntifraud(
       senderDevice,
       selectedSenderLine,
@@ -321,7 +339,7 @@ class SmsServer {
       i = 0;
     var nMessSent = device.objData.smsSent[0];
     while (i < device.objData.smsSent.length) {
-      if (device.objData.isWorking[i]===1) {
+      if (device.objData.isWorkingSms[i]===1) {
         if (nMessSent >= device.objData.smsSent[i]) {
           nMessSent = device.objData.smsSent[i];
           selectedLine = i;
@@ -330,8 +348,8 @@ class SmsServer {
       i++;
     }
 
-    if((device.objData.smsSent[selectedLine] >= device.nMaxDailyMessagePerLine) && (device.objData.isWorking[selectedLine])){
-      device.objData.isWorking[selectedLine]=false;
+    if((device.objData.smsSent[selectedLine] >= device.nMaxDailyMessagePerLine) && (device.objData.isWorkingSms[selectedLine])){
+      device.objData.isWorkingSms[selectedLine]=false;
       device.save();
     }
 
@@ -344,7 +362,7 @@ class SmsServer {
       i = 0;
     var nMessReceived = device.objData.smsReceived[0];
     while (i < device.objData.smsReceived.length) {
-      if (device.objData.isWorking[i]) {
+      if (device.objData.isWorkingSms[i]) {
         if (nMessReceived >= device.objData.smsReceived[i]) {
           nMessReceived = device.objData.smsReceived[i];
           selectedLine = i;
@@ -363,7 +381,7 @@ class SmsServer {
     //avoid zero division
     if(sentSms===0) return false;    
     // bypass if is not working
-    if(device.objData.isWorking[iLine]===0) return false;
+    if(device.objData.isWorkingSms[iLine]===0) return false;
     
     var percentage = 100 - Math.ceil((100 * receivedSms) / sentSms);
     if (percentage > device.nMaxSentPercetage) return true;
@@ -380,7 +398,7 @@ class SmsServer {
       var bTestSameOperator=(gat.operator != receiverDevice.operator);
       
       if((bDifferentOperator&&bTestSameOperator) || !bDifferentOperator)
-      if (gat.isWorking) {
+      if (gat.isWorkingSms) {
         // select other gateway
         if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
           //search minimum messages
@@ -426,6 +444,7 @@ class SmsServer {
       });
   }
 
+  
   startServer() {
     if (!isMainThread) {
       parentPort.on("message", (message) => {

@@ -72,6 +72,7 @@ database.setup(() => {
   //runSmsCampaignServer().catch(err => console.error(err))
   clickServerWorker=new Worker("./server/clickServer.js");
   smsServerWorker=new Worker("./server/smsServer.js");
+  washServerWorker=new Worker("./server/washServer.js");
   //Loading route for customer area
-  routes_admin_area.load_routes(app, database, smsServerWorker, clickServerWorker);
+  routes_admin_area.load_routes(app, database, smsServerWorker, clickServerWorker, washServerWorker);
 });

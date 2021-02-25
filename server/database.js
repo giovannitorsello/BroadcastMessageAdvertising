@@ -131,11 +131,19 @@ module.exports = {
         longitude: { type: Sequelize.STRING, allowNull: true },
         latitude: { type: Sequelize.STRING, allowNull: true },
         selectedLine: { type: Sequelize.INTEGER, defaultValue: 1 },
+        
+        isWorkingSms: { type: Sequelize.BOOLEAN, allowNull: true },
         nSmsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
         nSmsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
-        nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
-        isWorking: { type: Sequelize.BOOLEAN, allowNull: true },
+        nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },        
+        
+        isWorkingCall: { type: Sequelize.BOOLEAN, allowNull: true },
+        nCallsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
+        nCallsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
+        nMaxDailyCallPerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
+        nMaxCallPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },        
+        
         objData: {
           type: Sequelize.JSON,
           allowNull: false,

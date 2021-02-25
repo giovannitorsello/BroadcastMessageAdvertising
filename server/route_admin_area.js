@@ -16,7 +16,7 @@ const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
 
 module.exports = {
-  load_routes(app, database, smsCampaignServerWorker, clickServerWorker) {
+  load_routes(app, database, smsCampaignServerWorker, clickServerWorker, washServerWorker) {
     var app = app;
     //pingServer.startServer(app, database);
 
@@ -381,6 +381,11 @@ module.exports = {
             });
           }
         });
+    });
+
+    app.post("/adminarea/messageCampaign/cleanContacts", function (req, res) {
+      var messageCampaign = req.body.messageCampaign;
+      
     });
 
     app.post("/adminarea/messageCampaign/pause", function (req, res) {
