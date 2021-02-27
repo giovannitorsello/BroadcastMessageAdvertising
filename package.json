@@ -1,8 +1,12 @@
 {
   "dependencies": {
+    "ari-client": "^2.2.0",
+    "drachtio": "^4.1.16",
     "drachtio-mw-digest-auth": "^0.3.3",
     "drachtio-mw-registration-parser": "^0.1.0",
     "drachtio-srf": "^4.4.47",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "sip": "^0.0.6",
+    "ws": "^7.4.3"
   }
 }

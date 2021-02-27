@@ -22,6 +22,7 @@
     "https": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
     "jssip": "^3.7.1",
+    "jssip-node-websocket": "^3.0.0",
     "locutus": "^2.0.14",
     "mariadb": "^2.5.2",
     "moment": "^2.29.1",
@@ -34,10 +35,11 @@
     "ping": "^0.4.0",
     "rand-token": "^1.0.1",
     "sequelize": "^6.5.0",
+    "sip": "^0.0.6",
+    "util": "^0.10.4",
     "uuid": "^8.3.2",
     "worker-farm": "^1.7.0"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

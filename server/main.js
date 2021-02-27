@@ -1,5 +1,4 @@
 var config = require("./config.js").load();
-
 const fs = require("fs");
 const https = require("https");
 const http = require("http");
