@@ -5,6 +5,9 @@
   "main": "main.js",
   "dependencies": {
     "adm-zip": "^0.5.2",
+    "ari-client": "^2.2.0",
+    "asterisk-ami-client": "^1.1.5",
+    "awry": "^8.0.0",
     "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "child_process": "^1.0.2",

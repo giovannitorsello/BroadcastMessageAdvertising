@@ -11,9 +11,6 @@ var moment = require("moment");
 const couchdb = require("./couchdb.js");
 const database = require("./database.js");
 
-//Mysql connection for bulk import
-var mysql = require("mysql");
-
 const {
   Worker,
   isMainThread,
@@ -86,22 +83,6 @@ module.exports = {
               console.log(
                 "Write CSV successfully processed: " + filename_import
               );
-              /*var conn_db = mysql.createConnection("mysql://bma:bma@localhost:3306/bma?allowLoadLocalInfile=true");
-              conn_db.connect( err => {
-                console.log(err);
-                //bulk import in database
-                var sql =
-                "LOAD DATA INFILE '" +
-                filename_import +
-                "' INTO TABLE bma.customers  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 ROWS "+
-                " (firstname,lastname,email,mobilephone,address,postcode,city,adm1,adm2,adm3,campaignId,state)";
-                conn_db.query(sql, function (err, results, fields) {
-                  console.log(err);
-                  console.log(results);
-                  conn_db.end();
-                  callback(results.affectedRows);
-                });
-              })*/
               
               var sql =
                 "LOAD DATA INFILE '" +
