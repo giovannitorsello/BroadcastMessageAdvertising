@@ -363,6 +363,7 @@ module.exports = {
             obj.save().then(function (campNew) {
               if (campNew !== null) {
                 //Reload campaign in smsServer
+                washServerWorker.postMessage("/campaigns/reload");
                 smsCampaignServerWorker.postMessage("/campaigns/reload");
                 smsCampaignServerWorker.once("message", (results) => {
                   res.send({

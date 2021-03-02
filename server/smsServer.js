@@ -25,7 +25,7 @@ class SmsServer {
   }
 
   init() {
-    this.loadSmsGateways((gateways) => {
+    this.loadGateways((gateways) => {
       this.smsGateways = gateways;
       this.loadCampaings((campaigns) => {
         this.smsCampaigns = campaigns;
@@ -108,7 +108,7 @@ class SmsServer {
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      contact.state === "toContact" &&
+      contact.state === "toContactVerified" &&
       campaign.state === "active"
     ) {
       //Line selection
@@ -206,7 +206,7 @@ class SmsServer {
     return selGat;
   }
 
-  loadSmsGateways(callback) {
+  loadGateways(callback) {
     var gateways = [];
     database.entities.gateway
       .findAll()
@@ -225,7 +225,7 @@ class SmsServer {
               .create(gat)
               .then((savedgateway) => {              
                 if (index === array.length - 1) 
-                  this.loadSmsGateways(callback);
+                  this.loadGateways(callback);
               })
               .catch((error) => {
                 console.log(error);
