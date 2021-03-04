@@ -3,101 +3,8 @@ const config = require("./config.js").load();
 var database = require("./database.js");
 
 const AmiClient = require("asterisk-ami-client");
-let client = new AmiClient();
-var mapUniqueIdPhone={};
-//Quando il numero non esiste manda prima Hangup->ringing e poi Originate->Response Failure
-//Quando il numero esiste ma è disconnesso manda prima Originate->Response Failure e poi Hangup->ringing.
-client
-  .connect("bma", "bma2021!", { host: "5.83.124.98", port: 5038 })
-  .then((amiConnection) => {
-    client
-      .on("connect", () => console.log("connect"))
-      .on("event", (event) => {
-        if (event.Event === "Cdr") {
-          console.log("CDR: " + event.Disposition);
-          if (event.Disposition === "ANSWERED") {
-            var uniqueobj=mapUniqueIdPhone[event.Channel];
-            
-            client.action({
-              Action: "Hangup",
-              Channel: uniqueobj.channel,
-              Uniqueid: uniqueobj.id,
-              Cause: 16,
-            });
-            console.log("Number exist!!!");
-          }
-        }
-        if (event.Event === "OriginateResponse") {
-          if (event.Context === "autocallbma" && event.Response === "Failure") {
-            console.log("OriginateResponse: Does not exist");
-          }
-        }
-        
-        if(event.Event==="VarSet" && event.Variable==="CALLEE") {
-          mapUniqueIdPhone[event.Channel]={id: event.Uniqueid, phone: event.Value, channel: event.Channel};
-        }
-        
-        
-        if (event.Event === "SoftHangupRequest") {
-          if (event.context === "autocaLlbma" && event.Exten === "failed") {
-            console.log("SoftHangupRequest: Not exists");
-          }
-          console.log(event);
-        }
-        if (event.Event === "Newexten") {
-          if (
-            event.Context === "autocallbma" &&
-            event.Application === "Answer"
-          ) {
-            var uniqueobj=mapUniqueIdPhone[event.Channel];
-            client.action({
-              Action: "Hangup",
-              Channel: uniqueobj.channel,
-              Uniqueid: uniqueobj.id,
-              Cause: 16,
-            });
-          }
-          if (event.Channel === "OutgoingSpoolFailed") {
-            console.log("Doesn't esist");
-          }
-        }
-        if (event.Event === "HangupRequest") {
-          if (event.Cause === "16") {
-            console.log("Normal clearing");
-          }
-          if (event.Cause === "17") {
-            console.log("Busy");
-          }
-          if (event.Cause === "18") {
-            console.log("No user response");
-          }
-          if (event.Cause === "21") {
-            console.log("Rejected");
-          }
-        } else if (event.Event === "Hangup") {
-          if (event.ChannelStateDesc === "Ringing") {
-            //console.log("Hangup - Ringing");
-          }
-        } else {
-          console.log(event);
-          // NewChannel, Uniqueid
-          //AppDial2
-        }
-      })
-      .on("data", (chunk) => {
-        /*console.log(chunk)*/
-      })
-      .on("disconnect", () => console.log("disconnect"))
-      .on("reconnection", () => console.log("reconnection"))
-      .on("internalError", (error) => console.log(error))
-      .on("response", (response) => {
-        console.log(response);
-      })
-      .on("close", (response) => {
-        console.log(response);
-      });
-  })
-  .catch((error) => console.log(error));
+var contacts = [];
+var mapUniqueIdPhone = {};
 
 const {
   Worker,
@@ -129,42 +36,154 @@ class WashServer {
     });
   }
 
+  executeCalls(contacts) {
+    this.client = new AmiClient();
+    this.client
+      .connect("bma", "bma2021!", { host: "5.83.124.98", port: 5038 })
+      .then((amiConnection) => {
+        this.client
+          .on("connect", () => console.log("connect"))
+          .on("event", (event) => {
+            if (event.Event === "Cdr") {
+              if (event.Disposition === "ANSWERED") {
+                var uniqueobj = mapUniqueIdPhone[event.UniqueID];
+                console.log(uniqueobj.phone + " exists!!! (CDR)");
+                this.client.action({Action: "Hangup", Channel: event.Uniqueid});
+              }
+            }
+            if (event.Event === "OriginateResponse") {
+              if (
+                event.Context === "autocallbma" &&
+                event.Response === "Failure"
+              ) {
+                var uniqueobj = mapUniqueIdPhone[event.Channel];
+                if (uniqueobj && uniqueobj.phone)
+                  console.log(
+                    uniqueobj.phone + " doesn't esist (OriginateResponse)"
+                  );
+              }
+            }
+
+            if (event.Event === "VarSet" && event.Variable === "CALLEE") {
+              if (event.Channel !== "OutgoingSpoolFailed")
+                mapUniqueIdPhone[event.Uniqueid] = {
+                  id: event.Uniqueid,
+                  phone: event.Value,
+                  channel: event.Channel,
+                };
+              if (event.Channel === "OutgoingSpoolFailed") {
+                console.log(
+                  event.Value +
+                    " does not exists. (OutgoingSpoolFailed - failed extension)"
+                );
+              }
+            }
+
+            if (event.Event === "SoftHangupRequest") {
+              if (event.context === "autocallbma" && event.Exten === "failed") {
+                var uniqueobj = mapUniqueIdPhone[event.Uniqueid];
+                if (uniqueobj && uniqueobj.phone)
+                  console.log(
+                    uniqueobj.phone +
+                      " doesn't esist (SoftHangupRequest - failed extension)"
+                  );
+              }
+            }
+            if (event.Event === "Newexten") {
+              if (
+                event.Context === "autocallbma" &&
+                event.Application === "Answer"
+              ) {
+                var uniqueobj = mapUniqueIdPhone[event.Uniqueid];
+                console.log(uniqueobj.phone + " exists!!! (Answer dialplan)");
+                this.client.action({ Action: "Hangup", Channel: event.Uniqueid });
+              }
+              if (event.Channel === "OutgoingSpoolFailed") {
+                var uniqueobj = mapUniqueIdPhone[event.Channel];
+                if (uniqueobj && uniqueobj.phone)
+                  console.log(
+                    uniqueobj.phone + " doesn't esist (OutgoingSpoolFailed)"
+                  );
+              }
+            }
+            if (event.Event === "HangupRequest") {
+              if (event.Cause === "16") {
+                console.log("Normal clearing");
+              }
+              if (event.Cause === "17") {
+                console.log("Busy");
+              }
+              if (event.Cause === "18") {
+                console.log("No user response");
+              }
+              if (event.Cause === "21") {
+                console.log("Rejected");
+              }
+            } else if (event.Event === "Hangup") {
+              if (event.ChannelStateDesc === "Ringing") {
+                console.log("Hangup - Ringing");
+              }
+            } else {
+              //console.log(event);
+            }
+          })
+          .on("data", (chunk) => {
+            /*console.log(chunk)*/
+          })
+          .on("disconnect", () => console.log("disconnect"))
+          .on("reconnection", () => console.log("reconnection"))
+          .on("internalError", (error) => console.log(error))
+          .on("response", (response) => {
+            console.log(response);
+          })
+          .on("close", (response) => {
+            console.log(response);
+          });
+
+        var iGateway = 0,
+          iContacts = 0;
+        var gateways = this.gateways;
+        setInterval(() => {
+          if (iGateway === gateways.length - 1) iGateway = 0;
+          if (iContacts === contacts.length - 1) iContacts = 0;
+          var gatewayName = gateways[iGateway].name;
+          var phone = contacts[iContacts].mobilephone;
+          var phone = "3939241987";
+          var actionId = phone + "-" + new Date().getTime();
+          var channel = "SIP/GOIP32_1/" + phone;
+
+          this.client.action({
+            Action: "Originate",
+            ActionId: actionId,
+            Variable: "CALLEE=" + phone,
+            Channel: channel,
+            Context: "autocallbma",
+            Exten: "s",
+            Priority: 1,
+            Timeout: 30000,
+            CallerID: "1001",
+            Async: true,
+            EarlyMedia: true,
+            Application: "",
+            Codecs: "g729",
+          });
+          
+          iGateway++;
+          iContacts++;
+        }, 5000);
+      })
+      .catch((error) => console.log(error));
+  }
+
   generateCalls(campaign) {
-    var iGateway = 0;
-    var gateways = this.gateways;
     database.entities.customer
       .findAll({ where: { campaignId: campaign.id, state: "toContact" } })
       .then((customers) => {
-        customers.forEach((cust) => {
-          if (iGateway === gateways.length - 1) iGateway = 0;
-          var gatewayName = gateways[iGateway].name;
-          var callee = cust.mobilephone;
-          var channel = "SIP/" + gatewayName + "/" + callee;
-
-          iGateway++;
-        });
+        this.contacts = customers;
+        this.executeCalls(customers);
       });
-
-    var channel="SIP/GOIP32_1/3939241987"; //3956789234"; //3939241987
-    //var channel = "SIP/GOIP32_1/3956789234"; //3939241987
-
-    //channel="Local/1001@from-internal"
-    client.action({
-      Action: "Originate",
-      ActionId: "1111-1111-1111",
-      Variable: "CALLEE=3939241987",
-      Channel: channel,
-      Context: "autocallbma",
-      Exten: "s",
-      Priority: 1,
-      Timeout: 10000,
-      CallerID: "1001",
-      Async: true,
-      EarlyMedia: true,
-      Application: "",
-      Codecs: "g729",
-    });
   }
+
   writeAutoDialAsteriskFile(campaign) {
     //Open autodial file
     var filenameTemp =
