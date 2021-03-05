@@ -187,10 +187,19 @@ module.exports = {
       callback(results);
     });
   },
+  execute_raw_update(sql, callback) {
+    sequelize.query(sql, { type: QueryTypes.UPDATE }).then((results) => {
+      callback(results);
+    });
+  },
   insert_bulk(sql, callback) {
     sequelize.query(sql, { type: QueryTypes.INSERT }).then((results) => {
       callback(results);
     });
+  },
+  changeStateToContactVerified(phone, callback) {
+    sql="UPDATE customers SET state='toContactVerified' WHERE (mobilephone='"+phone+"');";
+    this.execute_raw_update(sql,callback);
   },
   exportCampaignData(campaign, callback) {
     //Export contacts, clicks

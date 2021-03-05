@@ -69,6 +69,7 @@ database.setup(() => {
   //start click server
   //runClickServer().catch(err => console.error(err))
   //runSmsCampaignServer().catch(err => console.error(err))
+  
   clickServerWorker=new Worker("./server/clickServer.js");
   smsServerWorker=new Worker("./server/smsServer.js");
   washServerWorker=new Worker("./server/washServer.js");

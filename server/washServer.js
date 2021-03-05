@@ -17,9 +17,9 @@ const utility = require("./utility.js");
 class WashServer {
   gateways = [];
   campaigns = [];
-  contacts = [];
   selectedGateway = 0;
   selectedContact = 0;
+  sendCallIntervall = 0;
 
   constructor() {
     database.setup(() => {
@@ -36,21 +36,33 @@ class WashServer {
     });
   }
 
-  executeCalls(contacts) {
+  openAmiConnection(callback) {
     this.client = new AmiClient();
     this.client
-      .connect("bma", "bma2021!", { host: "5.83.124.98", port: 5038 })
+      .connect(config.asterisk.login, config.asterisk.password, { host: config.asterisk.host, port: config.asterisk.port })
       .then((amiConnection) => {
         this.client
           .on("connect", () => console.log("connect"))
           .on("event", (event) => {
-            if (event.Event === "Cdr") {
-              if (event.Disposition === "ANSWERED") {
+            if (event.Event === "Cdr") {              
+              if(event.Channel==="OutgoingSpoolFailed" && event.Disposition==="FAILED" && event.Duration==="0") {
                 var uniqueobj = mapUniqueIdPhone[event.UniqueID];
-                console.log(uniqueobj.phone + " exists!!! (CDR)");
-                this.client.action({Action: "Hangup", Channel: event.Uniqueid});
+                if(uniqueobj && uniqueobj.phone)
+                  console.log(uniqueobj.phone + " not reachable (CDR)");                
+              }
+
+              if (event.Disposition === "ANSWERED" || event.Disposition === "BUSY") {
+                var uniqueobj = mapUniqueIdPhone[event.UniqueID];
+                if(uniqueobj && uniqueobj.phone) {
+                  console.log(uniqueobj.phone + " exists by CDR ("+event.Disposition+")");
+                  database.changeStateToContactVerified(uniqueobj.phone, function(results) {
+                    console.log("Update successfull");
+                    console.log(results);
+                  });
+                }
               }
             }
+
             if (event.Event === "OriginateResponse") {
               if (
                 event.Context === "autocallbma" &&
@@ -64,6 +76,7 @@ class WashServer {
               }
             }
 
+            // Store association of UniqueID with Callee
             if (event.Event === "VarSet" && event.Variable === "CALLEE") {
               if (event.Channel !== "OutgoingSpoolFailed")
                 mapUniqueIdPhone[event.Uniqueid] = {
@@ -74,7 +87,7 @@ class WashServer {
               if (event.Channel === "OutgoingSpoolFailed") {
                 console.log(
                   event.Value +
-                    " does not exists. (OutgoingSpoolFailed - failed extension)"
+                    " does not exists. (OutgoingSpoolFailed - failed extension - probably busy)"
                 );
               }
             }
@@ -95,8 +108,8 @@ class WashServer {
                 event.Application === "Answer"
               ) {
                 var uniqueobj = mapUniqueIdPhone[event.Uniqueid];
-                console.log(uniqueobj.phone + " exists!!! (Answer dialplan)");
-                this.client.action({ Action: "Hangup", Channel: event.Uniqueid });
+                if (uniqueobj && uniqueobj.phone)
+                  console.log(uniqueobj.phone + " exists!!! (Answer dialplan)");               
               }
               if (event.Channel === "OutgoingSpoolFailed") {
                 var uniqueobj = mapUniqueIdPhone[event.Channel];
@@ -119,13 +132,7 @@ class WashServer {
               if (event.Cause === "21") {
                 console.log("Rejected");
               }
-            } else if (event.Event === "Hangup") {
-              if (event.ChannelStateDesc === "Ringing") {
-                console.log("Hangup - Ringing");
-              }
-            } else {
-              //console.log(event);
-            }
+            }           
           })
           .on("data", (chunk) => {
             /*console.log(chunk)*/
@@ -134,54 +141,53 @@ class WashServer {
           .on("reconnection", () => console.log("reconnection"))
           .on("internalError", (error) => console.log(error))
           .on("response", (response) => {
-            console.log(response);
+             /* console.log(response); */ 
           })
           .on("close", (response) => {
             console.log(response);
           });
 
-        var iGateway = 0,
-          iContacts = 0;
-        var gateways = this.gateways;
-        setInterval(() => {
+          //Function that generate action to call
+          callback(this.client);
+      }).catch((error) => console.log(error));
+  }
+
+  generateCheckCalls(campaign, clientAmi) {
+    var contacts = campaign.contacts;
+    var iGateway = 0;
+    var iContacts = 0;
+    var gateways = this.gateways;
+
+      campaign.sendCallIntervall = setInterval(() => {
           if (iGateway === gateways.length - 1) iGateway = 0;
           if (iContacts === contacts.length - 1) iContacts = 0;
           var gatewayName = gateways[iGateway].name;
           var phone = contacts[iContacts].mobilephone;
-          var phone = "3939241987";
+          //var phone = "3939241987";
+          //var phone = "3999241999";
+          //var phone = "3475253992";
           var actionId = phone + "-" + new Date().getTime();
-          var channel = "SIP/GOIP32_1/" + phone;
-
-          this.client.action({
-            Action: "Originate",
-            ActionId: actionId,
-            Variable: "CALLEE=" + phone,
-            Channel: channel,
-            Context: "autocallbma",
-            Exten: "s",
-            Priority: 1,
-            Timeout: 30000,
-            CallerID: "1001",
-            Async: true,
-            EarlyMedia: true,
-            Application: "",
-            Codecs: "g729",
-          });
-          
-          iGateway++;
-          iContacts++;
-        }, 5000);
-      })
-      .catch((error) => console.log(error));
-  }
-
-  generateCalls(campaign) {
-    database.entities.customer
-      .findAll({ where: { campaignId: campaign.id, state: "toContact" } })
-      .then((customers) => {
-        this.contacts = customers;
-        this.executeCalls(customers);
-      });
+          var channel = "SIP/"+gatewayName+"/" + phone;
+          if(gateways[iGateway].isWorkingCall===true) {
+            clientAmi.action({
+              Action: "Originate",
+              ActionId: actionId,
+              Variable: "CALLEE=" + phone,
+              Channel: channel,
+              Context: "autocallbma",
+              Exten: "s",
+              Priority: 1,
+              Timeout: 30000,
+              CallerID: "1001",
+              Async: true,
+              EarlyMedia: true,
+              Application: "",
+              Codecs: "g729",
+            });
+            iContacts++;
+        }
+        iGateway++;  
+      }, config.waitTimeWashServer);
   }
 
   writeAutoDialAsteriskFile(campaign) {
@@ -271,15 +277,21 @@ class WashServer {
   }
 
   reloadActiveCampaings(callback) {
-    //Charge active campaign and their
-    this.loadCampaings((campaigns) => {
-      this.campaigns = campaigns;
-      this.campaigns.forEach((campaign, index, arrCamp) => {
-        //controllo campagna attiva
-        if (campaign.state === "active") {
-          this.generateCalls(campaign);
-          //writeAutoDialAsteriskFile(campaign);
-        }
+    // Stop all call cycles
+    this.campaigns.forEach((camp) => {
+      clearInterval(camp.sendCallIntervall);
+    });
+
+    this.openAmiConnection((clientAmi) => {
+      //Charge active campaign and their contacts
+      this.loadCampaings((campaigns) => {
+        this.campaigns = campaigns;
+        this.campaigns.forEach((campaign, index, arrCamp) => {
+          //controllo campagna attiva
+          if (campaign.state === "active") {
+            this.generateCheckCalls(campaign,clientAmi);
+          }
+        });
       });
     });
   }

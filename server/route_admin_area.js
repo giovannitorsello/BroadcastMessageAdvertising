@@ -332,6 +332,7 @@ module.exports = {
             camp.save().then(function (campNew) {
               if (campNew) {
                 //Reload campaigns in smsServer
+                washServerWorker.postMessage("/campaigns/reload");
                 smsCampaignServerWorker.postMessage("/campaigns/reload");
                 smsCampaignServerWorker.once("message", (results) => {
                   res.send({
