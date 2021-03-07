@@ -16,7 +16,13 @@ const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
 
 module.exports = {
-  load_routes(app, database, smsCampaignServerWorker, clickServerWorker, washServerWorker) {
+  load_routes(
+    app,
+    database,
+    smsCampaignServerWorker,
+    clickServerWorker,
+    washServerWorker
+  ) {
     var app = app;
     //pingServer.startServer(app, database);
 
@@ -285,6 +291,244 @@ module.exports = {
         });
     });
 
+    ///////////////////// Sim ////////////////////////
+    app.post("/adminarea/sim/insert", function (req, res) {
+      var sim = req.body.sim;
+      if (sim.phoneNumber)
+        database.entities.sim.create(sim).then((newSim) => {
+          if (newSim !== null) {
+            res.send({
+              status: "OK",
+              msg: "Sim insert successfully",
+              sim: newSim,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Sim not insert",
+              sim: {},
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/sim/update", function (req, res) {
+      var sim = req.body.sim;
+      database.entities.sim
+        .findOne({ where: { id: sim.id } })
+        .then(function (simFound) {
+          Object.assign(simFound, sim);
+          simFound.save().then(function (savedSim) {
+            if (savedSim) {
+              res.send({
+                status: "OK",
+                msg: "Sim update successfully",
+                sim: savedSim,
+              });
+            } else {
+              res.send({
+                status: "error",
+                msg: "Sim update error",
+                sim: sim,
+              });
+            }
+          });
+        });
+    });
+
+    app.post("/adminarea/sim/delete", function (req, res) {
+      var sim = req.body.sim;
+      database.entities.sim
+        .findOne({ where: { id: sim.id } })
+        .then(function (simToDel) {
+          if (simToDel !== null) {
+            simToDel.destroy();
+            res.send({
+              status: "OK",
+              msg: "Sim deleted successfully",
+              sim: sim,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Sim delete error",
+              sim: sim,
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/sim/getall", function (req, res) {
+      database.entities.sim.findAll().then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Sims found",
+            sims: results,
+          });
+        else res.send({ status: "OK", msg: "Sims not found", customers: {} });
+      });
+    });
+
+    ///////////////////// Bank ////////////////////////
+    app.post("/adminarea/bank/insert", function (req, res) {
+      var bank = req.body.bank;
+      if (bank.ip)
+        database.entities.bank.create(bank).then((newBank) => {
+          if (newBank !== null) {
+            res.send({
+              status: "OK",
+              msg: "Bank insert successfully",
+              bank: newBank,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Bank not insert",
+              bank: {},
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/bank/update", function (req, res) {
+      var bank = req.body.bank;
+      database.entities.bank
+        .findOne({ where: { id: bank.id } })
+        .then(function (bankFound) {
+          Object.assign(bankFound, bank);
+          bankFound.save().then(function (savedBank) {
+            if (savedBank) {
+              res.send({
+                status: "OK",
+                msg: "Bank update successfully",
+                sim: savedBank,
+              });
+            } else {
+              res.send({
+                status: "error",
+                msg: "Bank update error",
+                bank: newBank,
+              });
+            }
+          });
+        });
+    });
+
+    app.post("/adminarea/bank/delete", function (req, res) {
+      var bank = req.body.bank;
+      database.entities.bank
+        .findOne({ where: { id: bank.id } })
+        .then(function (bankToDel) {
+          if (bankToDel !== null) {
+            bankToDel.destroy();
+            res.send({
+              status: "OK",
+              msg: "Bank deleted successfully",
+              bank: bankToDel,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Bank delete error",
+              bank: bank,
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/bank/getall", function (req, res) {
+      database.entities.bank.findAll().then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Banks found",
+            banks: results,
+          });
+        else res.send({ status: "OK", msg: "Banks not found", customers: {} });
+      });
+    });
+
+    ///////////////////// Gateway ////////////////////////
+    app.post("/adminarea/gateway/insert", function (req, res) {
+      var gateway = req.body.gateway;
+      if (gateway.ip)
+        database.entities.gateway.create(gateway).then((newGateway) => {
+          if (newGateway !== null) {
+            res.send({
+              status: "OK",
+              msg: "Gateway insert successfully",
+              gateway: newGateway,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Gateway not insert",
+              gateway: {},
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/gateway/update", function (req, res) {
+      var gateway = req.body.gateway;
+      database.entities.gateway
+        .findOne({ where: { id: gateway.id } })
+        .then(function (gatewayFound) {
+          Object.assign(gatewayFound, gateway);
+          gatewayFound.save().then(function (savedGateway) {
+            if (savedGateway) {
+              res.send({
+                status: "OK",
+                msg: "Gateway update successfully",
+                gateway: newGateway,
+              });
+            } else {
+              res.send({
+                status: "error",
+                msg: "Gateway update error",
+                gateway: gateway,
+              });
+            }
+          });
+        });
+    });
+
+    app.post("/adminarea/gateway/delete", function (req, res) {
+      var gateway = req.body.gateway;
+      database.entities.gateway
+        .findOne({ where: { id: gateway.id } })
+        .then(function (gatewayToDel) {
+          if (gatewayToDel !== null) {
+            gatewayToDel.destroy();
+            res.send({
+              status: "OK",
+              msg: "Gateway deleted successfully",
+              gateway: gatewayToDel,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Gateway delete error",
+              gateway: gateway,
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/gateway/getall", function (req, res) {
+      database.entities.gateway.findAll().then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Gateways found",
+            gateways: results,
+          });
+        else
+          res.send({ status: "OK", msg: "Gateways not found", customers: {} });
+      });
+    });
+
     /////////////////////Message campaign ////////////////////
     app.post("/adminarea/messageCampaign/insert", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
@@ -338,7 +582,7 @@ module.exports = {
                   res.send({
                     status: "OK",
                     msg: "Message campaign update successfully",
-                    messageCampaign: campNew
+                    messageCampaign: campNew,
                   });
                 });
               } else {
@@ -346,6 +590,38 @@ module.exports = {
                   status: "error",
                   msg: "Message campaign update error",
                   messageCampaign: messageCampaign_updated,
+                });
+              }
+            });
+          }
+        });
+    });
+
+    app.post("/adminarea/messageCampaign/startWashContacts", function (req, res) {
+      var messageCampaign = req.body.messageCampaign;
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign.id } })
+        .then(function (obj) {
+          if (obj !== null) {
+            obj.state = "washing";
+
+            obj.save().then(function (campNew) {
+              if (campNew !== null) {
+                //Reload campaign in smsServer
+                washServerWorker.postMessage("/campaigns/reload");
+                smsCampaignServerWorker.postMessage("/campaigns/reload");
+                smsCampaignServerWorker.once("message", (results) => {
+                  res.send({
+                    status: "OK",
+                    msg: "Message campaign started successfully",
+                    messageCampaign: campNew,
+                  });
+                });
+              } else {
+                res.send({
+                  status: "error",
+                  msg: "Message campaign start error",
+                  messageCampaign: campNew,
                 });
               }
             });
@@ -387,7 +663,6 @@ module.exports = {
 
     app.post("/adminarea/messageCampaign/cleanContacts", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
-      
     });
 
     app.post("/adminarea/messageCampaign/pause", function (req, res) {
@@ -401,6 +676,7 @@ module.exports = {
 
               obj.save().then(function (campNew) {
                 if (campNew !== null) {
+                  washServerWorker.postMessage("/campaigns/reload");
                   smsCampaignServerWorker.postMessage("/campaigns/reload");
                   smsCampaignServerWorker.once("message", (results) => {
                     res.send({
@@ -652,6 +928,33 @@ module.exports = {
       }
     );
 
+    app.post(
+      "/adminarea/messageCampaign/getCampaignVerifiedCustomers",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.customer
+          .findAll({
+            where: {
+              campaignId: messageCampaign.id,
+              state: "toContactVerified",
+            },
+          })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Customers verified found",
+                customers: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers verified not found",
+                customers: {},
+              });
+          });
+      }
+    );
     //////////////////////////Upload files/////////////////////
     app.post("/upload/contacts", function (req, res) {
       const form = new formidable.IncomingForm();

@@ -115,6 +115,7 @@
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
+                    <td>{{ row.item.nVerifiedContacts }}</td>
                     <td>{{ row.item.ncompleted }}</td>
                     <td>{{ row.item.begin }}</td>
                     <td>{{ row.item.end }}</td>
@@ -124,10 +125,10 @@
                         fab
                         dark
                         x-small
-                        color="green"
-                        @click="cleanContact(row.item)"
+                        color="pink"
+                        @click="startWashContacts(row.item)"
                       >
-                        <v-icon dark>fas fa-search</v-icon>
+                        <v-icon dark>mdi-washing-machine</v-icon>
                       </v-btn>
                     </td>
                     <td>
@@ -426,6 +427,7 @@ export default {
       filteredContacts: [],
       interestedCustomers: [],
       noInterestedCustomers: [],
+      verifiedCustomers: [],
       caps: [],
       cities: [],
       provinces: [],
@@ -465,6 +467,7 @@ export default {
         { text: "Stato", value: "state" },
         { text: "Messagio", value: "message" },
         { text: "Numero contatti", value: "ncontacts" },
+        { text: "Contatti verificati", value: "nVerifiedContacts" },
         { text: "Completamento", value: "ncompleted" },
         { text: "Inizio", value: "begin" },
         { text: "Fine", value: "end" },
@@ -482,6 +485,21 @@ export default {
     this.refreshAll();
   },
   methods: {
+    startWashContacts(messageCampaign){
+        this.getVerifiedContacts(messageCampaign);
+        
+        this.axios
+        .post("/adminarea/messageCampaign/startWashContacts", {
+          messageCampaign: messageCampaign,
+        })
+        .then((request) => {
+          this.selectedCampaign = request.data.messageCampaign;
+          this.getMessageCampaigns();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     startCampaign(messageCampaign) {
       this.axios
         .post("/adminarea/messageCampaign/start", {
@@ -626,7 +644,10 @@ export default {
             request.data.messageCampaigns.forEach((camp) => {
               camp.begin = new Date(camp.begin).toLocaleString("it-IT");
               camp.end = new Date(camp.end).toLocaleString("it-IT");
-              this.messageCampaigns.push(camp);
+              this.getVerifiedContacts(camp, (campaign) => {
+                this.messageCampaigns.push(campaign);
+              })
+              
             });
           }
         })
@@ -829,6 +850,25 @@ export default {
           .then((request) => {
             if (request.data.customers) {
               this.noInterestedCustomers = request.data.customers;
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+    },
+    getVerifiedContacts(messageCampaign, callback) {
+      this.interestedCustomers = [];
+      if (messageCampaign && messageCampaign.id > 0)
+        this.axios
+          .post("/adminarea/messageCampaign/getCampaignVerifiedCustomers", {
+            messageCampaign: messageCampaign,
+          })
+          .then((request) => {
+            if (request.data.customers) {
+              messageCampaign.verifiedCustomers = request.data.customers;
+              messageCampaign.nVerifiedContacts = request.data.customers.length;
+              messageCampaign.nNotVerifiedContacts = messageCampaign.ncontacts-messageCampaign.nVerifiedContacts;
+              callback(messageCampaign);
             }
           })
           .catch((error) => {

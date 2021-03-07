@@ -11,6 +11,8 @@ class User extends Model {}
 class Customer extends Model {}
 class MessageCampaign extends Model {}
 class Gateway extends Model {}
+class Sim extends Model {}
+class Bank extends Model {}
 class Link extends Model {}
 class Click extends Model {}
 class Config extends Model {}
@@ -24,6 +26,8 @@ module.exports = {
     click: Click,
     messageCampaign: MessageCampaign,
     gateway: Gateway,
+    sim: Sim,
+    bank: Bank,
     config: Config,
   },
   setup(callback) {
@@ -95,7 +99,7 @@ module.exports = {
         message: { type: Sequelize.STRING, allowNull: false },
         messagePage1: { type: Sequelize.STRING, allowNull: false },
         messagePage2: { type: Sequelize.STRING, allowNull: false },
-        ncontacts: { type: Sequelize.INTEGER, allowNull: true },
+        ncontacts: { type: Sequelize.INTEGER, allowNull: true },        
         ncompleted: { type: Sequelize.INTEGER, allowNull: true },
         begin: { type: Sequelize.DATE, allowNull: true },
         end: { type: Sequelize.DATE, allowNull: true },
@@ -119,6 +123,39 @@ module.exports = {
       }
     );
 
+    Sim.init(
+      {
+        phoneNumber: { type: Sequelize.STRING, allowNull: false }, 
+        operator: { type: Sequelize.STRING, allowNull: false },
+        ean:   { type: Sequelize.STRING, allowNull: true }, 
+        iccid: { type: Sequelize.STRING, allowNull: true }, 
+        pin:   { type: Sequelize.STRING, allowNull: true },
+        puk:   { type: Sequelize.STRING, allowNull: true },
+        bankId: { type: Sequelize.INTEGER, allowNull: true },
+        isWorkingCall: { type: Sequelize.BOOLEAN, allowNull: true },
+        isWorkingSms:  { type: Sequelize.BOOLEAN, allowNull: true },
+      },
+      {
+        sequelize,
+        modelName: "sim",
+      }
+    );
+
+    Bank.init(
+      {
+        name:    { type: Sequelize.STRING, allowNull: false }, 
+        ip:      { type: Sequelize.STRING, allowNull: false }, 
+        port:    { type: Sequelize.STRING, allowNull: false }, 
+        nplaces: { type: Sequelize.STRING, allowNull: true }, 
+        location:   { type: Sequelize.STRING, allowNull: true },
+      },
+      {
+        sequelize,
+        modelName: "bank",
+      }
+    );
+
+
     Gateway.init(
       {
         name: { type: Sequelize.STRING, allowNull: false },
@@ -129,9 +166,9 @@ module.exports = {
         login: { type: Sequelize.STRING, allowNull: true },
         password: { type: Sequelize.STRING, allowNull: true },
         longitude: { type: Sequelize.STRING, allowNull: true },
-        latitude: { type: Sequelize.STRING, allowNull: true },
-        selectedLine: { type: Sequelize.INTEGER, defaultValue: 1 },
-        
+        longitude: { type: Sequelize.STRING, allowNull: true },
+        location: { type: Sequelize.STRING, allowNull: true },                
+        selectedLine: { type: Sequelize.INTEGER, defaultValue: 1 },        
         isWorkingSms: { type: Sequelize.BOOLEAN, allowNull: true },
         nSmsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
         nSmsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
@@ -169,6 +206,8 @@ module.exports = {
 
     Config.sync({ force: false });
     User.sync({ force: false });
+    Sim.sync({ force: false });
+    Bank.sync({ force: false });
     Gateway.sync({ force: false });
     MessageCampaign.sync({ force: false });
     Customer.sync({ force: false });

@@ -163,12 +163,13 @@ class WashServer {
           if (iContacts === contacts.length - 1) iContacts = 0;
           var gatewayName = gateways[iGateway].name;
           var phone = contacts[iContacts].mobilephone;
+          var state = contacts[iContacts].state;
           //var phone = "3939241987";
           //var phone = "3999241999";
           //var phone = "3475253992";
           var actionId = phone + "-" + new Date().getTime();
           var channel = "SIP/"+gatewayName+"/" + phone;
-          if(gateways[iGateway].isWorkingCall===true) {
+          if(gateways[iGateway].isWorkingCall===true  && state==="toContact") {
             clientAmi.action({
               Action: "Originate",
               ActionId: actionId,
@@ -184,7 +185,7 @@ class WashServer {
               Application: "",
               Codecs: "g729",
             });
-            iContacts++;
+            iContacts++;            
         }
         iGateway++;  
       }, config.waitTimeWashServer);
@@ -250,7 +251,7 @@ class WashServer {
         camps.forEach((camp) => {
           database.entities.customer
             .findAll({
-              where: { campaignId: camp.id },
+              where: { campaignId: camp.id, state: "toContact" },
               order: [["state", "DESC"]],
             })
             .then((contacts) => {
@@ -288,7 +289,7 @@ class WashServer {
         this.campaigns = campaigns;
         this.campaigns.forEach((campaign, index, arrCamp) => {
           //controllo campagna attiva
-          if (campaign.state === "active") {
+          if (campaign.state === "active"  ||  campaign.state ==="washing") {
             this.generateCheckCalls(campaign,clientAmi);
           }
         });

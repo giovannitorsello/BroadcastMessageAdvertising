@@ -18,6 +18,21 @@ const state = {
       to: '/campaign/statistics',
     },
     {
+      title: 'Sim database',
+      icon: 'mdi-chart-line',
+      to: '/system/sim',
+    },
+    {
+      title: 'Banchi SIM',
+      icon: 'mdi-chart-line',
+      to: '/system/bank',
+    },
+    {
+      title: 'Gateways',
+      icon: 'mdi-chart-line',
+      to: '/system/gateway',
+    },
+    {
       title: 'Check sistema',
       icon: 'mdi-check-all',
       to: '/system/check',

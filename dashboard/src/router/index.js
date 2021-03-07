@@ -23,6 +23,9 @@ const router = new Router({
       // Pages
       route('CampaignManage', null, 'campaign/manage'),
       route('CampaignStatistics', null, 'campaign/statistics'),
+      route('Sim', null, 'system/sim'),
+      route('Bank', null, 'system/bank'),
+      route('Gateway', null, 'system/gateway'),
       route('SystemCheck', null, 'system/check'),
       route('SystemUsers', null, 'system/user'),
 
@@ -61,10 +64,5 @@ router.beforeEach((to, from, next) => {
   }
 })
 
-/*
-router.beforeEach((to, from, next) => {
-  return to.path.endsWith('/') ? next() : next(trailingSlash(to.path))
-})
-*/
 
 export default router
