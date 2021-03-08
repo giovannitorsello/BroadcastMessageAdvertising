@@ -481,7 +481,7 @@ module.exports = {
               res.send({
                 status: "OK",
                 msg: "Gateway update successfully",
-                gateway: newGateway,
+                gateway: savedGateway,
               });
             } else {
               res.send({
@@ -525,7 +525,53 @@ module.exports = {
             gateways: results,
           });
         else
-          res.send({ status: "OK", msg: "Gateways not found", customers: {} });
+          res.send({ status: "OK", msg: "Gateways not found", gateways: {} });
+      });
+    });
+
+    app.post("/adminarea/gateway/reset", function (req, res) {
+      var gatewaysReset = [];
+      database.entities.gateway.findAll().then((gateways) => {
+        var iSim = 0;
+        gateways.forEach((gateway, iGateway, array) => {
+          database.entities.sim
+            .findAll({
+              where: { bankId: gateway.bankId },
+              order: [["id", "ASC"]],
+            })
+            .then((sims) => {
+              gateway.objData = {
+                lines: [],
+                isWorkingSms: [],
+                isWorkingCall: [],
+                smsSent: [],
+                smsReceived: [],
+                callsSent: [],
+                callsReceived: [],
+              };
+              for (var i = 0; i < gateway.nRadios; i++) {
+                if (iSim < sims.length) {
+                  gateway.objData.lines[i] = sims[iSim].phoneNumber;
+                  gateway.objData.isWorkingSms[i] = 1;
+                  gateway.objData.isWorkingCall[i] = 1;
+                  gateway.objData.smsSent[i] = 0;
+                  gateway.objData.smsReceived[i] = 0;
+                  gateway.objData.callsSent[i] = 0;
+                  gateway.objData.callsReceived[i] = 0;
+                  iSim++;
+                }
+              }
+              gateway.save().then((gat) => {
+                gatewaysReset.push(gat);
+                if (iGateway === array.length - 1)
+                  res.send({
+                    status: "OK",
+                    msg: "Gateways reset",
+                    gateways: gatewaysReset,
+                  });
+              });
+            });
+        });
       });
     });
 
@@ -597,37 +643,40 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/messageCampaign/startWashContacts", function (req, res) {
-      var messageCampaign = req.body.messageCampaign;
-      database.entities.messageCampaign
-        .findOne({ where: { id: messageCampaign.id } })
-        .then(function (obj) {
-          if (obj !== null) {
-            obj.state = "washing";
+    app.post(
+      "/adminarea/messageCampaign/startWashContacts",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.messageCampaign
+          .findOne({ where: { id: messageCampaign.id } })
+          .then(function (obj) {
+            if (obj !== null) {
+              obj.state = "washing";
 
-            obj.save().then(function (campNew) {
-              if (campNew !== null) {
-                //Reload campaign in smsServer
-                washServerWorker.postMessage("/campaigns/reload");
-                smsCampaignServerWorker.postMessage("/campaigns/reload");
-                smsCampaignServerWorker.once("message", (results) => {
+              obj.save().then(function (campNew) {
+                if (campNew !== null) {
+                  //Reload campaign in smsServer
+                  washServerWorker.postMessage("/campaigns/reload");
+                  smsCampaignServerWorker.postMessage("/campaigns/reload");
+                  smsCampaignServerWorker.once("message", (results) => {
+                    res.send({
+                      status: "OK",
+                      msg: "Message campaign started successfully",
+                      messageCampaign: campNew,
+                    });
+                  });
+                } else {
                   res.send({
-                    status: "OK",
-                    msg: "Message campaign started successfully",
+                    status: "error",
+                    msg: "Message campaign start error",
                     messageCampaign: campNew,
                   });
-                });
-              } else {
-                res.send({
-                  status: "error",
-                  msg: "Message campaign start error",
-                  messageCampaign: campNew,
-                });
-              }
-            });
-          }
-        });
-    });
+                }
+              });
+            }
+          });
+      }
+    );
 
     app.post("/adminarea/messageCampaign/start", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
@@ -1005,7 +1054,7 @@ module.exports = {
       const form = new formidable.IncomingForm();
       form.parse(req, function (err, fields, files) {
         var oldPath = files.csv_data.path;
-        var idBank = fields.bankId;                
+        var idBank = fields.bankId;
         if (!idBank || idBank <= 0) {
           res.send({
             status: "Error",
@@ -1014,7 +1063,8 @@ module.exports = {
           });
           return;
         }
-        var newPath =path.join(__dirname, "uploads") + "/" + files.csv_data.name;
+        var newPath =
+          path.join(__dirname, "uploads") + "/" + files.csv_data.name;
         var rawData = fs.readFileSync(oldPath);
         console.log("Received file:  " + oldPath);
         console.log("Upload file:  " + newPath);
@@ -1044,7 +1094,6 @@ module.exports = {
         });
       });
     });
-
 
     ///////////////////// Gateways ////////////////////////
     app.post("/adminarea/gateway/getAll", function (req, res) {

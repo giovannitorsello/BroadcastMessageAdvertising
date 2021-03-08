@@ -18,6 +18,16 @@
         ></v-text-field>
       </v-col>
       <v-col>
+        <v-select
+          v-model="selectedGateway.bankId"
+          :items="banks"
+          label="Banco SIM"
+          item-text="name"
+          item-value="id"
+        >
+        </v-select>
+      </v-col>
+      <v-col>
         <v-text-field
           v-model="selectedGateway.nRadios"
           counter="15"
@@ -90,8 +100,21 @@
         ></v-text-field>
       </v-col>
     </v-row>
-    <v-btn classs="primary" @click="insertGateway()">Inserisci</v-btn>
+    <v-row>
+      <v-col>
+        <v-btn classs="primary" @click="insertGateway()">Inserisci</v-btn>
+      </v-col>
+    </v-row>
 
+    <v-card>
+      <p>Numeri di telefono</p>
+      <v-row v-if="selectedGateway && selectedGateway.objData">
+        <v-col v-for="line in selectedGateway.objData.lines" v-bind:key="line">
+          {{ line }}
+        </v-col>
+      </v-row>
+    </v-card>
+    
     <v-row>
       <v-col>
         <v-data-table
@@ -108,6 +131,7 @@
               <td>{{ row.item.id }}</td>
               <td>{{ row.item.name }}</td>
               <td>{{ row.item.location }}</td>
+              <td>{{ row.item.bankId }}</td>
               <td>{{ row.item.nRadios }}</td>
               <td>{{ row.item.ip }}</td>
               <td>{{ row.item.port }}</td>
@@ -134,6 +158,9 @@
         </v-data-table>
       </v-col>
     </v-row>
+    <v-btn classs="primary" @click="insertSimInGateway()"
+      >Carica sim nei gateway</v-btn
+    >
 
     <ConfirmDlg ref="confirm" />
     <NewOrUpdateDlg ref="neworupdate" />
@@ -152,6 +179,7 @@ export default {
         { text: "ID", value: "id" },
         { text: "Nome", value: "name" },
         { text: "Collocazione", value: "location" },
+        { text: "Banco Sim", value: "bankId" },
         { text: "Numero Linee", value: "nRadios" },
         { text: "IP", value: "ip" },
         { text: "Porta", value: "port" },
@@ -170,44 +198,56 @@ export default {
       ],
       selectedGateway: {},
       gateways: [],
+      banks: [],
     };
   },
   mounted() {
+    this.loadBanks();
     this.loadGateways();
   },
   methods: {
-    async insertGateway() { 
-           
+    async insertSimInGateway() {
+      if (
+        await this.$refs.confirm.open(
+          "Conferma riprogrammazione",
+          "Tutti i contatori saranno azzzerati. Sei sicuro di voler riprogrammare i gateways con le sim?"
+        )
+      ) {
+        this.axios.post("/adminarea/gateway/reset", {}).then((request) => {
+          this.gateways = request.data.gateways;
+        });
+      }
+    },
+    async insertGateway() {
       if (
         await this.$refs.neworupdate.open(
           "Nuova/aggiornamento",
           "Vuoi creare un nuovo gateway?"
         )
       ) {
-        var newGateway={};
-        Object.assign(newGateway,this.selectedGateway); newGateway.id="";
+        var newGateway = {};
+        Object.assign(newGateway, this.selectedGateway);
+        newGateway.id = "";
         this.axios
-        .post("/adminarea/gateway/insert", { gateway: newGateway })
-        .then((request) => {
-          var gatewayInserted = request.data.gateway;
-          if (gatewayInserted) {
-            this.gateways.push(gatewayInserted);
-            this.selectedGateway = gatewayInserted;
-          }
-        });
+          .post("/adminarea/gateway/insert", { gateway: newGateway })
+          .then((request) => {
+            var gatewayInserted = request.data.gateway;
+            if (gatewayInserted) {
+              this.gateways.push(gatewayInserted);
+              this.selectedGateway = gatewayInserted;
+            }
+          });
       } else {
         this.axios
-        .post("/adminarea/gateway/update", { gateway: this.selectedGateway })
-        .then((request) => {
-          var gatewayInserted = request.data.gateway;
-          if (gatewayInserted) {
-            this.gateways.push(gatewayInserted);
-            this.selectedGateway = gatewayInserted;
-          }
-        });
+          .post("/adminarea/gateway/update", { gateway: this.selectedGateway })
+          .then((request) => {
+            var gatewayInserted = request.data.gateway;
+            if (gatewayInserted) {
+              this.selectedGateway = gatewayInserted;
+              this.loadGateways();
+            }
+          });
       }
-
-      
     },
     async deleteGateway(gatToDel) {
       if (
@@ -234,8 +274,21 @@ export default {
       }
     },
     selectGateway(gat) {
-      this.selectedGateway= {};
-      Object.assign(this.selectedGateway , gat);
+      this.selectedGateway = {};
+      Object.assign(this.selectedGateway, gat);
+    },
+    loadBanks() {
+      this.banks = [];
+      this.axios
+        .post("/adminarea/bank/getAll")
+        .then((request) => {
+          if (request.data.banks) {
+            this.banks = request.data.banks;
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     },
     loadGateways() {
       this.gateways = [];

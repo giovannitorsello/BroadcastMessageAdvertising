@@ -182,6 +182,8 @@ module.exports = {
         nMaxDailyCallPerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxCallPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },        
         
+        bankId: { type: Sequelize.INTEGER, allowNull: true },
+
         objData: {
           type: Sequelize.JSON,
           allowNull: false,

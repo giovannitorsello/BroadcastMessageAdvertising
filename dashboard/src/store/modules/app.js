@@ -19,17 +19,17 @@ const state = {
     },
     {
       title: 'Sim database',
-      icon: 'mdi-chart-line',
+      icon: 'mdi-sim-outline',
       to: '/system/sim',
     },
     {
       title: 'Banchi SIM',
-      icon: 'mdi-chart-line',
+      icon: 'mdi-office-building',
       to: '/system/bank',
     },
     {
       title: 'Gateways',
-      icon: 'mdi-chart-line',
+      icon: 'mdi-server',
       to: '/system/gateway',
     },
     {

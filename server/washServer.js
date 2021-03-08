@@ -269,8 +269,8 @@ class WashServer {
     var gateways = [];
     database.entities.gateway
       .findAll()
-      .then((results) => {
-        callback(results);
+      .then((gateways) => {        
+        callback(gateways);
       })
       .catch((error) => {
         console.log(error);
