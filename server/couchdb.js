@@ -1,7 +1,7 @@
 const config = require("./config.js").load();
 
-const nano = require('nano')(config.couchdb.url);
-const db_couch = nano.use(config.couchdb.db);
+//const nano = require('nano')(config.couchdb.url);
+//const db_couch = nano.use(config.couchdb.db);
 
 module.exports = {
 
