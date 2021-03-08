@@ -1001,6 +1001,51 @@ module.exports = {
       });
     });
 
+    app.post("/upload/sims", function (req, res) {
+      const form = new formidable.IncomingForm();
+      form.parse(req, function (err, fields, files) {
+        var oldPath = files.csv_data.path;
+        var idBank = fields.bankId;                
+        if (!idBank || idBank <= 0) {
+          res.send({
+            status: "Error",
+            msg: "Error in bank id",
+            nsims: 0,
+          });
+          return;
+        }
+        var newPath =path.join(__dirname, "uploads") + "/" + files.csv_data.name;
+        var rawData = fs.readFileSync(oldPath);
+        console.log("Received file:  " + oldPath);
+        console.log("Upload file:  " + newPath);
+
+        fs.writeFile(newPath, rawData, (err) => {
+          if (err) console.log(err);
+          else {
+            //delete all old customers
+            database.entities.sim.destroy({
+              where: { bankId: idBank },
+            });
+
+            utility.import_Sims_From_Csv(
+              idBank,
+              newPath,
+              database,
+              (nImported) => {
+                console.log("File csv successfully imported.");
+                res.send({
+                  status: "OK",
+                  msg: "Contacts found",
+                  nsims: nImported,
+                });
+              }
+            );
+          }
+        });
+      });
+    });
+
+
     ///////////////////// Gateways ////////////////////////
     app.post("/adminarea/gateway/getAll", function (req, res) {
       smsCampaignServerWorker.postMessage("/gateways/getAll");

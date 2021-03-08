@@ -125,6 +125,7 @@ module.exports = {
 
     Sim.init(
       {
+        name: { type: Sequelize.STRING, allowNull: false }, 
         phoneNumber: { type: Sequelize.STRING, allowNull: false }, 
         operator: { type: Sequelize.STRING, allowNull: false },
         ean:   { type: Sequelize.STRING, allowNull: true }, 

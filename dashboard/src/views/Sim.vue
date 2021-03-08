@@ -1,5 +1,6 @@
 <template>
   <div>
+    <p>Inserimento singola scheda</p>
     <v-row>
       <v-col>
         <v-text-field
@@ -9,7 +10,7 @@
           label="Numero di Telefono"
         ></v-text-field>
       </v-col>
-       <v-col>
+      <v-col>
         <v-text-field
           v-model="selectedSim.operator"
           counter="14"
@@ -59,8 +60,33 @@
         >
         </v-select>
       </v-col>
+      <v-col>
+        <v-btn classs="primary" @click="insertSim()">Inserisci</v-btn>
+      </v-col>
     </v-row>
-    <v-btn classs="primary" @click="insertSim()">Inserisci</v-btn>
+    
+    <p>Importazione massiva</p>
+    <v-row>
+      <v-col>
+        <v-select
+          v-model="selectedSim.bankId"
+          :items="banks"
+          label="Banco SIM"
+          item-text="name"
+          item-value="id"
+        >
+        </v-select>
+      </v-col>
+      <v-col>
+        <v-file-input
+          v-on:change="loadCSVFile"
+          v-model="fileCSVSim"
+          truncate-length="15"
+          show-size
+          label="Carica il file CSV delle SIM"
+        ></v-file-input>
+      </v-col>      
+    </v-row>
 
     <v-row>
       <v-col>
@@ -76,13 +102,16 @@
               :class="{ primary: row.item.id === selectedSim.id }"
             >
               <td>{{ row.item.id }}</td>
+              <td>{{ row.item.name }}</td>
               <td>{{ row.item.phoneNumber }}</td>
               <td>{{ row.item.operator }}</td>
+              <td>{{ row.item.bankId }}</td>
               <td>{{ row.item.iicd }}</td>
               <td>{{ row.item.ean }}</td>              
-              <td>{{ row.item.bankId }}</td>
               <td>{{ row.item.pin }}</td>
               <td>{{ row.item.puk }}</td>
+              <td>{{ row.item.isWorkingCall }}</td>
+              <td>{{ row.item.isWorkingSms }}</td>
               <td>
                 <v-btn
                   class="mx-4"
@@ -116,16 +145,21 @@ export default {
     return {
       headerSims: [
         { text: "ID", value: "id" },
+        { text: "Nome", value: "name" },
         { text: "Numero Telefono", value: "phoneNumber" },
         { text: "Operatore", value: "operator" },
+        { text: "Banco SIM", value: "bankId" },
         { text: "Codice IICD", value: "iicd" },
-        { text: "Codice EAN", value: "ean" },        
+        { text: "Codice EAN", value: "ean" },
         { text: "Pin", value: "pin" },
         { text: "Puk", value: "puk" },
+        { text: "Abilit. Chiamate", value: "isWorkingCall" },
+        { text: "Abilit. Sms", value: "isWorkingSms" },
       ],
       selectedSim: {},
       sims: [],
       banks: [],
+      fileCSVSim: "",
     };
   },
   mounted() {
@@ -133,40 +167,38 @@ export default {
     this.loadBanks();
   },
   methods: {
-    async insertSim() {      
+    async insertSim() {
       if (
         await this.$refs.neworupdate.open(
           "Nuova/aggiornamento",
           "Vuoi creare una nuova SIM?"
         )
       ) {
-        
-        var newSim={};
-        Object.assign(newSim,this.selectedSim); newSim.id="";
+        var newSim = {};
+        Object.assign(newSim, this.selectedSim);
+        newSim.id = "";
         this.axios
-        .post("/adminarea/sim/insert", { sim: newSim })
-        .then((request) => {
-          var simInserted = request.data.sim;
-          if (simInserted) {
-            this.sims.push(simInserted);
-            this.selectedSim = simInserted;
-          }
-        });
+          .post("/adminarea/sim/insert", { sim: newSim })
+          .then((request) => {
+            var simInserted = request.data.sim;
+            if (simInserted) {
+              this.sims.push(simInserted);
+              this.selectedSim = simInserted;
+            }
+          });
       } else {
         this.axios
-        .post("/adminarea/sim/update", { sim: this.selectedSim })
-        .then((request) => {
-          var simInserted = request.data.sim;
-          if (simInserted) {            
-            this.selectedSim = simInserted;
-          }
-        });
+          .post("/adminarea/sim/update", { sim: this.selectedSim })
+          .then((request) => {
+            var simInserted = request.data.sim;
+            if (simInserted) {
+              this.selectedSim = simInserted;
+            }
+          });
       }
-
-      
     },
     selectSim(sim) {
-      this.selectedSim={};
+      this.selectedSim = {};
       Object.assign(this.selectedSim, sim);
     },
     async deleteSim(simToDel) {
@@ -218,6 +250,23 @@ export default {
         .catch((error) => {
           console.log(error);
         });
+    },
+    loadCSVFile() {
+        var formData = new FormData();
+        formData.append("csv_data", this.fileCSVSim);   
+        formData.append("bankId", this.selectedSim.bankId);     
+        this.axios
+          .post("/upload/sims", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((request) => {            
+            this.loadSims();
+          })
+          .catch((error) => {
+            console.log(error);
+          });      
     },
   },
 };

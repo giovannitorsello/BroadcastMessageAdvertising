@@ -125,6 +125,76 @@ module.exports = {
           });
       });
   },
+  import_Sims_From_Csv(idBank,filename, database, callback) {
+    console.log("Destroy old sims and import new");
+    var nImported = 0;
+    var sims = [];
+    //Delete old contacts
+    database.entities.sim
+      .destroy({ where: { bankId: idBank } })
+      .then((results) => {
+        const rows = [];
+        fs.createReadStream(filename)
+          .pipe(csvParser({ separator: config.csvSeparator }))
+          .on("data", (data) => {
+            var sim = {};
+            sim.id = "";
+            sim.bankId=idBank;
+            sim.name = data.name;
+            sim.phoneNumber = data.phoneNumber;
+            sim.operator = data.operator;
+            sim.iccid = data.iccid;
+            sim.ean = data.ean;
+            sim.pin = data.pin;
+            sim.puk = data.puk;
+            sim.isWorkingCall = 1;
+            sim.isWorkingSms = 1;
+            sim.objData = {};
+            console.log("Sim try to insert " + sim.phoneNumber);
+            if (sim.phoneNumber) {
+              sims.push(sim);
+            }
+          })
+          .on("end", () => {
+            console.log("Read CSV successfully processed: " + filename);
+            var filename_import =
+              config.database.secureimportfolder +
+              "/import_sim.csv";
+
+            //save data in csv standard file
+            const csvWriter = createCsvWriter({
+              path: filename_import,
+              header: [
+                { id: "name", title: "name" },
+                { id: "phoneNumber", title: "phoneNumber" },
+                { id: "operator", title: "operator" },
+                { id: "ean", title: "ean" },
+                { id: "iccid", title: "iccid" },
+                { id: "pin", title: "pin" },
+                { id: "puk", title: "puk" },
+                { id: "bankId", title: "bankId" },
+                { id: "isWorkingCall", title: "isWorkingCall" },
+                { id: "isWorkingSms", title: "isWorkingSms" },                
+              ],
+            });
+            csvWriter.writeRecords(sims).then(() => {
+              console.log(
+                "Write CSV successfully processed: " + filename_import
+              );
+              
+              var sql =
+                "LOAD DATA INFILE '" +
+                filename_import +
+                "' INTO TABLE bma.sims  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 ROWS "+
+                " (name,phoneNumber,operator,ean,iccid,pin,puk,bankId,isWorkingCall,isWorkingSms)";
+              database.insert_bulk(sql, results => {
+                  console.log("CSV successfully imported in database");                  
+                  callback(results[1]);
+                })
+            });            
+          });
+      });
+  },
   makeAuthenticationCode() {
     var rnd = randtoken.generate(5, "0123456789");
     var d = new Date(); //now date
