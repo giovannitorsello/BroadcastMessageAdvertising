@@ -80,7 +80,7 @@ class SmsServer {
       //controllo campagna attiva
       if (campaign.state === "active") {
         //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
-        //this.sendNextMessage(campaign, (response) => console.log(response));
+        this.sendNextMessage(campaign, (response) => console.log(response));
       }
     });
   }
@@ -108,7 +108,7 @@ class SmsServer {
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      contact.state === "toContactVerified" &&
+      contact.state === "toContact" &&
       campaign.state === "active"
     ) {
       //Line selection

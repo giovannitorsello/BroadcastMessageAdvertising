@@ -137,6 +137,7 @@
               <td>{{ row.item.port }}</td>
               <td>{{ row.item.login }}</td>
               <td>{{ row.item.password }}</td>
+              <td>{{ row.item.isWorkingCall }} -- {{row.item.isWorkingSms}}</td>
               <td>{{ row.item.nMaxDailyMessagePerLine }}</td>
               <td>{{ row.item.nMaxSentPercetage }}</td>
               <td>{{ row.item.nMaxDailyCallPerLine }}</td>
@@ -185,6 +186,10 @@ export default {
         { text: "Porta", value: "port" },
         { text: "Login", value: "login" },
         { text: "Password", value: "password" },
+        {
+          text: "Abilitazione Chiamate - Sms",
+          value: "isWorkingCall",
+        },
         {
           text: "Messaggi per linea giornalieri",
           value: "nMaxDailyMessagePerLine",

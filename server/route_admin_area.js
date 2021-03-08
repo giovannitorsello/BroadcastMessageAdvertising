@@ -540,6 +540,8 @@ module.exports = {
               order: [["id", "ASC"]],
             })
             .then((sims) => {
+              gateway.isWorkingCall=true;
+              gateway.isWorkingSms=true;
               gateway.objData = {
                 lines: [],
                 isWorkingSms: [],
@@ -1008,6 +1010,13 @@ module.exports = {
     app.post("/upload/contacts", function (req, res) {
       const form = new formidable.IncomingForm();
       form.parse(req, function (err, fields, files) {
+        if(!files.csv_data) {
+          res.send({
+            status: "Error",
+            msg: "File not found",
+            ncontacts: nImported,
+          });
+        }
         var oldPath = files.csv_data.path;
         var idCampaign = fields.idCampaign;
         if (!idCampaign || idCampaign <= 0) {
