@@ -47,7 +47,6 @@ class SmsServer {
     }
   }
 
-
   resetCounters() {
     var iGat = 0;    
     while (iGat < this.smsGateways.length) {
@@ -429,7 +428,6 @@ class SmsServer {
           });
       });
   }
-
   
   startServer() {
     if (!isMainThread) {
