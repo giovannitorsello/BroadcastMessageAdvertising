@@ -11,6 +11,14 @@
       </v-col>
       <v-col>
         <v-text-field
+          v-model="selectedGateway.operator"
+          counter="14"
+          hint="inserisci l'operatore"
+          label="Operatore"
+        ></v-text-field>
+      </v-col>
+      <v-col>
+        <v-text-field
           v-model="selectedGateway.location"
           counter="15"
           hint="Indirizzo collocazione"
