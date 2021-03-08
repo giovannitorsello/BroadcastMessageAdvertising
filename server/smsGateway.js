@@ -72,7 +72,7 @@ module.exports = {
     if(device.objData && device.objData.lines)
         senderNumber=device.objData.lines[line];
 
-    if(config.production===true && device.isWorking===true) {
+    if(config.production===true && device.isWorking===1) {
       var senderNumber="";
       if(device.objData && device.objData.lines)
         senderNumber=device.objData.lines[line];

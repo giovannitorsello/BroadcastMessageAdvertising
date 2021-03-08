@@ -108,7 +108,7 @@ class SmsServer {
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      contact.state === "toContact" &&
+      (contact.state === "toContact" || contact.state === "toContactVerified")&&
       campaign.state === "active"
     ) {
       //Line selection
