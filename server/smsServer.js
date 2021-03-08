@@ -108,7 +108,7 @@ class SmsServer {
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      (contact.state === "toContact" || contact.state === "toContactVerified")&&
+      (contact.state === "toContact" || contact.state === "toContactVerified") &&
       campaign.state === "active"
     ) {
       //Line selection
@@ -217,20 +217,6 @@ class SmsServer {
             if (gateways[i].isWorkingSms) this.nTotRadios += gateways[i].nRadios;
             callback(gateways);
           }
-        } else {
-          gateways = config.smsGateways;
-          gateways.forEach((gat, index, array) => {
-            gat.id = "";
-            database.entities.gateway
-              .create(gat)
-              .then((savedgateway) => {              
-                if (index === array.length - 1) 
-                  this.loadGateways(callback);
-              })
-              .catch((error) => {
-                console.log(error);
-              });
-          });
         }
       })
       .catch((error) => {
