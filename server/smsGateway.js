@@ -64,8 +64,8 @@ module.exports = {
       device.login,
       device.password,
       {
-        waitForStatus: false, // Wait and check sending status
-        waitTries: 2, // Number of attempts
+        waitForStatus: config.checkSendStatus, // Wait and check sending status
+        waitTries: config.numberSmsAttemps, // Number of attempts
         waitTime: config.waitForStatusLine, // Time in  milliseconds
       }
     );
