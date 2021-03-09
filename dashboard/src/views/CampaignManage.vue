@@ -817,20 +817,20 @@ export default {
             messageCampaign: this.selectedCampaign,
           })
           .then((request) => {
-            if (request.data.clicks) {
-              request.data.clicks.forEach((click) => {
+            if (request.data.customers) {
+              request.data.customers.forEach((customer) => {
                 var strConfirm = "";
-                if (click.confirm) strConfirm = "2 click";
-                if (!click.confirm) strConfirm = "1 click";
+                if (customer.confirm) strConfirm = "2 click";
+                if (!customer.confirm) strConfirm = "1 click";
 
                 var interestedCustomer = {
-                  id: click.customer.id,
+                  id: customer.id,
                   confirmed: strConfirm,
-                  firstname: click.customer.firstname,
-                  lastname: click.customer.lastname,
-                  address: click.customer.address,
-                  mobilephone: click.customer.mobilephone,
-                  postcode: click.customer.postcode,
+                  firstname: customer.firstname,
+                  lastname: customer.lastname,
+                  address: customer.address,
+                  mobilephone: customer.mobilephone,
+                  postcode: customer.postcode,
                 };
                 this.interestedCustomers.push(interestedCustomer);
               });

@@ -72,7 +72,7 @@ module.exports = {
 
     Customer.init(
       {
-        id: {type: Sequelize.INTEGER,autoIncrement: true,primaryKey: true},
+        id: { type: Sequelize.INTEGER, autoIncrement: true, primaryKey: true },
         firstname: { type: Sequelize.STRING, allowNull: false },
         lastname: { type: Sequelize.STRING, allowNull: true },
         email: { type: Sequelize.STRING, allowNull: true },
@@ -99,7 +99,7 @@ module.exports = {
         message: { type: Sequelize.STRING, allowNull: false },
         messagePage1: { type: Sequelize.STRING, allowNull: false },
         messagePage2: { type: Sequelize.STRING, allowNull: false },
-        ncontacts: { type: Sequelize.INTEGER, allowNull: true },        
+        ncontacts: { type: Sequelize.INTEGER, allowNull: true },
         ncompleted: { type: Sequelize.INTEGER, allowNull: true },
         begin: { type: Sequelize.DATE, allowNull: true },
         end: { type: Sequelize.DATE, allowNull: true },
@@ -125,16 +125,16 @@ module.exports = {
 
     Sim.init(
       {
-        name: { type: Sequelize.STRING, allowNull: false }, 
-        phoneNumber: { type: Sequelize.STRING, allowNull: false }, 
+        name: { type: Sequelize.STRING, allowNull: false },
+        phoneNumber: { type: Sequelize.STRING, allowNull: false },
         operator: { type: Sequelize.STRING, allowNull: false },
-        ean:   { type: Sequelize.STRING, allowNull: true }, 
-        iccid: { type: Sequelize.STRING, allowNull: true }, 
-        pin:   { type: Sequelize.STRING, allowNull: true },
-        puk:   { type: Sequelize.STRING, allowNull: true },
+        ean: { type: Sequelize.STRING, allowNull: true },
+        iccid: { type: Sequelize.STRING, allowNull: true },
+        pin: { type: Sequelize.STRING, allowNull: true },
+        puk: { type: Sequelize.STRING, allowNull: true },
         bankId: { type: Sequelize.INTEGER, allowNull: true },
         isWorkingCall: { type: Sequelize.BOOLEAN, allowNull: true },
-        isWorkingSms:  { type: Sequelize.BOOLEAN, allowNull: true },
+        isWorkingSms: { type: Sequelize.BOOLEAN, allowNull: true },
       },
       {
         sequelize,
@@ -144,18 +144,17 @@ module.exports = {
 
     Bank.init(
       {
-        name:    { type: Sequelize.STRING, allowNull: false }, 
-        ip:      { type: Sequelize.STRING, allowNull: false }, 
-        port:    { type: Sequelize.STRING, allowNull: false }, 
-        nplaces: { type: Sequelize.STRING, allowNull: true }, 
-        location:   { type: Sequelize.STRING, allowNull: true },
+        name: { type: Sequelize.STRING, allowNull: false },
+        ip: { type: Sequelize.STRING, allowNull: false },
+        port: { type: Sequelize.STRING, allowNull: false },
+        nplaces: { type: Sequelize.STRING, allowNull: true },
+        location: { type: Sequelize.STRING, allowNull: true },
       },
       {
         sequelize,
         modelName: "bank",
       }
     );
-
 
     Gateway.init(
       {
@@ -168,20 +167,20 @@ module.exports = {
         password: { type: Sequelize.STRING, allowNull: true },
         longitude: { type: Sequelize.STRING, allowNull: true },
         longitude: { type: Sequelize.STRING, allowNull: true },
-        location: { type: Sequelize.STRING, allowNull: true },                
-        selectedLine: { type: Sequelize.INTEGER, defaultValue: 1 },        
+        location: { type: Sequelize.STRING, allowNull: true },
+        selectedLine: { type: Sequelize.INTEGER, defaultValue: 1 },
         isWorkingSms: { type: Sequelize.BOOLEAN, allowNull: true },
         nSmsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
         nSmsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxDailyMessagePerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
-        nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },        
-        
+        nMaxSentPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
+
         isWorkingCall: { type: Sequelize.BOOLEAN, allowNull: true },
         nCallsSent: { type: Sequelize.INTEGER, defaultValue: 0 },
         nCallsReceived: { type: Sequelize.INTEGER, defaultValue: 0 },
         nMaxDailyCallPerLine: { type: Sequelize.INTEGER, defaultValue: 0 },
-        nMaxCallPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },        
-        
+        nMaxCallPercetage: { type: Sequelize.INTEGER, defaultValue: 0 },
+
         bankId: { type: Sequelize.INTEGER, allowNull: true },
 
         objData: {
@@ -240,50 +239,52 @@ module.exports = {
     });
   },
   changeStateToContactVerified(phone, callback) {
-    sql="UPDATE customers SET state='toContactVerified' WHERE (mobilephone='"+phone+"');";
-    this.execute_raw_update(sql,callback);
+    sql =
+      "UPDATE customers SET state='toContactVerified' WHERE (mobilephone='" +
+      phone +
+      "');";
+    this.execute_raw_update(sql, callback);
   },
   exportCampaignData(campaign, callback) {
     //Export contacts, clicks
-    var contacts = [],
-      clicks = [];
+    var contacts = [];
+    var clicks = [];
     this.entities.customer
       .findAll({ where: { campaignId: campaign.id } })
       .then((custs) => {
         if (custs) {
           contacts = custs;
-          this.entities.click
-            .findAll({
-              where: { campaignId: campaign.id },
-              include: [this.entities.customer],
-            })
-            .then((cs) => {
-              if (cs) {
-                clicks = cs;
-                this.entities.customer
-                  .findAll({
-                    where: this.sequelize.literal(
-                      "customer.campaignId=" +
-                        campaign.id +
-                        " AND clicks.id IS null"
-                    ),
-                    include: [this.entities.click],
-                  })
-                  .then((notInterestedContacts) => {
-                    if (notInterestedContacts) {
-                      pkgData = {
-                        campaign: campaign,
-                        contacts: contacts,
-                        clicks: clicks,
-                        notInterestedContacts: notInterestedContacts,
-                      };
-                      utility.createCampaignPackage(pkgData, (data) => {
-                        callback(data);
-                      });
-                    }
+          var sql =
+            "SELECT * from customers,clicks where (clicks.campaignId='" +
+            campaign.id+
+            "' AND " +
+            "clicks.customerId=customers.id);";
+          this.execute_raw_query(sql, (cs) => {
+            if (cs) {
+              clicks = cs;
+              var sql =
+                "SELECT * from customers where (" +
+                "customers.campaignId='" +
+                campaign.id +
+                "' AND " +
+                "customers.id NOT IN (SELECT customerId FROM clicks WHERE clicks.campaignId='" +
+                campaign.id +
+                "'))";
+              this.execute_raw_query(sql, (notInterestedContacts) => {
+                if (notInterestedContacts) {
+                  pkgData = {
+                    campaign: campaign,
+                    contacts: contacts,
+                    clicks: clicks,
+                    notInterestedContacts: notInterestedContacts,
+                  };
+                  utility.createCampaignPackage(pkgData, (data) => {
+                    callback(data);
                   });
-              }
-            });
+                }
+              });
+            }
+          });
         }
       });
   },

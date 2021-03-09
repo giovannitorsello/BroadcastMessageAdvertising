@@ -300,18 +300,18 @@ module.exports = {
       var strConfirm = "1 click";
       if (click.confirm) strConfirm = "2 click";
       clickData.push({
-        id: click.customer.id,
+        id: click.id,
         confirm: strConfirm,
-        firstname: click.customer.firstname,
-        lastname: click.customer.lastname,
-        mobilephone: click.customer.mobilephone,
-        address: click.customer.address,
-        postcode: click.customer.postcode,
-        city: click.customer.city,
-        adm1: click.customer.adm1,
-        adm2: click.customer.adm2,
-        adm3: click.customer.adm3,
-        country: click.customer.country,
+        firstname: click.firstname,
+        lastname: click.lastname,
+        mobilephone: click.mobilephone,
+        address: click.address,
+        postcode: click.postcode,
+        city: click.city,
+        adm1: click.adm1,
+        adm2: click.adm2,
+        adm3: click.adm3,
+        country: click.country,
       });
 
       if (index === pkgData.clicks.length - 1)

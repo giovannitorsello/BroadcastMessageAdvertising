@@ -925,18 +925,11 @@ module.exports = {
     app.post(
       "/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
       function (req, res) {
-        var messageCampaign = req.body.messageCampaign;
-        var customersNoClick = [];
-        database.entities.customer
-          .findAll({
-            where: database.sequelize.literal(
-              "customer.campaignId=" +
-                messageCampaign.id +
-                " AND clicks.id IS null"
-            ),
-            include: [database.entities.click],
-          })
-          .then(function (customers) {
+        var messageCampaign = req.body.messageCampaign;        
+        var sql="SELECT * from customers where ("+
+        "customers.campaignId='"+messageCampaign.id+"' AND "+
+        "customers.id NOT IN (SELECT customerId FROM clicks WHERE clicks.campaignId='"+messageCampaign.id+"'))";
+        database.execute_raw_query(sql, function (customers) {
             if (customers)
               res.send({
                 status: "OK",
@@ -957,23 +950,20 @@ module.exports = {
       "/adminarea/messageCampaign/getCampaignInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
-        database.entities.click
-          .findAll({
-            where: { campaignId: messageCampaign.id },
-            include: [database.entities.customer],
-          })
-          .then(function (results) {
+        var sql="SELECT * from customers,clicks where (clicks.campaignId='"+messageCampaign.id+"' AND "+
+        "clicks.customerId=customers.id);";
+        database.execute_raw_query(sql, function (results) {
             if (results)
               res.send({
                 status: "OK",
                 msg: "Customers interested found",
-                clicks: results,
+                customers: results,
               });
             else
               res.send({
                 status: "OK",
                 msg: "Customers interested not found",
-                clicks: {},
+                customers: {},
               });
           });
       }
