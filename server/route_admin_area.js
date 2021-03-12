@@ -516,6 +516,15 @@ module.exports = {
         });
     });
 
+    app.post("/adminarea/gateway/dialCall", function (req, res) {
+      
+    });
+
+    app.post("/adminarea/gateway/sendSms", function (req, res) {
+      if(req.body)
+      smsCampaignServerWorker.postMessage(["sendSms", req.body]);
+    });
+
     app.post("/adminarea/gateway/getall", function (req, res) {
       database.entities.gateway.findAll().then(function (results) {
         if (results)
@@ -544,6 +553,7 @@ module.exports = {
               gateway.isWorkingSms=true;
               gateway.objData = {
                 lines: [],
+                operator: [],
                 isWorkingSms: [],
                 isWorkingCall: [],
                 smsSent: [],
@@ -554,6 +564,7 @@ module.exports = {
               for (var i = 0; i < gateway.nRadios; i++) {
                 if (iSim < sims.length) {
                   gateway.objData.lines[i] = sims[iSim].phoneNumber;
+                  gateway.objData.operator[i] = sims[iSim].operator;
                   gateway.objData.isWorkingSms[i] = 1;
                   gateway.objData.isWorkingCall[i] = 1;
                   gateway.objData.smsSent[i] = 0;

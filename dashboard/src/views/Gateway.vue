@@ -118,11 +118,13 @@
       <p>Numeri di telefono</p>
       <v-row v-if="selectedGateway && selectedGateway.objData">
         <v-col v-for="line in selectedGateway.objData.lines" v-bind:key="line">
-          {{ line }}
+          <v-btn @click="openPhoneDialDlg(selectedGateway, line)">{{
+            line
+          }}</v-btn>
         </v-col>
       </v-row>
     </v-card>
-    
+
     <v-row>
       <v-col>
         <v-data-table
@@ -145,7 +147,15 @@
               <td>{{ row.item.port }}</td>
               <td>{{ row.item.login }}</td>
               <td>{{ row.item.password }}</td>
-              <td>{{ row.item.isWorkingCall }} -- {{row.item.isWorkingSms}}</td>
+              <td>
+                <v-btn @click="toggleWorkingCall(row.item)">{{
+                  row.item.isWorkingCall
+                }}</v-btn>
+                --
+                <v-btn @click="toggleWorkingSms(row.item)">{{
+                  row.item.isWorkingSms
+                }}</v-btn>
+              </td>
               <td>{{ row.item.nMaxDailyMessagePerLine }}</td>
               <td>{{ row.item.nMaxSentPercetage }}</td>
               <td>{{ row.item.nMaxDailyCallPerLine }}</td>
@@ -171,6 +181,60 @@
       >Carica sim nei gateway</v-btn
     >
 
+    <v-dialog
+      v-model="dialDlg"
+      persistent
+      max-width="600px"
+      @keydown.esc="cancel"
+    >
+    <v-card-title>Test per chiamate ed invio SMS</v-card-title>
+      <v-card>
+        <v-card-text>
+          <v-text-field
+            v-model="phoneNumber"
+            counter="14"
+            hint="inserisci numero di destinazione"
+            label="Numero di telefono"
+          ></v-text-field>
+        </v-card-text>
+        <v-card-text>
+          <v-text-field
+            v-model="message"
+            counter="14"
+            hint="Messaggio di Test"
+            label="Messaggio"
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions class="pt-3">
+          <v-spacer></v-spacer>
+
+          <v-btn
+            color="primary"
+            class="body-2 font-weight-bold"
+            outlined
+            @click="dialCall()"
+            >Chiama</v-btn
+          >
+
+          <v-btn
+            color="primary"
+            class="body-2 font-weight-bold"
+            outlined
+            @click="sendSms()"
+            >Invia SMS</v-btn
+          >
+
+          <v-btn
+            color="primary"
+            class="body-2 font-weight-bold"
+            outlined
+            @click="dialDlg = false"
+            >Chiudi</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <ConfirmDlg ref="confirm" />
     <NewOrUpdateDlg ref="neworupdate" />
   </div>
@@ -184,6 +248,9 @@ export default {
   },
   data() {
     return {
+      dialDlg: false,
+      phoneNumber: "3939241987",
+      message: "Test di prova http://w.wfn.ovh/324/asd/2",
       headerGateways: [
         { text: "ID", value: "id" },
         { text: "Nome", value: "name" },
@@ -210,6 +277,7 @@ export default {
         { text: "Percentuale chiamatein uscita", value: "nMaxCallPercetage" },
       ],
       selectedGateway: {},
+      selectedLine: {},
       gateways: [],
       banks: [],
     };
@@ -219,6 +287,30 @@ export default {
     this.loadGateways();
   },
   methods: {
+    sendSms() {
+      this.axios
+        .post("/adminarea/gateway/sendSms", {
+          gateway: this.selectedGateway,
+          line: this.selectedLine,
+          phonenumber: this.phoneNumber,
+          message: this.message,
+        })
+        .then((request) => {
+          this.dialDlg = false;
+        });
+    },
+    openPhoneDialDlg(gateway, line) {
+      this.selectedLine=line;
+      this.dialDlg = true;
+    },
+    toggleWorkingCall(gateway) {
+      gateway.isWorkingCall = !gateway.isWorkingCall;
+      this.updateGateway(gateway);
+    },
+    toggleWorkingSms(gateway) {
+      gateway.isWorkingSms = !gateway.isWorkingSms;
+      this.updateGateway(gateway);
+    },
     async insertSimInGateway() {
       if (
         await this.$refs.confirm.open(
@@ -285,6 +377,17 @@ export default {
             }
           });
       }
+    },
+    updateGateway(gatToUpdate) {
+      this.axios
+        .post("/adminarea/gateway/update", { gateway: gatToUpdate })
+        .then((request) => {
+          var gatewayUpdated = request.data.gateway;
+          if (gatewayUpdated) {
+            this.selectedGateway = gatewayUpdated;
+            this.loadGateways();
+          }
+        });
     },
     selectGateway(gat) {
       this.selectedGateway = {};

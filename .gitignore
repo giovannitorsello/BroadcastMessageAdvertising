@@ -107,7 +107,6 @@ dist
 
 #Config files
 config.json
-gateways.json
 antifraudMessages.json
 
 #datafile

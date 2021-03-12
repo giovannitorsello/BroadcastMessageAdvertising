@@ -58,22 +58,27 @@ module.exports = {
   },
   sendSMS(device, line, message, mobilephone, callback) {    
     if(line>=device.nRadios) line=device.nRadios-1;
-    const sms = new HttpSms(
-      "http://"+device.ip+":"+device.port,
-      line+1,
-      device.login,
-      device.password,
-      {
-        waitForStatus: config.checkSendStatus, // Wait and check sending status
-        waitTries: config.numberSmsAttemps, // Number of attempts
-        waitTime: config.waitForStatusLine, // Time in  milliseconds
-      }
-    );
+    var senderNumber="";
+    var senderOperator="";
     if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[line];
+      senderNumber=device.objData.lines[line];
+
+    if(device.objData && device.objData.operator)
+      senderOperator=device.objData.operator[line];
 
     if(config.production===true && device.isWorking===1) {
-      var senderNumber="";
+      const sms = new HttpSms(
+        "http://"+device.ip+":"+device.port,
+        line+1,
+        device.login,
+        device.password,
+        {
+          waitForStatus: config.checkSendStatus, // Wait and check sending status
+          waitTries: config.numberSmsAttemps, // Number of attempts
+          waitTime: config.waitForStatusLine, // Time in  milliseconds
+        }
+      );
+      
       if(device.objData && device.objData.lines)
         senderNumber=device.objData.lines[line];
       sms
@@ -105,15 +110,15 @@ module.exports = {
     else
     {
       console.log(
-        "Sending message  " +
+        "Sending antifraud message  " +
           message +
           " -- " +
           device.name +
           " -- " +
-          device.operator +
-          " -- " +
           line +
-          " -- " +
+          " -- " +          
+          senderOperator +
+          " -- " +          
           senderNumber +
           " to " +
           mobilephone
@@ -128,25 +133,28 @@ module.exports = {
   },
   sendSMSAntifraud(device, line, message, mobilephone, callback) {
     if(line>=device.nRadios) line=device.nRadios-1;
-
-    const sms = new HttpSms(
-      "http://"+device.ip+":"+device.port,
-      line+1,
-      device.login,
-      device.password,
-      {
-        waitForStatus: false, // Wait and check sending status
-        waitTries: 3, // Number of attempts
-        waitTime: config.waitForStatusLine, // Time in  milliseconds
-      }
-    );
-
     var senderNumber="";
+    var senderOperator="";
     if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[line];
+      senderNumber=device.objData.lines[line];
+
+    if(device.objData && device.objData.operator)
+      senderOperator=device.objData.operator[line];
+
+
 
     if(config.production===true && device.isWorking===true) {      
-      
+      const sms = new HttpSms(
+        "http://"+device.ip+":"+device.port,
+        line+1,
+        device.login,
+        device.password,
+        {
+          waitForStatus: false, // Wait and check sending status
+          waitTries: 3, // Number of attempts
+          waitTime: config.waitForStatusLine, // Time in  milliseconds
+        }
+      );
       sms
         .send(mobilephone, message)
         .then((response) => {
@@ -179,10 +187,10 @@ module.exports = {
           " -- " +
           device.name +
           " -- " +
-          device.operator +
-          " -- " +
           line +
-          " -- " +
+          " -- " +          
+          senderOperator +
+          " -- " +          
           senderNumber +
           " to " +
           mobilephone
