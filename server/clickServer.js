@@ -1,12 +1,11 @@
 var config = require("./config.js").load();
 var database = require("./database.js");
-const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 const fs = require("fs");
 const https = require("https");
 const http = require("http");
 
 function startClickServer(database) {
-this.server = http.createServer((req, res) => {
+  this.server = http.createServer((req, res) => {
     if (req.url) {
       [hexIdCamp, hexIdCust, confirm] = req.url.substring(1).split("/");
       if (hexIdCamp === "favicon.ico") {
@@ -111,16 +110,14 @@ this.server = http.createServer((req, res) => {
     }
   });
 
-  this.server.listen(config.clickServer.port, config.clickServer.ip, () => {    
-    var msg= `Click server is running at http://${config.clickServer.ip}:${config.clickServer.port}/`
+  this.server.listen(config.clickServer.port, config.clickServer.ip, () => {
+    var msg = `Click server is running at http://${config.clickServer.ip}:${config.clickServer.port}/`;
     console.log(msg);
-    parentPort.postMessage({status: "OK", msg: msg});
   });
 }
 
-if (!isMainThread) {
-  database.setup(() => {
+module.exports = {
+  startServer(app, database) {
     startClickServer(database);
-  });
-  
-}
+  },
+};

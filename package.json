@@ -8,6 +8,7 @@
     "drachtio-srf": "^4.4.47",
     "freepbx": "^3.0.0",
     "mysql": "^2.18.1",
+    "node-fetch": "^2.6.1",
     "sip": "^0.0.6",
     "swagger": "^0.7.5",
     "ws": "^7.4.3"

@@ -19,13 +19,13 @@ module.exports = {
   load_routes(
     app,
     database,
-    smsCampaignServerWorker,
-    clickServerWorker,
-    washServerWorker
+    smsServer,    
+    callServer
   ) {
     var app = app;
-    //pingServer.startServer(app, database);
-
+    smsServer.startServer(app,database);
+    callServer.startServer(app,database);
+    
     /////////////////////GENERAL UTILITIES //////////////////////
     app.post("/adminarea/find_obj_by_field", function (req, res) {
       const searchObj = req.body.searchObj;
@@ -517,12 +517,13 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/dialCall", function (req, res) {
-      
+      if(req.body)
+        callServer.dialCall(req.body);
     });
 
     app.post("/adminarea/gateway/sendSms", function (req, res) {
       if(req.body)
-      smsCampaignServerWorker.postMessage(["sendSms", req.body]);
+        smsServer.sendSms(req.body);
     });
 
     app.post("/adminarea/gateway/getall", function (req, res) {
@@ -635,15 +636,8 @@ module.exports = {
             camp.save().then(function (campNew) {
               if (campNew) {
                 //Reload campaigns in smsServer
-                washServerWorker.postMessage("/campaigns/reload");
-                smsCampaignServerWorker.postMessage("/campaigns/reload");
-                smsCampaignServerWorker.once("message", (results) => {
-                  res.send({
-                    status: "OK",
-                    msg: "Message campaign update successfully",
-                    messageCampaign: campNew,
-                  });
-                });
+                callServer.reloadActiveCampaings();
+                smsServer.reloadActiveCampaings();                
               } else {
                 res.send({
                   status: "error",
@@ -667,17 +661,8 @@ module.exports = {
               obj.state = "washing";
 
               obj.save().then(function (campNew) {
-                if (campNew !== null) {
-                  //Reload campaign in smsServer
-                  washServerWorker.postMessage("/campaigns/reload");
-                  smsCampaignServerWorker.postMessage("/campaigns/reload");
-                  smsCampaignServerWorker.once("message", (results) => {
-                    res.send({
-                      status: "OK",
-                      msg: "Message campaign started successfully",
-                      messageCampaign: campNew,
-                    });
-                  });
+                if (campNew !== null) {                  
+                  callServer.reloadActiveCampaings();                  
                 } else {
                   res.send({
                     status: "error",
@@ -701,16 +686,7 @@ module.exports = {
 
             obj.save().then(function (campNew) {
               if (campNew !== null) {
-                //Reload campaign in smsServer
-                washServerWorker.postMessage("/campaigns/reload");
-                smsCampaignServerWorker.postMessage("/campaigns/reload");
-                smsCampaignServerWorker.once("message", (results) => {
-                  res.send({
-                    status: "OK",
-                    msg: "Message campaign started successfully",
-                    messageCampaign: campNew,
-                  });
-                });
+                smsServer.reloadActiveCampaings();
               } else {
                 res.send({
                   status: "error",
@@ -738,16 +714,8 @@ module.exports = {
 
               obj.save().then(function (campNew) {
                 if (campNew !== null) {
-                  washServerWorker.postMessage("/campaigns/reload");
-                  smsCampaignServerWorker.postMessage("/campaigns/reload");
-                  smsCampaignServerWorker.once("message", (results) => {
-                    res.send({
-                      status: "OK",
-                      msg: "Message campaign paused successfully",
-                      messageCampaign: campNew,
-                      fileArchive: fileArchive,
-                    });
-                  });
+                  callServer.reloadActiveCampaings();
+                  smsServer.reloadActiveCampaings();
                 } else {
                   res.send({
                     status: "error",
@@ -779,15 +747,8 @@ module.exports = {
                 where: { campaignId: messageCampaign.id },
               });
               messageCampaignToDel.destroy();
-
-              smsCampaignServerWorker.postMessage("/campaigns/reload");
-              smsCampaignServerWorker.once("message", (results) => {
-                res.send({
-                  status: "OK",
-                  msg: "Campaign deleted successfully",
-                  fileArchive: fileArchive,
-                });
-              });
+              smsServer.reloadActiveCampaings();
+              callServer.reloadActiveCampaings();              
             });
           } else {
             res.send({
@@ -1106,18 +1067,13 @@ module.exports = {
     });
 
     ///////////////////// Gateways ////////////////////////
-    app.post("/adminarea/gateway/getAll", function (req, res) {
-      smsCampaignServerWorker.postMessage("/gateways/getAll");
-      smsCampaignServerWorker.once("message", (results) => {
-        res.send({ status: "OK", msg: "Gateways found", gateways: results });
-      });
+    app.post("/adminarea/gateway/getAll", function (req, res) {      
+      res.send({ status: "OK", msg: "Gateways found", gateways: smsServer.getGateways() });
     });
 
     app.post("/adminarea/gateway/resetCounters", function (req, res) {
-      smsCampaignServerWorker.postMessage("/gateways/resetCounters");
-      smsCampaignServerWorker.once("message", (results) => {
-        res.send({ status: "OK", msg: "Gateways found", gateways: results });
-      });
+      smsServer.resetCounters();      
+      res.send({ status: "OK", msg: "Gateways reset", gateways: smsServer.getGateways() });
     });
 
     ///////////////////// User ///////////////////////////////
@@ -1281,6 +1237,8 @@ module.exports = {
               token: token,
             });
           }
+        }).catch(error => {
+          console.log(error);
         });
     });
     //Logout from admin area by post

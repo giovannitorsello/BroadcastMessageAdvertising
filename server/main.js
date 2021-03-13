@@ -4,22 +4,21 @@ const https = require("https");
 const http = require("http");
 var session = require("express-session");
 const { Sequelize, Model, DataTypes } = require("sequelize");
-const { Worker, isMainThread, parentPort, workerData } = require("worker_threads");
 
 var express = require("express");
 var multer = require("multer");
 var bodyParser = require("body-parser");
 var cors = require("cors");
 
+const clickServer=require("./clickServer.js");
+const smsServer=require("./smsServer.js");
+const callServer=require("./callServer.js");  
 var database = require("./database.js");
 
 
 //file per route sezioni
 var routes_admin_area = require("./route_admin_area.js");
 const utility = require("./utility.js");
-//var routes_cust_area = require("./route_customer_area.js");
-
-var pingServerProcess = null;
 var app = express();
 
 app.set("trust proxy", 1); // trust first proxy
@@ -66,13 +65,7 @@ app.listen(config.server.http_port);
 
 //Init components and utilities.
 database.setup(() => {
-  //start click server
-  //runClickServer().catch(err => console.error(err))
-  //runSmsCampaignServer().catch(err => console.error(err))
-  
-  clickServerWorker=new Worker("./server/clickServer.js");
-  smsServerWorker=new Worker("./server/smsServer.js");
-  washServerWorker=new Worker("./server/washServer.js");
   //Loading route for customer area
-  routes_admin_area.load_routes(app, database, smsServerWorker, clickServerWorker, washServerWorker);
+  clickServer.startServer(database);
+  routes_admin_area.load_routes(app, database, smsServer, callServer);
 });

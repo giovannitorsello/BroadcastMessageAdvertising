@@ -1,11 +1,16 @@
 const config = require("./config.js").load();
 const { ServerFactory, HttpSms, SocketSms } = require("goip");
+const fetch = require('node-fetch');
+const xmlParser = require('fast-xml-parser');
+const http = require('http');
 
-const server = ServerFactory.make(
-  config.smsServer.ip,
-  config.smsServer.port,
-  config.smsServer.password
-);
+const optionsGoip = {
+  'sendDir': '/default/en_US/send.html',
+  'statusDir': '/default/en_US/send_status.xml',
+  'waitForStatus': false,
+  'waitTries': 10,
+  'waitTime': 1000
+};
 
 module.exports = {
   setupListener() {
@@ -66,25 +71,29 @@ module.exports = {
     if(device.objData && device.objData.operator)
       senderOperator=device.objData.operator[line];
 
-    if(config.production===true && device.isWorking===1) {
-      const sms = new HttpSms(
-        "http://"+device.ip+":"+device.port,
-        line+1,
-        device.login,
-        device.password,
-        {
-          waitForStatus: config.checkSendStatus, // Wait and check sending status
-          waitTries: config.numberSmsAttemps, // Number of attempts
-          waitTime: config.waitForStatusLine, // Time in  milliseconds
-        }
-      );
-      
+    if(config.production===true) 
+    if(device.isWorkingSms===true || device.isWorkingSms===1 || device.isWorkingSms==="1")
+    {
       if(device.objData && device.objData.lines)
         senderNumber=device.objData.lines[line];
-      sms
-        .send(mobilephone, message)
-        .then((response) => {
-          
+            
+      const params = new URLSearchParams();
+      params.append('u', device.login);
+      params.append('p', device.password);
+      params.append('l', line+1);
+      params.append('n', mobilephone);
+      params.append('m', message);
+      
+      const optionsGet = {
+        hostname: device.ip,
+        port: device.port,
+        path: optionsGoip.sendDir + '?' + params,
+        method: 'GET'
+      }
+      const req = http.request(optionsGet, res => {
+        console.log(`statusCode: ${res.statusCode}`)
+        res.on('data', res => {
+          var response=''+res;
           console.log(
             "Sending message  " +
               message +
@@ -99,18 +108,22 @@ module.exports = {
               " to " +
               mobilephone
           );
-          callback(response);
+          console.log(response);
+          callback(response);    
         })
-        .catch((error) => {
-          console.log(error);
-          callback(error);
-        });
+      })
+      
+      req.on('error', error => {
+        console.error(error)
+      })      
+      req.end();
+          
         
     }
     else
     {
       console.log(
-        "Sending antifraud message  " +
+        "Sending message  " +
           message +
           " -- " +
           device.name +

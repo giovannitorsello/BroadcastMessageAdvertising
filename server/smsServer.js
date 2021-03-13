@@ -1,28 +1,24 @@
 const config = require("./config.js").load();
-var database = require("./database.js");
-const {
-  Worker,
-  isMainThread,
-  parentPort,
-  workerData,
-} = require("worker_threads");
-const sms_gateway_hardware = require("./smsGateway.js");
+sms_gateway_hardware = require("./smsGateway.js");
+
 
 class SmsServer {
+  
   smsSims = [];
   smsGateways = [];
   smsCampaigns = [];
   smsContacts = [];
   selectedGateway = 0;
   selectedContact = 0;
-  waitTime = 15000;
+  waitTime = 1000;
   nTotRadios = 0;
   nAntifroudMessage = 0;
 
-  constructor() {
-    database.setup(() => {
-      this.init();
-    });
+  database= {};
+
+  constructor(app, database) {
+    this.database=database;
+    this.init();
   }
 
   init() {
@@ -175,7 +171,7 @@ class SmsServer {
 
   selectCurrentContact(campaign) {
     if (!campaign.contacts) {
-      database.entities.customer
+      this.database.entities.customer
         .findAll({ where: { campaignId: campaign.id } })
         .then((custs) => {
           campaign.contacts = custs;
@@ -214,7 +210,7 @@ class SmsServer {
 
   loadSims(callback) {
     var gateways = [];
-    database.entities.sim
+    this.database.entities.sim
       .findAll({ order: [["id", "DESC"]] })
       .then((results) => {
         if (results.length > 0) {
@@ -233,7 +229,7 @@ class SmsServer {
 
   loadGateways(callback) {
     var gateways = [];
-    database.entities.gateway
+    this.database.entities.gateway
       .findAll({ order: [["id", "DESC"]] })
       .then((results) => {
         if (results.length > 0) {
@@ -253,12 +249,12 @@ class SmsServer {
   loadCampaings(callback) {
     var campaigns = [];
     //Charge active campaign
-    database.entities.messageCampaign
+    this.database.entities.messageCampaign
       .findAll({ order: [["id", "DESC"]] })
       .then((camps) => {
         if (camps) {
           camps.forEach((camp) => {
-            database.entities.customer
+            this.database.entities.customer
               .findAll({
                 where: { campaignId: camp.id },
                 order: [["state", "DESC"]],
@@ -448,7 +444,7 @@ class SmsServer {
   }
 
   updateCampaignData(campaign, callback) {
-    database.entities.customer
+    this.database.entities.customer
       .count({
         where: {
           campaignId: campaign.id,
@@ -456,7 +452,7 @@ class SmsServer {
         },
       })
       .then((countContacted) => {
-        database.entities.messageCampaign
+        this.database.entities.messageCampaign
           .findOne({ where: { id: campaign.id } })
           .then((camp) => {
             //aggiornamento contattati
@@ -486,36 +482,20 @@ class SmsServer {
     return smsSims;
   }
 
-  startServer() {
-    if (!isMainThread) {
-      parentPort.on("message", (message) => {
-        if(message && message[0]==="sendSms") {
-          var data=message[1];
-          sms_gateway_hardware.sendSMS(data.gateway,data.line,data.phonenumber,data.message, (res)=>{});
-        }
-        else if (message == "/campaigns/getAll")
-          parentPort.postMessage(this.smsCampaigns);
-        else if (message == "/campaigns/reload") {
-          this.reloadActiveCampaings();
-          parentPort.postMessage(this.smsCampaigns);
-        } else if (message == "/gateways/getAll")
-          parentPort.postMessage(JSON.parse(JSON.stringify(this.smsGateways)));
-        else if (message == "/gateways/resetCounters") {
-          this.resetCounters();
-          parentPort.postMessage(JSON.parse(JSON.stringify(this.smsGateways)));
-        } else if (message == "/process/exit") {
-          parentPort.postMessage("exit!");
-          parentPort.close();
-        }
-      });
-
-      setInterval(() => {
-        this.startCampaignManager();
-      }, config.waitTime);
-    }
+  sendSms(data) {    
+    sms_gateway_hardware.sendSMS(data.gateway,data.gatewayLine, data.message, data.phonenumber, (res)=>{});
   }
+
 }
 
-const smsServerIstance = new SmsServer();
-module.exports = smsServerIstance;
-smsServerIstance.startServer();
+
+module.exports = {
+  smsServerIstance: {},
+  startServer(app, database) {
+    this.smsServerIstance=new SmsServer(app, database);
+    
+    setInterval(() => {
+      this.smsServerIstance.startCampaignManager();
+    }, config.waitTime);
+  }
+}

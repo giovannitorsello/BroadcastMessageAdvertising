@@ -288,10 +288,28 @@ export default {
   },
   methods: {
     sendSms() {
+      var lines=this.selectedGateway.objData.lines;
+      var gatewayLine=lines.indexOf(this.selectedLine);
       this.axios
         .post("/adminarea/gateway/sendSms", {
-          gateway: this.selectedGateway,
           line: this.selectedLine,
+          gateway: this.selectedGateway,
+          gatewayLine: gatewayLine,
+          phonenumber: this.phoneNumber,
+          message: this.message,
+        })
+        .then((request) => {
+          this.dialDlg = false;
+        });
+    },
+    dialCall() {
+      var lines=this.selectedGateway.objData.lines;
+      var gatewayLine=lines.indexOf(this.selectedLine);
+      this.axios
+        .post("/adminarea/gateway/dialCall", {
+          line: this.selectedLine,
+          gateway: this.selectedGateway,
+          gatewayLine: gatewayLine,
           phonenumber: this.phoneNumber,
           message: this.message,
         })

@@ -1,30 +1,21 @@
 var fs = require("fs");
 const config = require("./config.js").load();
-var database = require("./database.js");
 
 const AmiClient = require("asterisk-ami-client");
 var contacts = [];
 var mapUniqueIdPhone = {};
 
-const {
-  Worker,
-  isMainThread,
-  parentPort,
-  workerData,
-} = require("worker_threads");
-const utility = require("./utility.js");
 
-class WashServer {
+class CallServer {
   gateways = [];
   campaigns = [];
   selectedGateway = 0;
   selectedContact = 0;
   sendCallInterval = {};
 
-  constructor() {
-    database.setup(() => {
-      this.init();
-    });
+  constructor(app, database) {
+    this.database=database;
+    this.init();
   }
 
   init() {
@@ -177,48 +168,72 @@ class WashServer {
     var iContacts = 0;
     var gateways = this.gateways;
     var server = this;
-    var interval={};
+    var interval = {};
 
-    interval=setInterval(() => {
-        var gatewayName = gateways[iGateway].name;
-        var phone = contacts[iContacts].mobilephone;
-        var state = contacts[iContacts].state;
-        //var phone = "3939241987";
-        //var phone = "3999241999";
-        //var phone = "3475253992";
-        var actionId = phone + "-" + new Date().getTime();
-        var channel = "SIP/" + gatewayName + "/" + phone;
-        var gateway = gateways[iGateway];
-        if (gateway.isWorkingCall === true && state === "toContact") {
-          clientAmi.action({
-            Action: "Originate",
-            ActionId: actionId,
-            Variable: "CALLEE=" + phone,
-            Channel: channel,
-            Context: "autocallbma",
-            Exten: "s",
-            Priority: 1,
-            Timeout: 30000,
-            CallerID: "1001",
-            Async: true,
-            EarlyMedia: true,
-            Application: "",
-            Codecs: "g729",
+    interval = setInterval(() => {
+      var gatewayName = gateways[iGateway].name;
+      var phone = contacts[iContacts].mobilephone;
+      var state = contacts[iContacts].state;
+      //var phone = "3939241987";
+      //var phone = "3999241999";
+      //var phone = "3475253992";
+      var actionId = phone + "-" + new Date().getTime();
+      var channel = "SIP/" + gatewayName + "/" + phone;
+      var gateway = gateways[iGateway];
+      if (gateway.isWorkingCall === true && state === "toContact") {
+        clientAmi.action({
+          Action: "Originate",
+          ActionId: actionId,
+          Variable: "CALLEE=" + phone,
+          Channel: channel,
+          Context: "autocallbma",
+          Exten: "s",
+          Priority: 1,
+          Timeout: 30000,
+          CallerID: "1001",
+          Async: true,
+          EarlyMedia: true,
+          Application: "",
+          Codecs: "g729",
+        });
+        iContacts++;
+
+        if (iContacts === contacts.length) {
+          campaign.state = "washed";
+          campaign.save().then((res) => {
+            clearInterval(interval);
+            server.reloadActiveCampaings();
           });
-          iContacts++;
-
-          if (iContacts === contacts.length) {
-            campaign.state = "washed";
-            campaign.save().then((res) => {
-              clearInterval(interval);              
-              server.reloadActiveCampaings();
-            });
-            iContacts = 0;
-          }
+          iContacts = 0;
         }
-        iGateway++;
-        if (iGateway === gateways.length) iGateway = 0;
-      }, config.waitTimeWashServer);    
+      }
+      iGateway++;
+      if (iGateway === gateways.length) iGateway = 0;
+    }, config.waitTimeWashServer);
+  }
+
+  dialCall(gateway, line, phoneNumber, clientAmi, callback) {
+    var gatewayName = gateway.name;
+    var actionId = phoneNumber + "-" + new Date().getTime();
+    var channel = "SIP/" + gatewayName + "/" + phoneNumber;
+    if (gateway.isWorkingCall === true) {
+      clientAmi.action({
+        Action: "Originate",
+        ActionId: actionId,
+        Variable: "CALLEE=" + phoneNumber,
+        Channel: channel,
+        Context: "autocallbma",
+        Exten: "s",
+        Priority: 1,
+        Timeout: 30000,
+        CallerID: "1001",
+        Async: true,
+        EarlyMedia: true,
+        Application: "",
+        Codecs: "g729",
+      });
+      callback();
+    }
   }
 
   writeAutoDialAsteriskFile(campaign) {
@@ -246,7 +261,7 @@ class WashServer {
 
     var iGateway = 0;
     var gateways = this.gateways;
-    database.entities.customer
+    this.database.entities.customer
       .findAll({ where: { campaignId: campaign.id, state: "toContact" } })
       .then((customers) => {
         customers.forEach((cust) => {
@@ -276,10 +291,10 @@ class WashServer {
   loadCampaings(callback) {
     var campaigns = [];
     //Charge active campaign
-    database.entities.messageCampaign.findAll().then((camps) => {
+    this.database.entities.messageCampaign.findAll().then((camps) => {
       if (camps) {
         camps.forEach((camp) => {
-          database.entities.customer
+          this.database.entities.customer
             .findAll({
               where: { campaignId: camp.id, state: "toContact" },
               order: [["state", "DESC"]],
@@ -297,7 +312,7 @@ class WashServer {
 
   loadGateways(callback) {
     var gateways = [];
-    database.entities.gateway
+    this.database.entities.gateway
       .findAll()
       .then((gateways) => {
         callback(gateways);
@@ -327,30 +342,31 @@ class WashServer {
     });
   }
 
-  startServer() {
-    if (!isMainThread) {
-      parentPort.on("message", (message) => {
-        if (message == "/campaigns/getAll")
-          parentPort.postMessage(this.campaigns);
-        else if (message == "/campaigns/reload") {
-          this.reloadActiveCampaings();
-          parentPort.postMessage(this.campaigns);
-        } else if (message == "/gateways/getAll")
-          parentPort.postMessage(JSON.parse(JSON.stringify(this.gateways)));
-        else if (message == "/gateways/resetCounters") {
-          this.resetCounters();
-          parentPort.postMessage(JSON.parse(JSON.stringify(this.gateways)));
-        } else if (message == "/process/exit") {
-          parentPort.postMessage("sold!");
-          parentPort.close();
-        }
-      });
+  dialCall(data) {
+    this.openAmiConnection((clientAmi) => {
+      this.dialCall(
+        data.gateway,
+        data.gatewayLine,
+        data.phonenumber,
+        clientAmi,
+        (res) => {}
+      );
+    });
+  }
 
+  startServer() {
       setTimeout(() => this.startWashServer(), 3000);
-    }
   }
 }
 
-const washServerIstance = new WashServer();
-module.exports = washServerIstance;
-washServerIstance.startServer();
+
+module.exports = {
+  callServerIstance: {},
+  startServer(app, database) {
+    this.callServerIstance=new CallServer(app, database);
+    
+    setInterval(() => {
+      this.callServerIstance.startServer();
+    }, config.waitTime);
+  }
+}
