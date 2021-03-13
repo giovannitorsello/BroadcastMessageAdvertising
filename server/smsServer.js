@@ -13,7 +13,7 @@ class SmsServer {
   waitTime = 1000;
   nTotRadios = 0;
   nAntifroudMessage = 0;
-
+  inteval= {};
   database= {};
 
   constructor(app, database) {
@@ -22,15 +22,9 @@ class SmsServer {
   }
 
   init() {
-    this.loadSims((sims) => {
-      this.sims = sims;
-      this.loadGateways((gateways) => {
-        this.smsGateways = gateways;
-        this.loadCampaings((campaigns) => {
-          this.smsCampaigns = campaigns;
-        });
-      });
-    });
+    this.loadSims((sims) => {this.sims = sims;});
+    this.loadGateways((gateways) => {this.smsGateways = gateways;});
+    this.loadCampaings((campaigns) => {this.smsCampaigns = campaigns;});
   }
 
   checkgatewayIsWorking(iGateway) {
@@ -253,7 +247,7 @@ class SmsServer {
       .findAll({ order: [["id", "DESC"]] })
       .then((camps) => {
         if (camps) {
-          camps.forEach((camp) => {
+          camps.forEach((camp, index, array) => {
             this.database.entities.customer
               .findAll({
                 where: { campaignId: camp.id },
@@ -262,9 +256,12 @@ class SmsServer {
               .then((contacts) => {
                 camp.contacts = contacts;
                 camp.ncontacts = contacts.length;
-                campaigns.push(camp);
-                callback(campaigns);
+                
               });
+
+              campaigns.push(camp);
+              if(index===array.length-1) 
+                callback(campaigns);              
           });
         }
       });
@@ -412,9 +409,10 @@ class SmsServer {
     var bDifferentOperator = config.checkOperatorInAntifraudRoutine;
     var receiverDevice = this.smsGateways[iDevice];
     var receiverOperator = receiverDevice.objData.operator[iLineDevice];
-    var nSmsSent = 0;
-    var senderGateway = 0,
-      senderLine = 0;
+    var senderGateway = 0;
+    var senderLine = 0;
+    var nSmsSent = this.smsGateways[0].nSmsSent;
+    
 
     for (var iGat = 0; iGat < this.smsGateways.length; iGat++) {
       for (var iLine = 0; iLine < this.smsGateways[iGat].nRadios; iLine++) {
@@ -424,15 +422,15 @@ class SmsServer {
         var senderOperator = gat.objData.operator[iLine];
         if (bDifferentOperator) {
           if (receiverOperator != senderOperator) {
-            if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
-              nSmsSent = gat.nSmsSent;
+            if (nSmsSent >= gat.objData.smsSent[iLine]) {
+              nSmsSent = gat.objData.smsSent[iLine];
               senderGateway = iGat;
               senderLine = iLine;
             }
           }
         } else {
-          if (nSmsSent >= gat.nSmsSent || nSmsSent === 0) {
-            nSmsSent = gat.nSmsSent;
+          if (nSmsSent >= gat.objData.smsSent[iLine]) {
+            nSmsSent = gat.objData.smsSent[iLine];
             senderGateway = iGat;
             senderLine = iLine;
           }
@@ -494,8 +492,10 @@ module.exports = {
   startServer(app, database) {
     this.smsServerIstance=new SmsServer(app, database);
     
-    setInterval(() => {
+    
+    this.smsServerIstance.interval=setInterval(() => {
       this.smsServerIstance.startCampaignManager();
     }, config.waitTime);
+    
   }
 }

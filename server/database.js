@@ -36,7 +36,7 @@ module.exports = {
       .then(() => {
         this.init_entities();
         this.seq = sequelize;
-        sequelize.options.logging = false;
+        sequelize.options.logging = true;
         console.log("Connection has been established successfully.");
         setTimeout(function () {
           console.log("Init database successfull");
@@ -218,10 +218,6 @@ module.exports = {
     //Association Campaign-Customer
     MessageCampaign.hasMany(Customer, { foreignKey: "campaignId" });
     Customer.belongsTo(MessageCampaign, { foreignKey: "campaignId" });
-
-    //Association Customers-Link
-    //Customer.hasMany(Click, { foreignKey: "customerId" });
-    //Click.belongsTo(Customer, { foreignKey: "customerId" });
   },
   execute_raw_query(sql, callback) {
     sequelize.query(sql, { type: QueryTypes.SELECT }).then((results) => {

@@ -67,5 +67,8 @@ app.listen(config.server.http_port);
 database.setup(() => {
   //Loading route for customer area
   clickServer.startServer(database);
-  routes_admin_area.load_routes(app, database, smsServer, callServer);
+  smsServer.startServer(app,database);
+  callServer.startServer(app,database);
+
+  routes_admin_area.load_routes(app, database, smsServer.smsServerIstance, callServer.callServerIstance);
 });

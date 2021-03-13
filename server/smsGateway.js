@@ -1,15 +1,15 @@
 const config = require("./config.js").load();
 const { ServerFactory, HttpSms, SocketSms } = require("goip");
-const fetch = require('node-fetch');
-const xmlParser = require('fast-xml-parser');
-const http = require('http');
+const fetch = require("node-fetch");
+const xmlParser = require("fast-xml-parser");
+const http = require("http");
 
 const optionsGoip = {
-  'sendDir': '/default/en_US/send.html',
-  'statusDir': '/default/en_US/send_status.xml',
-  'waitForStatus': false,
-  'waitTries': 10,
-  'waitTime': 1000
+  sendDir: "/default/en_US/send.html",
+  statusDir: "/default/en_US/send_status.xml",
+  waitForStatus: false,
+  waitTries: 10,
+  waitTime: 1000,
 };
 
 module.exports = {
@@ -61,160 +61,167 @@ module.exports = {
       console.log(message);
     });
   },
-  sendSMS(device, line, message, mobilephone, callback) {    
-    if(line>=device.nRadios) line=device.nRadios-1;
-    var senderNumber="";
-    var senderOperator="";
-    if(device.objData && device.objData.lines)
-      senderNumber=device.objData.lines[line];
+  sendSMS(device, line, message, mobilephone, callback) {
+    if (line >= device.nRadios) line = device.nRadios - 1;
+    var senderNumber = "";
+    var senderOperator = "";
+    if (device.objData && device.objData.lines)
+      senderNumber = device.objData.lines[line];
 
-    if(device.objData && device.objData.operator)
-      senderOperator=device.objData.operator[line];
+    if (device.objData && device.objData.operator)
+      senderOperator = device.objData.operator[line];
 
-    if(config.production===true) 
-    if(device.isWorkingSms===true || device.isWorkingSms===1 || device.isWorkingSms==="1")
-    {
-      if(device.objData && device.objData.lines)
-        senderNumber=device.objData.lines[line];
-            
-      const params = new URLSearchParams();
-      params.append('u', device.login);
-      params.append('p', device.password);
-      params.append('l', line+1);
-      params.append('n', mobilephone);
-      params.append('m', message);
-      
-      const optionsGet = {
-        hostname: device.ip,
-        port: device.port,
-        path: optionsGoip.sendDir + '?' + params,
-        method: 'GET'
+    if (config.production === true)
+      if (
+        device.isWorkingSms === true ||
+        device.isWorkingSms === 1 ||
+        device.isWorkingSms === "1"
+      ) {
+        if (device.objData && device.objData.lines)
+          senderNumber = device.objData.lines[line];
+
+        const params = new URLSearchParams();
+        params.append("u", device.login);
+        params.append("p", device.password);
+        params.append("l", line + 1);
+        params.append("n", mobilephone);
+        params.append("m", message);
+
+        const optionsGet = {
+          hostname: device.ip,
+          port: device.port,
+          path: optionsGoip.sendDir + "?" + params,
+          method: "GET",
+        };
+        const req = http.request(optionsGet, (res) => {
+          console.log(`statusCode: ${res.statusCode}`);
+          res.on("data", (res) => {
+            var responseGateway = "" + res;
+            console.log(
+              "Sending message  " +
+                message +
+                " -- " +
+                device.name +
+                " -- " +
+                device.operator +
+                " -- " +
+                line +
+                " -- " +
+                senderNumber +
+                " to " +
+                mobilephone
+            );
+            console.log(responseGateway);            
+            callback({status: "send", msg: responseGateway});
+          });
+        });
+
+        req.on("error", (error) => {
+          console.log("Error on: " + device.ip);
+          console.error(error);
+          callback({status: "error", msg: error});
+        });
+        req.end();
+      } else {
+        console.log(
+          "Sending message  " +
+            message +
+            " -- " +
+            device.name +
+            " -- " +
+            line +
+            " -- " +
+            senderOperator +
+            " -- " +
+            senderNumber +
+            " to " +
+            mobilephone
+        );
+        callback({
+          status: "send",
+          msg: "temporary disabled",
+          response: "developing",
+        });
       }
-      const req = http.request(optionsGet, res => {
-        console.log(`statusCode: ${res.statusCode}`)
-        res.on('data', res => {
-          var response=''+res;
-          console.log(
-            "Sending message  " +
-              message +
-              " -- " +
-              device.name +
-              " -- " +
-              device.operator +
-              " -- " +
-              line +
-              " -- " +
-              senderNumber +
-              " to " +
-              mobilephone
-          );
-          console.log(response);
-          callback(response);    
-        })
-      })
-      
-      req.on('error', error => {
-        console.error(error)
-      })      
-      req.end();
-          
-        
-    }
-    else
-    {
-      console.log(
-        "Sending message  " +
-          message +
-          " -- " +
-          device.name +
-          " -- " +
-          line +
-          " -- " +          
-          senderOperator +
-          " -- " +          
-          senderNumber +
-          " to " +
-          mobilephone
-      );
-      callback({
-        status: "send",
-        msg: "temporary disabled",
-        response: "developing",
-      });
-    }
-      
   },
   sendSMSAntifraud(device, line, message, mobilephone, callback) {
-    if(line>=device.nRadios) line=device.nRadios-1;
-    var senderNumber="";
-    var senderOperator="";
-    if(device.objData && device.objData.lines)
-      senderNumber=device.objData.lines[line];
+    if (line >= device.nRadios) line = device.nRadios - 1;
+    var senderNumber = "";
+    var senderOperator = "";
+    if (device.objData && device.objData.lines)
+      senderNumber = device.objData.lines[line];
 
-    if(device.objData && device.objData.operator)
-      senderOperator=device.objData.operator[line];
+    if (device.objData && device.objData.operator)
+      senderOperator = device.objData.operator[line];
 
+    if (config.production === true)
+      if (
+        device.isWorkingSms === true ||
+        device.isWorkingSms === 1 ||
+        device.isWorkingSms === "1"
+      ) {
+        const params = new URLSearchParams();
+        params.append("u", device.login);
+        params.append("p", device.password);
+        params.append("l", line + 1);
+        params.append("n", mobilephone);
+        params.append("m", message);
 
-
-    if(config.production===true && device.isWorking===true) {      
-      const sms = new HttpSms(
-        "http://"+device.ip+":"+device.port,
-        line+1,
-        device.login,
-        device.password,
-        {
-          waitForStatus: false, // Wait and check sending status
-          waitTries: 3, // Number of attempts
-          waitTime: config.waitForStatusLine, // Time in  milliseconds
-        }
-      );
-      sms
-        .send(mobilephone, message)
-        .then((response) => {
-          console.log(
-            "Antifraud message  " +
-              message +
-              " -- " +
-              device.name +
-              " -- " +
-              device.operator +
-              " -- " +
-              line +
-              " -- " +
-              senderNumber +
-              " to " +
-              mobilephone
-          );
-          callback(response);
-        })
-        .catch((error) => {
-          console.log(error);
-          callback(error);
+        const optionsGet = {
+          hostname: device.ip,
+          port: device.port,
+          path: optionsGoip.sendDir + "?" + params,
+          method: "GET",
+        };
+        const req = http.request(optionsGet, (res) => {
+          console.log(`statusCode: ${res.statusCode}`);
+          res.on("data", (res) => {
+            var responseGateway = "" + res;
+            console.log(
+              "Sending antifraud message  " +
+                message +
+                " -- " +
+                device.name +
+                " -- " +
+                device.operator +
+                " -- " +
+                line +
+                " -- " +
+                senderNumber +
+                " to " +
+                mobilephone
+            );
+            console.log(responseGateway);
+            callback({status: "send", msg: responseGateway});
+          });
         });
-    }
-    else
-    {
-       console.log(
-        "Sending antifraud message  " +
-          message +
-          " -- " +
-          device.name +
-          " -- " +
-          line +
-          " -- " +          
-          senderOperator +
-          " -- " +          
-          senderNumber +
-          " to " +
-          mobilephone
-      ); 
-      callback({
-        status: "send",
-        msg: "temporary disabled",
-        response: "developing",
-      });
-    }
-      
-  }
-};
 
+        req.on("error", (error) => {
+          console.log("Error on: " + device.ip);
+          console.error(error);
+          callback({status: "error", msg: error});
+        });
+        req.end();
+      } else {
+        console.log(
+          "Sending antifraud message  " +
+            message +
+            " -- " +
+            device.name +
+            " -- " +
+            line +
+            " -- " +
+            senderOperator +
+            " -- " +
+            senderNumber +
+            " to " +
+            mobilephone
+        );
+        callback({
+          status: "send",
+          msg: "temporary disabled",
+          response: "developing",
+        });
+      }
+  },
+};

@@ -23,8 +23,6 @@ module.exports = {
     callServer
   ) {
     var app = app;
-    smsServer.startServer(app,database);
-    callServer.startServer(app,database);
     
     /////////////////////GENERAL UTILITIES //////////////////////
     app.post("/adminarea/find_obj_by_field", function (req, res) {

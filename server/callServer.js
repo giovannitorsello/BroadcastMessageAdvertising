@@ -12,6 +12,7 @@ class CallServer {
   selectedGateway = 0;
   selectedContact = 0;
   sendCallInterval = {};
+  interval={};
 
   constructor(app, database) {
     this.database=database;
@@ -19,12 +20,8 @@ class CallServer {
   }
 
   init() {
-    this.loadGateways((gateways) => {
-      this.gateways = gateways;
-      this.loadCampaings((campaigns) => {
-        this.campaigns = campaigns;
-      });
-    });
+    this.loadGateways((gateways) => {this.gateways = gateways;});
+    this.loadCampaings((campaigns) => {this.campaigns = campaigns;});    
   }
 
   openAmiConnection(callback) {
@@ -330,7 +327,6 @@ class CallServer {
 
     this.openAmiConnection((clientAmi) => {
       //Charge active campaign and their contacts
-      this.loadCampaings((campaigns) => {
         this.campaigns = campaigns;
         this.campaigns.forEach((campaign, index, arrCamp) => {
           //controllo campagna in washing
@@ -338,8 +334,7 @@ class CallServer {
             this.generateCheckCalls(campaign, clientAmi);
           }
         });
-      });
-    });
+      });    
   }
 
   dialCall(data) {
@@ -354,9 +349,7 @@ class CallServer {
     });
   }
 
-  startServer() {
-      setTimeout(() => this.startWashServer(), 3000);
-  }
+  
 }
 
 
@@ -365,8 +358,9 @@ module.exports = {
   startServer(app, database) {
     this.callServerIstance=new CallServer(app, database);
     
-    setInterval(() => {
+    /*
+    this.callServerIstance.interval=setInterval(() => {
       this.callServerIstance.startServer();
-    }, config.waitTime);
+    }, config.waitTime);*/
   }
 }
