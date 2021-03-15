@@ -66,7 +66,7 @@ app.listen(config.server.http_port);
 //Init components and utilities.
 database.setup(() => {
   //Loading route for customer area
-  clickServer.startServer(database);
+  clickServer.startServer(app,database);
   smsServer.startServer(app,database);
   callServer.startServer(app,database);
 
