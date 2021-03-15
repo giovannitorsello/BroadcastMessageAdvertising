@@ -479,11 +479,11 @@ class SmsServer {
   }
 
   getGateways() {
-    return smsGateways;
+    return this.smsGateways;
   }
 
   getSims() {
-    return smsSims;
+    return this.smsSims;
   }
 
   sendSms(data) {    
