@@ -66,6 +66,10 @@ class SmsServer {
 
       iGat++;
     }
+
+    this.loadGateways((gateways) => {
+      this.smsGateways = gateways;
+    });
   }
 
   startCampaignManager() {
