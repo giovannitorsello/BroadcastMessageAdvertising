@@ -166,7 +166,7 @@ class SmsServer {
   selectCurrentContact(campaign) {
     if (!campaign.contacts) {
       this.database.entities.customer
-        .findAll({ where: { campaignId: campaign.id } })
+        .findAll({ where: { campaignId: campaign.id , state: "toContact"} })
         .then((custs) => {
           campaign.contacts = custs;
           this.selectedContact = 0;
@@ -250,7 +250,7 @@ class SmsServer {
           camps.forEach((camp, index, array) => {
             this.database.entities.customer
               .findAll({
-                where: { campaignId: camp.id },
+                where: { campaignId: camp.id, state: "toContact" },
                 order: [["state", "DESC"]],
               })
               .then((contacts) => {
@@ -334,6 +334,10 @@ class SmsServer {
           receiverDevice.nSmsReceived++;
           receiverDevice.objData.smsReceived[selectedReceiverLine]++;
           receiverDevice.save({ fields: ["nSmsSent", "objData"] });
+
+          //if SIM are non balanced
+          this.antifraudRoutine(selectedSenderGateway, selectedSenderLine, () =>{});
+
           callback(response);
         }
       );

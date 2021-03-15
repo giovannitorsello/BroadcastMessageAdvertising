@@ -71,7 +71,7 @@ module.exports = {
     if (device.objData && device.objData.operator)
       senderOperator = device.objData.operator[line];
 
-    if (config.production === true)
+    if (config.production === true) {
       if (
         device.isWorkingSms === true ||
         device.isWorkingSms === 1 ||
@@ -111,38 +111,39 @@ module.exports = {
                 " to " +
                 mobilephone
             );
-            console.log(responseGateway);            
-            callback({status: "send", msg: responseGateway});
+            console.log(responseGateway);
+            callback({ status: "send", msg: responseGateway });
           });
         });
 
         req.on("error", (error) => {
           console.log("Error on: " + device.ip);
           console.error(error);
-          callback({status: "error", msg: error});
+          callback({ status: "error", msg: error });
         });
         req.end();
-      } else {
-        console.log(
-          "Sending message  " +
-            message +
-            " -- " +
-            device.name +
-            " -- " +
-            line +
-            " -- " +
-            senderOperator +
-            " -- " +
-            senderNumber +
-            " to " +
-            mobilephone
-        );
-        callback({
-          status: "send",
-          msg: "temporary disabled",
-          response: "developing",
-        });
       }
+    } else {
+      console.log(
+        "Sending message  " +
+          message +
+          " -- " +
+          device.name +
+          " -- " +
+          line +
+          " -- " +
+          senderOperator +
+          " -- " +
+          senderNumber +
+          " to " +
+          mobilephone
+      );
+      callback({
+        status: "send",
+        msg: "temporary disabled",
+        response: "developing",
+      });
+    }
   },
   sendSMSAntifraud(device, line, message, mobilephone, callback) {
     if (line >= device.nRadios) line = device.nRadios - 1;
@@ -154,7 +155,7 @@ module.exports = {
     if (device.objData && device.objData.operator)
       senderOperator = device.objData.operator[line];
 
-    if (config.production === true)
+    if (config.production === true) {
       if (
         device.isWorkingSms === true ||
         device.isWorkingSms === 1 ||
@@ -192,36 +193,37 @@ module.exports = {
                 mobilephone
             );
             console.log(responseGateway);
-            callback({status: "send", msg: responseGateway});
+            callback({ status: "send", msg: responseGateway });
           });
         });
 
         req.on("error", (error) => {
           console.log("Error on: " + device.ip);
           console.error(error);
-          callback({status: "error", msg: error});
+          callback({ status: "error", msg: error });
         });
         req.end();
-      } else {
-        console.log(
-          "Sending antifraud message  " +
-            message +
-            " -- " +
-            device.name +
-            " -- " +
-            line +
-            " -- " +
-            senderOperator +
-            " -- " +
-            senderNumber +
-            " to " +
-            mobilephone
-        );
-        callback({
-          status: "send",
-          msg: "temporary disabled",
-          response: "developing",
-        });
       }
+    } else {
+      console.log(
+        "Sending antifraud message  " +
+          message +
+          " -- " +
+          device.name +
+          " -- " +
+          line +
+          " -- " +
+          senderOperator +
+          " -- " +
+          senderNumber +
+          " to " +
+          mobilephone
+      );
+      callback({
+        status: "send",
+        msg: "temporary disabled",
+        response: "developing",
+      });
+    }
   },
 };
