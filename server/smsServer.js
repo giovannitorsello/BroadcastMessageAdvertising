@@ -23,7 +23,9 @@ class SmsServer {
 
   init() {
     this.loadSims((sims) => {this.sims = sims;});
-    this.loadGateways((gateways) => {this.smsGateways = gateways;});
+    this.loadGateways((gateways) => {
+      this.smsGateways = gateways;
+    });
     this.loadCampaings((campaigns) => {this.smsCampaigns = campaigns;});
   }
 

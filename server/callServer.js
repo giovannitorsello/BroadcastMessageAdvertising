@@ -322,12 +322,12 @@ class CallServer {
   reloadActiveCampaings(callback) {
     // Stop all call cycles
     this.campaigns.forEach((camp) => {
-      clearInterval(camp.sendCallIntervall);
+      if(camp.sendCallIntervall)
+        clearInterval(camp.sendCallIntervall);
     });
 
     this.openAmiConnection((clientAmi) => {
       //Charge active campaign and their contacts
-        this.campaigns = campaigns;
         this.campaigns.forEach((campaign, index, arrCamp) => {
           //controllo campagna in washing
           if (campaign.state === "washing") {

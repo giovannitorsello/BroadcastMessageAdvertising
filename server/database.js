@@ -4,9 +4,7 @@ var path = require("path");
 const { Sequelize, Model, DataTypes, QueryTypes } = require("sequelize");
 const utility = require("./utility.js");
 const sequelize = new Sequelize(config.database);
-sequelize.options.logging = false;
 
-//const sequelize = new Sequelize('database', 'username', 'password', {host: config.database.host,dialect: config.database.type});
 class User extends Model {}
 class Customer extends Model {}
 class MessageCampaign extends Model {}
@@ -36,7 +34,7 @@ module.exports = {
       .then(() => {
         this.init_entities();
         this.seq = sequelize;
-        sequelize.options.logging = true;
+        sequelize.options.logging = false;
         console.log("Connection has been established successfully.");
         setTimeout(function () {
           console.log("Init database successfull");

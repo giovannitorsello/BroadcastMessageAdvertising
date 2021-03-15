@@ -16,14 +16,9 @@ const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
 
 module.exports = {
-  load_routes(
-    app,
-    database,
-    smsServer,    
-    callServer
-  ) {
+  load_routes(app, database, smsServer, callServer) {
     var app = app;
-    
+
     /////////////////////GENERAL UTILITIES //////////////////////
     app.post("/adminarea/find_obj_by_field", function (req, res) {
       const searchObj = req.body.searchObj;
@@ -515,13 +510,11 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/dialCall", function (req, res) {
-      if(req.body)
-        callServer.dialCall(req.body);
+      if (req.body) callServer.dialCall(req.body);
     });
 
     app.post("/adminarea/gateway/sendSms", function (req, res) {
-      if(req.body)
-        smsServer.sendSms(req.body);
+      if (req.body) smsServer.sendSms(req.body);
     });
 
     app.post("/adminarea/gateway/getall", function (req, res) {
@@ -548,8 +541,8 @@ module.exports = {
               order: [["id", "ASC"]],
             })
             .then((sims) => {
-              gateway.isWorkingCall=true;
-              gateway.isWorkingSms=true;
+              gateway.isWorkingCall = true;
+              gateway.isWorkingSms = true;
               gateway.objData = {
                 lines: [],
                 operator: [],
@@ -635,7 +628,7 @@ module.exports = {
               if (campNew) {
                 //Reload campaigns in smsServer
                 callServer.reloadActiveCampaings();
-                smsServer.reloadActiveCampaings();                
+                smsServer.reloadActiveCampaings();
               } else {
                 res.send({
                   status: "error",
@@ -659,8 +652,8 @@ module.exports = {
               obj.state = "washing";
 
               obj.save().then(function (campNew) {
-                if (campNew !== null) {                  
-                  callServer.reloadActiveCampaings();                  
+                if (campNew !== null) {
+                  callServer.reloadActiveCampaings();
                 } else {
                   res.send({
                     status: "error",
@@ -714,6 +707,12 @@ module.exports = {
                 if (campNew !== null) {
                   callServer.reloadActiveCampaings();
                   smsServer.reloadActiveCampaings();
+                  res.send({
+                    status: "OK",
+                    msg: "Message campaign stopped",
+                    messageCampaign: campNew,
+                    fileArchive: fileArchive,
+                  });
                 } else {
                   res.send({
                     status: "error",
@@ -746,7 +745,13 @@ module.exports = {
               });
               messageCampaignToDel.destroy();
               smsServer.reloadActiveCampaings();
-              callServer.reloadActiveCampaings();              
+              callServer.reloadActiveCampaings();
+              res.send({
+                status: "OK",
+                msg: "Message campaign stopped",
+                messageCampaign: messageCampaignToDel,
+                fileArchive: fileArchive,
+              });
             });
           } else {
             res.send({
@@ -895,24 +900,29 @@ module.exports = {
     app.post(
       "/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
       function (req, res) {
-        var messageCampaign = req.body.messageCampaign;        
-        var sql="SELECT * from customers where ("+
-        "customers.campaignId='"+messageCampaign.id+"' AND "+
-        "customers.id NOT IN (SELECT customerId FROM clicks WHERE clicks.campaignId='"+messageCampaign.id+"'))";
+        var messageCampaign = req.body.messageCampaign;
+        var sql =
+          "SELECT * from customers where (" +
+          "customers.campaignId='" +
+          messageCampaign.id +
+          "' AND " +
+          "customers.id NOT IN (SELECT customerId FROM clicks WHERE clicks.campaignId='" +
+          messageCampaign.id +
+          "'))";
         database.execute_raw_query(sql, function (customers) {
-            if (customers)
-              res.send({
-                status: "OK",
-                msg: "Customers no click found",
-                customers: customers,
-              });
-            else
-              res.send({
-                status: "OK",
-                msg: "Customers no click not found",
-                contacts: {},
-              });
-          });
+          if (customers)
+            res.send({
+              status: "OK",
+              msg: "Customers no click found",
+              customers: customers,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers no click not found",
+              contacts: {},
+            });
+        });
       }
     );
 
@@ -920,22 +930,25 @@ module.exports = {
       "/adminarea/messageCampaign/getCampaignInterestedCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
-        var sql="SELECT * from customers,clicks where (clicks.campaignId='"+messageCampaign.id+"' AND "+
-        "clicks.customerId=customers.id);";
+        var sql =
+          "SELECT * from customers,clicks where (clicks.campaignId='" +
+          messageCampaign.id +
+          "' AND " +
+          "clicks.customerId=customers.id);";
         database.execute_raw_query(sql, function (results) {
-            if (results)
-              res.send({
-                status: "OK",
-                msg: "Customers interested found",
-                customers: results,
-              });
-            else
-              res.send({
-                status: "OK",
-                msg: "Customers interested not found",
-                customers: {},
-              });
-          });
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Customers interested found",
+              customers: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Customers interested not found",
+              customers: {},
+            });
+        });
       }
     );
 
@@ -970,7 +983,7 @@ module.exports = {
     app.post("/upload/contacts", function (req, res) {
       const form = new formidable.IncomingForm();
       form.parse(req, function (err, fields, files) {
-        if(!files.csv_data) {
+        if (!files.csv_data) {
           res.send({
             status: "Error",
             msg: "File not found",
@@ -1065,13 +1078,21 @@ module.exports = {
     });
 
     ///////////////////// Gateways ////////////////////////
-    app.post("/adminarea/gateway/getAll", function (req, res) {      
-      res.send({ status: "OK", msg: "Gateways found", gateways: smsServer.getGateways() });
+    app.post("/adminarea/gateway/getAll", function (req, res) {
+      res.send({
+        status: "OK",
+        msg: "Gateways found",
+        gateways: smsServer.getGateways(),
+      });
     });
 
     app.post("/adminarea/gateway/resetCounters", function (req, res) {
-      smsServer.resetCounters();      
-      res.send({ status: "OK", msg: "Gateways reset", gateways: smsServer.getGateways() });
+      smsServer.resetCounters();
+      res.send({
+        status: "OK",
+        msg: "Gateways reset",
+        gateways: smsServer.getGateways(),
+      });
     });
 
     ///////////////////// User ///////////////////////////////
@@ -1235,7 +1256,8 @@ module.exports = {
               token: token,
             });
           }
-        }).catch(error => {
+        })
+        .catch((error) => {
           console.log(error);
         });
     });
