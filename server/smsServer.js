@@ -91,6 +91,8 @@ class SmsServer {
               order: [["id", "ASC"]],
             })
             .then((sims) => {
+              gateway.nSmsSent=0;
+              gateway.nSmsReceived=0;
               gateway.isWorkingCall = true;
               gateway.isWorkingSms = true;
               gateway.objData = {
