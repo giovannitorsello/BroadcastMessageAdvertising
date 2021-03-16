@@ -1,9 +1,7 @@
 const config = require("./config.js").load();
 sms_gateway_hardware = require("./smsGateway.js");
 
-
 class SmsServer {
-  
   smsSims = [];
   smsGateways = [];
   smsCampaigns = [];
@@ -13,20 +11,24 @@ class SmsServer {
   waitTime = 1000;
   nTotRadios = 0;
   nAntifroudMessage = 0;
-  inteval= {};
-  database= {};
+  inteval = {};
+  database = {};
 
   constructor(app, database) {
-    this.database=database;
+    this.database = database;
     this.init();
   }
 
   init() {
-    this.loadSims((sims) => {this.sims = sims;});
+    this.loadSims((sims) => {
+      this.sims = sims;
+    });
     this.loadGateways((gateways) => {
       this.smsGateways = gateways;
     });
-    this.loadCampaings((campaigns) => {this.smsCampaigns = campaigns;});
+    this.loadCampaings((campaigns) => {
+      this.smsCampaigns = campaigns;
+    });
   }
 
   checkgatewayIsWorking(iGateway) {
@@ -45,7 +47,8 @@ class SmsServer {
     }
   }
 
-  resetCounters() {
+  resetCounters(callback) {
+    /*
     var iGat = 0;
     while (iGat < this.smsGateways.length) {
       this.smsGateways[iGat].nSmsSent = 0;
@@ -54,22 +57,76 @@ class SmsServer {
       while (iLine < this.smsGateways[iGat].objData.lines.length) {
         this.smsGateways[iGat].objData.smsSent[iLine] = 0;
         this.smsGateways[iGat].objData.smsReceived[iLine] = 0;
+        
         if (this.smsGateways[iGat].objData.lines[iLine] !== "")
           this.smsGateways[iGat].objData.isWorkingSms[iLine] = 1;
         if (this.smsGateways[iGat].objData.lines[iLine] === "")
           this.smsGateways[iGat].objData.isWorkingSms[iLine] = 0;
 
-        this.checkgatewayIsWorking(iGat);
-        this.smsGateways[iGat].save();
+          this.smsGateways[iGat].isWorkingSms=1;
+          this.smsGateways[iGat].isWorkingCall=1;
+
+          gateway.save().then((gat) => {
+            gatewaysReset.push(gat);
+            if (iGateway === array.length - 1)
+              res.send({
+                status: "OK",
+                msg: "Gateways reset",
+                gateways: gatewaysReset,
+              });
+          });          
+          //this.checkgatewayIsWorking(iGat);        
         iLine++;
       }
-
       iGat++;
-    }
+    }*/
 
-    this.loadGateways((gateways) => {
-      this.smsGateways = gateways;
-    });
+    var gatewaysReset = [];
+      this.database.entities.gateway.findAll().then((gateways) => {
+        var iSim = 0;
+        gateways.forEach((gateway, iGateway, array) => {
+          this.database.entities.sim
+            .findAll({
+              where: { bankId: gateway.bankId },
+              order: [["id", "ASC"]],
+            })
+            .then((sims) => {
+              gateway.isWorkingCall = true;
+              gateway.isWorkingSms = true;
+              gateway.objData = {
+                lines: [],
+                operator: [],
+                isWorkingSms: [],
+                isWorkingCall: [],
+                smsSent: [],
+                smsReceived: [],
+                callsSent: [],
+                callsReceived: [],
+              };
+              for (var i = 0; i < gateway.nRadios; i++) {
+                if (iSim < sims.length) {
+                  gateway.objData.lines[i] = sims[iSim].phoneNumber;
+                  gateway.objData.operator[i] = sims[iSim].operator;
+                  gateway.objData.isWorkingSms[i] = 1;
+                  gateway.objData.isWorkingCall[i] = 1;
+                  gateway.objData.smsSent[i] = 0;
+                  gateway.objData.smsReceived[i] = 0;
+                  gateway.objData.callsSent[i] = 0;
+                  gateway.objData.callsReceived[i] = 0;
+                  iSim++;
+                }
+              }
+              gateway.save().then((gat) => {
+                gatewaysReset.push(gat);
+                if (iGateway === array.length - 1)
+                  this.smsGateways=gatewaysReset;
+                  callback(this.smsGateways);
+              });
+            });
+        });
+      });
+
+    
   }
 
   startCampaignManager() {
@@ -129,8 +186,8 @@ class SmsServer {
               this.smsGateways[iDevice].nSmsSent++;
               this.smsGateways[iDevice].objData.smsSent[selectedSenderLine]++;
               this.smsGateways[iDevice]
-              .save({ fields: ["nSmsSent", "objData"]})
-              .then((savedgateway) => {
+                .save({ fields: ["nSmsSent", "objData"] })
+                .then((savedgateway) => {
                   this.antifraudRoutine(
                     iDevice,
                     selectedSenderLine,
@@ -172,7 +229,7 @@ class SmsServer {
   selectCurrentContact(campaign) {
     if (!campaign.contacts) {
       this.database.entities.customer
-        .findAll({ where: { campaignId: campaign.id , state: "toContact"} })
+        .findAll({ where: { campaignId: campaign.id, state: "toContact" } })
         .then((custs) => {
           campaign.contacts = custs;
           this.selectedContact = 0;
@@ -262,12 +319,10 @@ class SmsServer {
               .then((contacts) => {
                 camp.contacts = contacts;
                 camp.ncontacts = contacts.length;
-                
               });
 
-              campaigns.push(camp);
-              if(index===array.length-1) 
-                callback(campaigns);              
+            campaigns.push(camp);
+            if (index === array.length - 1) callback(campaigns);
           });
         }
       });
@@ -342,7 +397,11 @@ class SmsServer {
           receiverDevice.save({ fields: ["nSmsSent", "objData"] });
 
           //if SIM are non balanced
-          this.antifraudRoutine(selectedSenderGateway, selectedSenderLine, () =>{});
+          this.antifraudRoutine(
+            selectedSenderGateway,
+            selectedSenderLine,
+            () => {}
+          );
 
           callback(response);
         }
@@ -422,7 +481,6 @@ class SmsServer {
     var senderGateway = 0;
     var senderLine = 0;
     var nSmsSent = this.smsGateways[0].nSmsSent;
-    
 
     for (var iGat = 0; iGat < this.smsGateways.length; iGat++) {
       for (var iLine = 0; iLine < this.smsGateways[iGat].nRadios; iLine++) {
@@ -448,7 +506,7 @@ class SmsServer {
       }
     }
 
-    return {senderGateway: senderGateway, senderLine: senderLine};
+    return { senderGateway: senderGateway, senderLine: senderLine };
   }
 
   updateCampaignData(campaign, callback) {
@@ -490,22 +548,24 @@ class SmsServer {
     return this.smsSims;
   }
 
-  sendSms(data) {    
-    sms_gateway_hardware.sendSMS(data.gateway,data.gatewayLine, data.message, data.phonenumber, (res)=>{});
+  sendSms(data) {
+    sms_gateway_hardware.sendSMS(
+      data.gateway,
+      data.gatewayLine,
+      data.message,
+      data.phonenumber,
+      (res) => {}
+    );
   }
-
 }
-
 
 module.exports = {
   smsServerIstance: {},
   startServer(app, database) {
-    this.smsServerIstance=new SmsServer(app, database);
-    
-    
-    this.smsServerIstance.interval=setInterval(() => {
+    this.smsServerIstance = new SmsServer(app, database);
+
+    this.smsServerIstance.interval = setInterval(() => {
       this.smsServerIstance.startCampaignManager();
     }, config.waitTime);
-    
-  }
-}
+  },
+};

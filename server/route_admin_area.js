@@ -1087,11 +1087,12 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/resetCounters", function (req, res) {
-      smsServer.resetCounters();
-      res.send({
-        status: "OK",
-        msg: "Gateways reset",
-        gateways: smsServer.getGateways(),
+      smsServer.resetCounters((gateways) => {
+        res.send({
+          status: "OK",
+          msg: "Gateways reset",
+          gateways: gateways,
+        });
       });
     });
 
