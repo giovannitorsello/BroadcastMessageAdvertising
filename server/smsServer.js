@@ -92,7 +92,7 @@ class SmsServer {
             })
             .then((sims) => {
               gateway.nSmsSent=0;
-              gateway.nSmsReceived=0;
+              gateway.nSmsReceived
               gateway.isWorkingCall = true;
               gateway.isWorkingSms = true;
               gateway.objData = {
@@ -550,13 +550,13 @@ class SmsServer {
     return this.smsSims;
   }
 
-  sendSms(data) {
+  sendSms(data, callback) {
     sms_gateway_hardware.sendSMS(
       data.gateway,
       data.gatewayLine,
       data.message,
       data.phonenumber,
-      (res) => {}
+      (res) => {callback(res)}
     );
   }
 }

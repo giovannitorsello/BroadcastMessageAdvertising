@@ -110,7 +110,7 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-btn classs="primary" @click="insertGateway()">Inserisci</v-btn>
+        <v-btn class="primary" @click="insertGateway()">Inserisci</v-btn>
       </v-col>
     </v-row>
 
@@ -205,6 +205,7 @@
             label="Messaggio"
           ></v-text-field>
         </v-card-text>
+        <p>Risultato: {{resultSendSms}}</p>
         <v-card-actions class="pt-3">
           <v-spacer></v-spacer>
 
@@ -251,6 +252,7 @@ export default {
       dialDlg: false,
       phoneNumber: "3939241987",
       message: "Test di prova http://w.wfn.ovh/324/asd/2",
+      resultSendSms: "",
       headerGateways: [
         { text: "ID", value: "id" },
         { text: "Nome", value: "name" },
@@ -290,6 +292,7 @@ export default {
     sendSms() {
       var lines=this.selectedGateway.objData.lines;
       var gatewayLine=lines.indexOf(this.selectedLine);
+      this.resultSendSms="";
       this.axios
         .post("/adminarea/gateway/sendSms", {
           line: this.selectedLine,
@@ -299,7 +302,13 @@ export default {
           message: this.message,
         })
         .then((request) => {
-          this.dialDlg = false;
+          if(request.state==="send")
+            this.resultSendSms="Inviato"+"("+request.msg+")";
+          else
+            this.resultSendSms="Errore invio"+"("+request.msg+")";
+
+
+          //this.dialDlg = false;
         });
     },
     dialCall() {

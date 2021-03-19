@@ -2,7 +2,7 @@ const config = require("./config.js").load();
 const mailer = require("./mailer.js");
 const utility = require("./utility.js");
 const formidable = require("formidable");
-const { Op } = require("sequelize");
+const { Op, EmptyResultError } = require("sequelize");
 const { fork } = require("child_process");
 const fs = require("fs");
 const https = require("https");
@@ -514,7 +514,9 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/sendSms", function (req, res) {
-      if (req.body) smsServer.sendSms(req.body);
+      if (req.body) smsServer.sendSms(req.body, result => {
+        res.send(result);
+      });
     });
 
     app.post("/adminarea/gateway/getall", function (req, res) {
@@ -532,7 +534,7 @@ module.exports = {
 
     app.post("/adminarea/gateway/reset", function (req, res) {
       var gatewaysReset = [];
-      database.entities.gateway.findAll().then((gateways) => {
+      database.entities.gateway.findAll({order: [["id", "ASC"]]}).then((gateways) => {
         var iSim = 0;
         gateways.forEach((gateway, iGateway, array) => {
           database.entities.sim
