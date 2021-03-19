@@ -82,53 +82,62 @@ class SmsServer {
     }*/
 
     var gatewaysReset = [];
-      this.database.entities.gateway.findAll().then((gateways) => {
-        var iSim = 0;
-        gateways.forEach((gateway, iGateway, array) => {
-          this.database.entities.sim
-            .findAll({
-              where: { bankId: gateway.bankId },
-              order: [["id", "ASC"]],
-            })
-            .then((sims) => {
-              gateway.nSmsSent=0;
-              gateway.nSmsReceived
-              gateway.isWorkingCall = true;
-              gateway.isWorkingSms = true;
-              gateway.objData = {
-                lines: [],
-                operator: [],
-                isWorkingSms: [],
-                isWorkingCall: [],
-                smsSent: [],
-                smsReceived: [],
-                callsSent: [],
-                callsReceived: [],
-              };
-              for (var i = 0; i < gateway.nRadios; i++) {
-                if (iSim < sims.length) {
-                  gateway.objData.lines[i] = sims[iSim].phoneNumber;
-                  gateway.objData.operator[i] = sims[iSim].operator;
-                  gateway.objData.isWorkingSms[i] = 1;
-                  gateway.objData.isWorkingCall[i] = 1;
-                  gateway.objData.smsSent[i] = 0;
-                  gateway.objData.smsReceived[i] = 0;
-                  gateway.objData.callsSent[i] = 0;
-                  gateway.objData.callsReceived[i] = 0;
-                  iSim++;
-                }
+    var iSim = 0,
+      bankIdSel = 0;
+    this.database.entities.gateway.findAll().then((gateways) => {
+      gateways.forEach((gateway, iGateway, array) => {
+        this.database.entities.sim
+          .findAll({
+            where: { bankId: gateway.bankId },
+            order: [["id", "ASC"]],
+          })
+          .then((sims) => {
+            gateway.nSmsSent = 0;
+            gateway.nSmsReceived;
+            gateway.isWorkingCall = true;
+            gateway.isWorkingSms = true;
+            gateway.objData = {
+              lines: [],
+              operator: [],
+              isWorkingSms: [],
+              isWorkingCall: [],
+              smsSent: [],
+              smsReceived: [],
+              callsSent: [],
+              callsReceived: [],
+            };
+            //Manage change bank and Sim counter
+            if (bankIdSel !== gateway.bankId) {
+              iSim = 0;
+              bankIdSel = gateway.bankId;
+            }
+            for (var i = 0; i < gateway.nRadios; i++) {
+              if (iSim < sims.length) {
+                gateway.objData.lines[i] = sims[iSim].phoneNumber;
+                gateway.objData.operator[i] = sims[iSim].operator;
+                gateway.objData.isWorkingSms[i] = 1;
+                gateway.objData.isWorkingCall[i] = 1;
+                gateway.objData.smsSent[i] = 0;
+                gateway.objData.smsReceived[i] = 0;
+                gateway.objData.callsSent[i] = 0;
+                gateway.objData.callsReceived[i] = 0;
+                iSim++;
               }
-              gateway.save().then((gat) => {
+            }
+            gateway.setDataValue('objData', gateway.objData);              
+            gateway
+              .save()
+              .then((gat) => {
                 gatewaysReset.push(gat);
-                if (iGateway === array.length - 1)
-                  this.smsGateways=gatewaysReset;
-                  callback(this.smsGateways);
+                if (gatewaysReset.length === array.length) {
+                  this.loadGateways(gats => {
+                    callback(gats)
+                  });
+                }
               });
-            });
-        });
+          });
       });
-
-    
+    });
   }
 
   startCampaignManager() {
@@ -273,8 +282,8 @@ class SmsServer {
       .findAll({ order: [["id", "DESC"]] })
       .then((results) => {
         if (results.length > 0) {
-          sims = results;          
-          callback(sims);          
+          sims = results;
+          callback(sims);
         }
       })
       .catch((error) => {
@@ -285,18 +294,19 @@ class SmsServer {
   loadGateways(callback) {
     var gateways = [];
     this.database.entities.gateway
-      .findAll({ order: [["id", "DESC"]] })
+      .findAll({ order: [["id", "ASC"]] })
       .then((results) => {
         if (results.length > 0) {
           gateways = results;
           for (var i = 0; i < gateways.length; i++) {
             if (gateways[i].isWorkingSms)
-              this.nTotRadios += gateways[i].nRadios;
-            callback(gateways);
+              this.nTotRadios += gateways[i].nRadios;            
           }
+          callback(gateways);
         }
       })
       .catch((error) => {
+        callback([]);
         console.log(error);
       });
   }
@@ -552,7 +562,9 @@ class SmsServer {
       data.gatewayLine,
       data.message,
       data.phonenumber,
-      (res) => {callback(res)}
+      (res) => {
+        callback(res);
+      }
     );
   }
 }

@@ -579,7 +579,8 @@ module.exports = {
                     iSim++;
                   }
                 }
-                gateway.save().then((gat) => {
+              gateway.setDataValue('objData', gateway.objData);
+              gateway.save().then((gat) => {
                   gatewaysReset.push(gat);
                   if (gatewaysReset.length === array.length)
                     res.send({

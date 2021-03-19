@@ -302,10 +302,10 @@ export default {
           message: this.message,
         })
         .then((request) => {
-          if(request.state==="send")
-            this.resultSendSms="Inviato"+"("+request.msg+")";
+          if(request.data.state==="send" || request.data.state==="sending")
+            this.resultSendSms="Inviato"+"("+request.data.msg+")";
           else
-            this.resultSendSms="Errore invio"+"("+request.msg+")";
+            this.resultSendSms="Errore invio"+"("+request.data.msg+")";
 
 
           //this.dialDlg = false;
