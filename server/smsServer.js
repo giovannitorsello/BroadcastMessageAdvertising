@@ -268,17 +268,13 @@ class SmsServer {
   }
 
   loadSims(callback) {
-    var gateways = [];
+    var sims = [];
     this.database.entities.sim
       .findAll({ order: [["id", "DESC"]] })
       .then((results) => {
         if (results.length > 0) {
-          gateways = results;
-          for (var i = 0; i < gateways.length; i++) {
-            if (gateways[i].isWorkingSms)
-              this.nTotRadios += gateways[i].nRadios;
-            callback(gateways);
-          }
+          sims = results;          
+          callback(sims);          
         }
       })
       .catch((error) => {

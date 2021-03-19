@@ -514,9 +514,10 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/sendSms", function (req, res) {
-      if (req.body) smsServer.sendSms(req.body, result => {
-        res.send(result);
-      });
+      if (req.body)
+        smsServer.sendSms(req.body, (result) => {
+          res.send(result);
+        });
     });
 
     app.post("/adminarea/gateway/getall", function (req, res) {
@@ -534,54 +535,62 @@ module.exports = {
 
     app.post("/adminarea/gateway/reset", function (req, res) {
       var gatewaysReset = [];
-      database.entities.gateway.findAll({order: [["id", "ASC"]]}).then((gateways) => {
-        var iSim = 0;
-        gateways.forEach((gateway, iGateway, array) => {
-          database.entities.sim
-            .findAll({
-              where: { bankId: gateway.bankId },
-              order: [["id", "ASC"]],
-            })
-            .then((sims) => {
-              gateway.nSmsSent=0;
-              gateway.nSmsReceived=0;
-              gateway.isWorkingCall = true;
-              gateway.isWorkingSms = true;
-              gateway.objData = {
-                lines: [],
-                operator: [],
-                isWorkingSms: [],
-                isWorkingCall: [],
-                smsSent: [],
-                smsReceived: [],
-                callsSent: [],
-                callsReceived: [],
-              };
-              for (var i = 0; i < gateway.nRadios; i++) {
-                if (iSim < sims.length) {
-                  gateway.objData.lines[i] = sims[iSim].phoneNumber;
-                  gateway.objData.operator[i] = sims[iSim].operator;
-                  gateway.objData.isWorkingSms[i] = 1;
-                  gateway.objData.isWorkingCall[i] = 1;
-                  gateway.objData.smsSent[i] = 0;
-                  gateway.objData.smsReceived[i] = 0;
-                  gateway.objData.callsSent[i] = 0;
-                  gateway.objData.callsReceived[i] = 0;
-                  iSim++;
+      var iSim = 0,
+        bankIdSel = 0;
+      database.entities.gateway
+        .findAll({ order: [["id", "ASC"]] })
+        .then((gateways) => {
+          gateways.forEach((gateway, iGateway, array) => {
+            database.entities.sim
+              .findAll({
+                where: { bankId: gateway.bankId },
+                order: [["id", "ASC"]],
+              })
+              .then((sims) => {
+                gateway.nSmsSent = 0;
+                gateway.nSmsReceived = 0;
+                gateway.isWorkingCall = true;
+                gateway.isWorkingSms = true;
+                gateway.objData = {
+                  lines: [],
+                  operator: [],
+                  isWorkingSms: [],
+                  isWorkingCall: [],
+                  smsSent: [],
+                  smsReceived: [],
+                  callsSent: [],
+                  callsReceived: [],
+                };
+                //Manage change bank and Sim counter
+                if (bankIdSel !== gateway.bankId) {
+                  iSim = 0;
+                  bankIdSel = gateway.bankId;
                 }
-              }
-              gateway.save().then((gat) => {
-                gatewaysReset.push(gat);
-                if (iGateway === array.length - 1)
-                  res.send({
-                    status: "OK",
-                    msg: "Gateways reset",
-                    gateways: gatewaysReset,
-                  });
+                for (var i = 0; i < gateway.nRadios; i++) {
+                  if (iSim < sims.length) {
+                    gateway.objData.lines[i] = sims[iSim].phoneNumber;
+                    gateway.objData.operator[i] = sims[iSim].operator;
+                    gateway.objData.isWorkingSms[i] = 1;
+                    gateway.objData.isWorkingCall[i] = 1;
+                    gateway.objData.smsSent[i] = 0;
+                    gateway.objData.smsReceived[i] = 0;
+                    gateway.objData.callsSent[i] = 0;
+                    gateway.objData.callsReceived[i] = 0;
+                    iSim++;
+                  }
+                }
+                gateway.save().then((gat) => {
+                  gatewaysReset.push(gat);
+                  if (gatewaysReset.length === array.length)
+                    res.send({
+                      status: "OK",
+                      msg: "Gateways reset",
+                      gateways: gatewaysReset,
+                    });
+                });
               });
-            });
+          });
         });
-      });
     });
 
     /////////////////////Message campaign ////////////////////
