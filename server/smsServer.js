@@ -94,8 +94,8 @@ class SmsServer {
           .then((sims) => {
             gateway.nSmsSent = 0;
             gateway.nSmsReceived;
-            gateway.isWorkingCall = true;
-            gateway.isWorkingSms = true;
+            //gateway.isWorkingCall = true;
+            //gateway.isWorkingSms = true;
             gateway.objData = {
               lines: [],
               operator: [],
