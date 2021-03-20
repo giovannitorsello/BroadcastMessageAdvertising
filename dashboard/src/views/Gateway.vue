@@ -187,8 +187,9 @@
       max-width="600px"
       @keydown.esc="cancel"
     >
-    <v-card-title>Test per chiamate ed invio SMS</v-card-title>
+    
       <v-card>
+        <v-card-title>Test per chiamate ed invio SMS</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="phoneNumber"
@@ -205,7 +206,11 @@
             label="Messaggio"
           ></v-text-field>
         </v-card-text>
-        <p>Risultato: {{resultSendSms}}</p>
+        
+        <v-card-text>
+            <p style="color: black">Risultato: {{resultSendSms}}</p>
+        </v-card-text>
+
         <v-card-actions class="pt-3">
           <v-spacer></v-spacer>
 
@@ -323,10 +328,16 @@ export default {
           message: this.message,
         })
         .then((request) => {
-          this.dialDlg = false;
+          console.log(request);
+          if(request.data.state==="dial")
+            this.resultSendSms="In chiamata ...";
+          else
+            this.resultSendSms="Fallito";
+          
         });
     },
     openPhoneDialDlg(gateway, line) {
+      this.resultSendSms="";
       this.selectedLine=line;
       this.dialDlg = true;
     },

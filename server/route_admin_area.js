@@ -510,7 +510,9 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/dialCall", function (req, res) {
-      if (req.body) callServer.dialCall(req.body);
+      if (req.body) callServer.dialCall(req.body, result=> {
+        res.send(result);
+      });
     });
 
     app.post("/adminarea/gateway/sendSms", function (req, res) {

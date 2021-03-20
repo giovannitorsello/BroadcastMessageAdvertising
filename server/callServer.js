@@ -13,6 +13,7 @@ class CallServer {
   selectedContact = 0;
   sendCallInterval = {};
   interval={};
+  database={};
 
   constructor(app, database) {
     this.database=database;
@@ -58,13 +59,15 @@ class CallServer {
                       event.Disposition +
                       ")"
                   );
-                  database.changeStateToContactVerified(
+                  
+                  this.database.changeStateToContactVerified(
                     uniqueobj.phone,
                     function (results) {
                       console.log("Update successfull");
-                      console.log(results);
+                      console.log(results);                      
                     }
                   );
+                  
                 }
               }
             }
@@ -209,7 +212,7 @@ class CallServer {
     }, config.waitTimeWashServer);
   }
 
-  dialCall(gateway, line, phoneNumber, clientAmi, callback) {
+  dialCallAmi(gateway, line, phoneNumber, clientAmi, callback) {
     var gatewayName = gateway.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
     var channel = "SIP/" + gatewayName + "/" + phoneNumber;
@@ -229,8 +232,9 @@ class CallServer {
         Application: "",
         Codecs: "g729",
       });
-      callback();
+      callback({state: "dial"});
     }
+    callback({state: "disabled"});
   }
 
   writeAutoDialAsteriskFile(campaign) {
@@ -337,14 +341,14 @@ class CallServer {
       });    
   }
 
-  dialCall(data) {
+  dialCall(data, callback) {
     this.openAmiConnection((clientAmi) => {
-      this.dialCall(
+      this.dialCallAmi(
         data.gateway,
         data.gatewayLine,
         data.phonenumber,
         clientAmi,
-        (res) => {}
+        (res) => {callback(res);}
       );
     });
   }

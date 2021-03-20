@@ -496,8 +496,9 @@ class SmsServer {
         var sim = this.sims[iSim];
         var gat = this.smsGateways[iGat];
         var senderOperator = gat.objData.operator[iLine];
+        var senderIsWorking=(gat.isWorkingSms===1 || gat.isWorkingSms===true);
         if (bDifferentOperator) {
-          if (receiverOperator != senderOperator) {
+          if (receiverOperator != senderOperator && senderIsWorking) {
             if (nSmsSent >= gat.objData.smsSent[iLine]) {
               nSmsSent = gat.objData.smsSent[iLine];
               senderGateway = iGat;
@@ -505,7 +506,7 @@ class SmsServer {
             }
           }
         } else {
-          if (nSmsSent >= gat.objData.smsSent[iLine]) {
+          if (nSmsSent >= gat.objData.smsSent[iLine] && senderIsWorking) {
             nSmsSent = gat.objData.smsSent[iLine];
             senderGateway = iGat;
             senderLine = iLine;
