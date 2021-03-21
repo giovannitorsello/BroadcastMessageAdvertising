@@ -239,6 +239,13 @@ module.exports = {
       "');";
     this.execute_raw_update(sql, callback);
   },
+  changeStateContactedByCallInterested(phone, callback) {
+    sql =
+      "UPDATE customers SET state='contactedByCallInterested' WHERE (mobilephone='" +
+      phone +
+      "');";
+    this.execute_raw_update(sql, callback);
+  },
   exportCampaignData(campaign, callback) {
     //Export contacts, clicks
     var contacts = [];

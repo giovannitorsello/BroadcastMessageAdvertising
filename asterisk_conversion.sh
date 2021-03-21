@@ -1,0 +1,1 @@
+ sox ./promo1.wav -t raw -r 8000  -c 1 /var/lib/asterisk/sounds/it/promo1.sln

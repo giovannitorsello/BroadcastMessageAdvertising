@@ -36,6 +36,22 @@ class CallServer {
         this.client
           .on("connect", () => console.log("connect"))
           .on("event", (event) => {
+            if(event.Event==="DTMFBegin") {
+              //console.log(event);              
+            }
+            if(event.Event==="DTMFEnd") {
+              var uniqueobj = mapUniqueIdPhone[event.Uniqueid];
+                if (uniqueobj && uniqueobj.phone && event.Digit==="1") {
+                  console.log(uniqueobj.phone +" Press 1 key ");
+                  this.database.changeStateContactedByCallInterested(
+                    uniqueobj.phone,
+                    function (results) {
+                      console.log("Update successfull");
+                      console.log(results);                      
+                    }
+                  );
+                }
+            }
             if (event.Event === "Cdr") {
               if (
                 event.Channel === "OutgoingSpoolFailed" &&
@@ -60,13 +76,13 @@ class CallServer {
                       ")"
                   );
                   
-                  this.database.changeStateToContactVerified(
+                  /*this.database.changeStateToContactVerified(
                     uniqueobj.phone,
                     function (results) {
                       console.log("Update successfull");
                       console.log(results);                      
                     }
-                  );
+                  );*/
                   
                 }
               }
@@ -144,7 +160,7 @@ class CallServer {
             }
           })
           .on("data", (chunk) => {
-            /*console.log(chunk)*/
+            //console.log(chunk);
           })
           .on("disconnect", () => console.log("disconnect"))
           .on("reconnection", () => console.log("reconnection"))
@@ -362,9 +378,9 @@ module.exports = {
   startServer(app, database) {
     this.callServerIstance=new CallServer(app, database);
     
-    /*
+    
     this.callServerIstance.interval=setInterval(() => {
-      this.callServerIstance.startServer();
-    }, config.waitTime);*/
+      this.callServerIstance.startWashServer();
+    }, config.waitTimeWashServer);
   }
 }
