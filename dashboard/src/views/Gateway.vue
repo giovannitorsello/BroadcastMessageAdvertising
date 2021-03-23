@@ -189,7 +189,7 @@
     >
     
       <v-card>
-        <v-card-title>Test per chiamate ed invio SMS</v-card-title>
+        <v-card-title>Test per chiamate ed invio SMS - {{ this.selectedLine }}</v-card-title>
         <v-card-text>
           <v-text-field
             v-model="phoneNumber"
@@ -330,7 +330,7 @@ export default {
         .then((request) => {
           console.log(request);
           if(request.data.state==="dial")
-            this.resultSendSms="In chiamata ...";
+            this.resultSendSms="In chiamata ... (da linea"+(gatewayLine+1)+" )";
           else
             this.resultSendSms="Fallito";
           

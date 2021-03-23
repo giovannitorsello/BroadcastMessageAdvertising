@@ -509,8 +509,8 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/gateway/dialCall", function (req, res) {
-      if (req.body) callServer.dialCall(req.body, result=> {
+    app.post("/adminarea/gateway/dialCall", function (req, res) {git
+      if (req.body) callServer.dialCall(req.body, result => {
         res.send(result);
       });
     });
@@ -975,9 +975,11 @@ module.exports = {
         database.entities.customer
           .findAll({
             where: {
-              campaignId: messageCampaign.id,
-              state: "toContactVerified",
-            },
+              [Op.and]: [
+                {campaignId: messageCampaign.id},
+                {[Op.or]: [{state: "toContactVerified"}, {state: "contactedByCallInterested"}]}                
+                ]
+              }
           })
           .then(function (results) {
             if (results)

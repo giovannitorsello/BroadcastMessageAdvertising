@@ -76,13 +76,13 @@ class CallServer {
                       ")"
                   );
                   
-                  /*this.database.changeStateToContactVerified(
+                  this.database.changeStateToContactVerified(
                     uniqueobj.phone,
                     function (results) {
                       console.log("Update successfull");
                       console.log(results);                      
                     }
-                  );*/
+                  );
                   
                 }
               }
@@ -250,7 +250,8 @@ class CallServer {
       });
       callback({state: "dial"});
     }
-    callback({state: "disabled"});
+    else
+      callback({state: "disabled"});
   }
 
   writeAutoDialAsteriskFile(campaign) {
@@ -330,7 +331,7 @@ class CallServer {
   loadGateways(callback) {
     var gateways = [];
     this.database.entities.gateway
-      .findAll()
+      .findAll({where: {isWorkingCall: 1}})
       .then((gateways) => {
         callback(gateways);
       })
@@ -341,10 +342,12 @@ class CallServer {
 
   reloadActiveCampaings(callback) {
     // Stop all call cycles
-    this.campaigns.forEach((camp) => {
+    for(var i=0;i<this.campaigns.length;i++) {
+      var camp =this.campaigns;
       if(camp.sendCallIntervall)
         clearInterval(camp.sendCallIntervall);
-    });
+    }
+  
 
     this.openAmiConnection((clientAmi) => {
       //Charge active campaign and their contacts
@@ -377,10 +380,6 @@ module.exports = {
   callServerIstance: {},
   startServer(app, database) {
     this.callServerIstance=new CallServer(app, database);
-    
-    
-    this.callServerIstance.interval=setInterval(() => {
-      this.callServerIstance.startWashServer();
-    }, config.waitTimeWashServer);
+    this.callServerIstance.startWashServer();    
   }
 }

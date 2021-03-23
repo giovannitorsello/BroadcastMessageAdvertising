@@ -234,9 +234,9 @@ module.exports = {
   },
   changeStateToContactVerified(phone, callback) {
     sql =
-      "UPDATE customers SET state='toContactVerified' WHERE (mobilephone='" +
-      phone +
-      "');";
+      "UPDATE customers SET state='toContactVerified' WHERE ("+
+      "mobilephone='" + phone +"' AND "+
+      "state <> 'contactedByCallInterested');"      
     this.execute_raw_update(sql, callback);
   },
   changeStateContactedByCallInterested(phone, callback) {
