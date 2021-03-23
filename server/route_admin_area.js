@@ -509,7 +509,7 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/gateway/dialCall", function (req, res) {git
+    app.post("/adminarea/gateway/dialCall", function (req, res) {
       if (req.body) callServer.dialCall(req.body, result => {
         res.send(result);
       });
