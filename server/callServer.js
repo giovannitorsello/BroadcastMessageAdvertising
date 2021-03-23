@@ -23,10 +23,12 @@ class CallServer {
   init() {
     this.loadGateways((gateways) => {this.gateways = gateways;});
     this.loadCampaings((campaigns) => {this.campaigns = campaigns;});    
+    this.client = new AmiClient();
   }
 
   openAmiConnection(callback) {
-    this.client = new AmiClient();
+    if(!this.client.connection)
+    {
     this.client
       .connect(config.asterisk.login, config.asterisk.password, {
         host: config.asterisk.host,
@@ -34,7 +36,10 @@ class CallServer {
       })
       .then((amiConnection) => {
         this.client
-          .on("connect", () => console.log("connect"))
+          .on("connect", () => {
+            console.log("Connect to Ami");
+            callback(this.client);
+          })
           .on("event", (event) => {
             if(event.Event==="DTMFBegin") {
               //console.log(event);              
@@ -76,7 +81,7 @@ class CallServer {
                       ")"
                   );
                   
-                  this.database.changeStateToContactVerified(
+                  this.database.changeStateCalled(
                     uniqueobj.phone,
                     function (results) {
                       console.log("Update successfull");
@@ -162,20 +167,28 @@ class CallServer {
           .on("data", (chunk) => {
             //console.log(chunk);
           })
-          .on("disconnect", () => console.log("disconnect"))
-          .on("reconnection", () => console.log("reconnection"))
-          .on("internalError", (error) => console.log(error))
+          .on("disconnect", () => {
+            console.log("disconnect");
+          })
+          .on("reconnection", () => {
+            console.log("reconnection")
+          })
+          .on("internalError", (error) => {
+            console.log(error)
+          })
           .on("response", (response) => {
             /* console.log(response); */
           })
           .on("close", (response) => {
             console.log(response);
           });
-
-        //Function that generate action to call
-        callback(this.client);
+        
       })
       .catch((error) => console.log(error));
+    }
+    else {
+      callback(this.client);
+    }
   }
 
   generateCheckCalls(campaign, clientAmi) {
@@ -215,7 +228,7 @@ class CallServer {
         iContacts++;
 
         if (iContacts === contacts.length) {
-          campaign.state = "washed";
+          campaign.setDataValue('state', "finished"); 
           campaign.save().then((res) => {
             clearInterval(interval);
             server.reloadActiveCampaings();
@@ -225,7 +238,7 @@ class CallServer {
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
-    }, config.waitTimeWashServer);
+    }, config.waitTimeCallServer);
   }
 
   dialCallAmi(gateway, line, phoneNumber, clientAmi, callback) {
@@ -302,7 +315,7 @@ class CallServer {
       });
   }
 
-  startWashServer() {
+  startCallServer() {
     this.reloadActiveCampaings();
   }
 
@@ -352,8 +365,8 @@ class CallServer {
     this.openAmiConnection((clientAmi) => {
       //Charge active campaign and their contacts
         this.campaigns.forEach((campaign, index, arrCamp) => {
-          //controllo campagna in washing
-          if (campaign.state === "washing") {
+          //controllo campagna in calling
+          if (campaign.state === "calling") {
             this.generateCheckCalls(campaign, clientAmi);
           }
         });
@@ -380,6 +393,6 @@ module.exports = {
   callServerIstance: {},
   startServer(app, database) {
     this.callServerIstance=new CallServer(app, database);
-    this.callServerIstance.startWashServer();    
+    this.callServerIstance.startCallServer();    
   }
 }

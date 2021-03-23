@@ -115,7 +115,7 @@
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
-                    <td>{{ row.item.nVerifiedContacts }}</td>
+                    <td>{{ row.item.nCalledContacts }}</td>
                     <td>{{ row.item.ncompleted }}</td>
                     <td>{{ row.item.begin }}</td>
                     <td>{{ row.item.end }}</td>
@@ -126,9 +126,9 @@
                         dark
                         x-small
                         color="pink"
-                        @click="startWashContacts(row.item)"
+                        @click="startCallContacts(row.item)"
                       >
-                        <v-icon dark>mdi-washing-machine</v-icon>
+                        <v-icon dark>mdi-phone</v-icon>
                       </v-btn>
                     </td>
                     <td>
@@ -427,7 +427,7 @@ export default {
       filteredContacts: [],
       interestedCustomers: [],
       noInterestedCustomers: [],
-      verifiedCustomers: [],
+      calledCustomers: [],
       caps: [],
       cities: [],
       provinces: [],
@@ -467,7 +467,7 @@ export default {
         { text: "Stato", value: "state" },
         { text: "Messagio", value: "message" },
         { text: "Numero contatti", value: "ncontacts" },
-        { text: "Contatti verificati", value: "nVerifiedContacts" },
+        { text: "Contatti verificati", value: "nCalledContacts" },
         { text: "Completamento", value: "ncompleted" },
         { text: "Inizio", value: "begin" },
         { text: "Fine", value: "end" },
@@ -485,11 +485,9 @@ export default {
     this.refreshAll();
   },
   methods: {
-    startWashContacts(messageCampaign){
-        this.getVerifiedContacts(messageCampaign);
-        
+    startCallContacts(messageCampaign){
         this.axios
-        .post("/adminarea/messageCampaign/startWashContacts", {
+        .post("/adminarea/messageCampaign/startCallContacts", {
           messageCampaign: messageCampaign,
         })
         .then((request) => {
@@ -520,9 +518,9 @@ export default {
         })
         .then((request) => {
           this.selectedCampaign = request.data.messageCampaign;
-          this.getMessageCampaigns();
           var fileArchive = request.data.fileArchive;
           this.downloadMessageCampaignArchive(fileArchive);
+          this.getMessageCampaigns();          
         })
         .catch((error) => {
           console.log(error);
@@ -644,10 +642,9 @@ export default {
             request.data.messageCampaigns.forEach((camp) => {
               camp.begin = new Date(camp.begin).toLocaleString("it-IT");
               camp.end = new Date(camp.end).toLocaleString("it-IT");
-              this.getVerifiedContacts(camp, (campaign) => {
+              this.getCalledContacts(camp, (campaign) => {
                 this.messageCampaigns.push(campaign);
-              })
-              
+              });
             });
           }
         })
@@ -856,19 +853,19 @@ export default {
             console.log(error);
           });
     },
-    getVerifiedContacts(messageCampaign, callback) {
+    getCalledContacts(messageCampaign, callback) {
       this.interestedCustomers = [];
       if (messageCampaign && messageCampaign.id > 0)
         this.axios
-          .post("/adminarea/messageCampaign/getCampaignVerifiedCustomers", {
+          .post("/adminarea/messageCampaign/getCampaignCalledCustomers", {
             messageCampaign: messageCampaign,
           })
           .then((request) => {
             if (request.data.customers) {
-              messageCampaign.verifiedCustomers = request.data.customers;
-              messageCampaign.nVerifiedContacts = request.data.customers.length;
-              messageCampaign.nNotVerifiedContacts = messageCampaign.ncontacts-messageCampaign.nVerifiedContacts;
-              callback(messageCampaign);
+              messageCampaign.calledCustomers = request.data.customers;
+              messageCampaign.nCalledContacts = request.data.customers.length;
+              messageCampaign.nNotCalledContacts = messageCampaign.ncontacts-messageCampaign.nCalledContacts;
+              callback(messageCampaign);    
             }
           })
           .catch((error) => {

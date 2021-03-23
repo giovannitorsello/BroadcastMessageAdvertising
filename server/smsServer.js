@@ -174,7 +174,7 @@ class SmsServer {
     if (
       message !== "" &&
       (contact.state === "toContact" ||
-        contact.state === "toContactVerified") &&
+        contact.state === "called") &&
       campaign.state === "active"
     ) {
       //Line selection

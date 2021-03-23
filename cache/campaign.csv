@@ -1,2 +1,2 @@
 Id;NomeCampagna;Messaggio;Inizio;Fine;Stato;NumeroContatti;NumeroCompletati
-2;TestCampagnaTelefonica;Testo di prova;22/3/2021, 16:03:38;1/1/1970, 01:00:00;washed;1000;0
+2;TestCampagnaTelefonica;Testo di prova;Mon Mar 22 2021 16:03:38 GMT+0100 (Ora standard dell’Europa centrale);;disabled;1;0

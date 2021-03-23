@@ -658,15 +658,14 @@ module.exports = {
     });
 
     app.post(
-      "/adminarea/messageCampaign/startWashContacts",
+      "/adminarea/messageCampaign/startCallContacts",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.messageCampaign
           .findOne({ where: { id: messageCampaign.id } })
           .then(function (obj) {
             if (obj !== null) {
-              obj.state = "washing";
-
+              obj.setDataValue('state', "calling"); 
               obj.save().then(function (campNew) {
                 if (campNew !== null) {
                   callServer.reloadActiveCampaings();
@@ -969,7 +968,7 @@ module.exports = {
     );
 
     app.post(
-      "/adminarea/messageCampaign/getCampaignVerifiedCustomers",
+      "/adminarea/messageCampaign/getCampaignCalledCustomers",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.customer
@@ -977,7 +976,7 @@ module.exports = {
             where: {
               [Op.and]: [
                 {campaignId: messageCampaign.id},
-                {[Op.or]: [{state: "toContactVerified"}, {state: "contactedByCallInterested"}]}                
+                {[Op.or]: [{state: "called"}, {state: "contactedByCallInterested"}]}                
                 ]
               }
           })
@@ -985,13 +984,13 @@ module.exports = {
             if (results)
               res.send({
                 status: "OK",
-                msg: "Customers verified found",
+                msg: "Customers called found",
                 customers: results,
               });
             else
               res.send({
                 status: "OK",
-                msg: "Customers verified not found",
+                msg: "Customers called not found",
                 customers: {},
               });
           });
