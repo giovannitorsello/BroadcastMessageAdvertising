@@ -330,7 +330,7 @@ export default {
         .then((request) => {
           console.log(request);
           if(request.data.state==="dial")
-            this.resultSendSms="In chiamata ... (da linea"+(gatewayLine+1)+" )";
+            this.resultSendSms="In chiamata ... (da linea "+(gatewayLine+1)+" )";
           else
             this.resultSendSms="Fallito";
           

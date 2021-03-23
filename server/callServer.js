@@ -37,8 +37,7 @@ class CallServer {
       .then((amiConnection) => {
         this.client
           .on("connect", () => {
-            console.log("Connect to Ami");
-            callback(this.client);
+            console.log("Connect to Ami");            
           })
           .on("event", (event) => {
             if(event.Event==="DTMFBegin") {
@@ -186,12 +185,13 @@ class CallServer {
       })
       .catch((error) => console.log(error));
     }
-    else {
-      callback(this.client);
-    }
+    callback(this.client);
+    //else {
+    //  callback(this.client);
+    //}
   }
 
-  generateCheckCalls(campaign, clientAmi) {
+  generateCalls(campaign, clientAmi) {
     var contacts = campaign.contacts;
     var iGateway = 0;
     var iContacts = 0;
@@ -367,7 +367,7 @@ class CallServer {
         this.campaigns.forEach((campaign, index, arrCamp) => {
           //controllo campagna in calling
           if (campaign.state === "calling") {
-            this.generateCheckCalls(campaign, clientAmi);
+            this.generateCalls(campaign, clientAmi);
           }
         });
       });    
