@@ -110,4 +110,9 @@ config.json
 antifraudMessages.json
 
 #datafile
-.csv
+*.csv
+
+#cache & upload & other
+cache/
+upload/
+other/
