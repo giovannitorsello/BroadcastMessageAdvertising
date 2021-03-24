@@ -124,6 +124,8 @@ class SmsServer {
                 iSim++;
               }
             }
+            gateway.setDataValue('nSmsSent', 0);
+            gateway.setDataValue('nSmsReceived', 0);
             gateway.setDataValue('objData', gateway.objData);              
             gateway
               .save()

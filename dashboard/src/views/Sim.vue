@@ -52,11 +52,11 @@
       </v-col>
       <v-col>
         <v-select
-          v-model="selectedSim.bankId"
+          v-model="selectedBank"
           :items="banks"
           label="Banco SIM"
           item-text="name"
-          item-value="id"
+          return-object
         >
         </v-select>
       </v-col>
@@ -69,11 +69,11 @@
     <v-row>
       <v-col>
         <v-select
-          v-model="selectedSim.bankId"
+          v-model="selectedBank"
           :items="banks"
           label="Banco SIM"
           item-text="name"
-          item-value="id"
+          return-object
         >
         </v-select>
       </v-col>
@@ -85,7 +85,10 @@
           show-size
           label="Carica il file CSV delle SIM"
         ></v-file-input>
-      </v-col>      
+      </v-col> 
+      <v-col>
+        <v-btn classs="primary" @click="emptySim()" :disabled="!selectedBank.id">Elimina le Sim dal banco</v-btn>
+      </v-col>     
     </v-row>
     <v-row>
       <v-col>
@@ -156,6 +159,7 @@ export default {
         { text: "Abilit. Sms", value: "isWorkingSms" },
       ],
       selectedSim: {},
+      selectedBank: {},
       sims: [],
       banks: [],
       fileCSVSim: "",
@@ -167,15 +171,14 @@ export default {
   },
   methods: {
     async insertSim() {
-      if (
-        await this.$refs.neworupdate.open(
-          "Nuova/aggiornamento",
-          "Vuoi creare una nuova SIM?"
-        )
-      ) {
+      var bAccept=await this.$refs.neworupdate.open("Nuova/aggiornamento","Vuoi creare una nuova SIM?")
+      if (bAccept) {
         var newSim = {};
-        Object.assign(newSim, this.selectedSim);
-        newSim.id = "";
+        
+        Object.assign(newSim, this.selectedSim);        
+        newSim.bankId=this.selectedBank.id;        
+        newSim.name=newSim.operator+"_"+newSim.phoneNumber;
+        newSim.id = "";        
         this.axios
           .post("/adminarea/sim/insert", { sim: newSim })
           .then((request) => {
@@ -223,6 +226,25 @@ export default {
           });
       }
     },
+    async emptySim() {
+      console.log(this.selectedBank);
+      var bAccept= await this.$refs.confirm.open(
+          "Conferma cancellazione",
+          "Sei sicuro di voler cancellare tutte le SIM?"
+        );
+      if (bAccept) {
+        this.axios
+          .post("/adminarea/sim/deleteall", {bankId: this.selectedBank.id})
+          .then((request) => {
+            var result = request.data.result;
+            if (result) {
+              this.selectedSim = {};
+              this.sims=[];   
+              this.loadSims();           
+            }
+          });
+      }
+    },
     loadSims() {
       this.sims = [];
       this.axios
@@ -242,8 +264,7 @@ export default {
         .post("/adminarea/bank/getAll")
         .then((request) => {
           if (request.data.banks) {
-            this.banks = request.data.banks;
-            console.log(this.banks);
+            this.banks = request.data.banks;            
           }
         })
         .catch((error) => {
@@ -253,7 +274,7 @@ export default {
     loadCSVFile() {
         var formData = new FormData();
         formData.append("csv_data", this.fileCSVSim);   
-        formData.append("bankId", this.selectedSim.bankId);     
+        formData.append("bankId", this.selectedBank.id);     
         this.axios
           .post("/upload/sims", formData, {
             headers: {

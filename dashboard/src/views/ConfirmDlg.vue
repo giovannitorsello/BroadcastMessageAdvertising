@@ -68,13 +68,13 @@
           this.reject = reject;
         });
       },
-      agree() {
-        this.resolve(true);
+      agree() {               
         this.dialog = false;
+         this.resolve(true);
       },
       cancel() {
-        this.resolve(false);
         this.dialog = false;
+        this.resolve(false);
       },
     },
   };

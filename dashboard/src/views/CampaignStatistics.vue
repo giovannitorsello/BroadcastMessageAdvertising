@@ -76,8 +76,7 @@ export default {
     resetCounters() {
       this.axios
         .post("/adminarea/gateway/resetCounters")
-        .then((request) => {
-          console.log(request.data.gateways);
+        .then((request) => {          
           if (request.data.gateways) {
             this.gateways = request.data.gateways;
           }
@@ -89,8 +88,7 @@ export default {
     getGateways() {
       this.axios
         .post("/adminarea/gateway/getAll")
-        .then((request) => {
-          console.log(request.data.gateways);
+        .then((request) => {          
           if (request.data.gateways) {
             this.gateways = request.data.gateways;
           }

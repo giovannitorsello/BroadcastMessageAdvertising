@@ -351,6 +351,29 @@ module.exports = {
         });
     });
 
+    app.post("/adminarea/sim/deleteall", function (req, res) {
+      var bankId = req.body.bankId;
+      database.entities.sim.destroy(
+        {
+          where: {bankId: bankId}      
+        })
+        .then(function (result) {
+          if (result !== null) {            
+            res.send({
+              status: "OK",
+              msg: "Sim deleted successfully",
+              result: result,
+            });
+          } else {
+            res.send({
+              status: "error",
+              msg: "Sim delete error",
+              result: result,
+            });
+          }
+        });
+    });
+
     app.post("/adminarea/sim/getall", function (req, res) {
       database.entities.sim.findAll().then(function (results) {
         if (results)
@@ -441,6 +464,7 @@ module.exports = {
         else res.send({ status: "OK", msg: "Banks not found", customers: {} });
       });
     });
+    
 
     ///////////////////// Gateway ////////////////////////
     app.post("/adminarea/gateway/insert", function (req, res) {
@@ -581,6 +605,8 @@ module.exports = {
                     iSim++;
                   }
                 }
+              gateway.setDataValue('nSmsSent', 0);
+              gateway.setDataValue('nSmsReceived', 0);
               gateway.setDataValue('objData', gateway.objData);
               gateway.save().then((gat) => {
                   gatewaysReset.push(gat);

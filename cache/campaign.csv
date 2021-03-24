@@ -1,2 +1,2 @@
 Id;NomeCampagna;Messaggio;Inizio;Fine;Stato;NumeroContatti;NumeroCompletati
-7;ProvaGio;Testo di prova;Tue Mar 23 2021 17:40:15 GMT+0100 (Ora standard dell’Europa centrale);;disabled;;0
+1;prova;Testo di prova;24/3/2021, 11:25:44;24/3/2021, 13:04:18;active;10997;8129
