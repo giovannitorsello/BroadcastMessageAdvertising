@@ -244,7 +244,8 @@ class CallServer {
   dialCallAmi(gateway, line, phoneNumber, clientAmi, callback) {
     var gatewayName = gateway.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
-    var channel = "SIP/" + gatewayName + "/" + phoneNumber;
+    var outLine= ('000'+(line+1)).slice(-3);
+    var channel = "SIP/" + gatewayName + "/" +outLine+phoneNumber;
     if (gateway.isWorkingCall === true) {
       clientAmi.action({
         Action: "Originate",
