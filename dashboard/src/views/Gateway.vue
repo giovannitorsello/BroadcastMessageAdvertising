@@ -307,7 +307,7 @@ export default {
           message: this.message,
         })
         .then((request) => {
-          if(request.data.state==="send" || request.data.state==="sending")
+          if(request.data.status==="send" || request.data.status==="sending")
             this.resultSendSms="Inviato"+"("+request.data.msg+")";
           else
             this.resultSendSms="Errore invio"+"("+request.data.msg+")";

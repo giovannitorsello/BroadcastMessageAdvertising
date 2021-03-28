@@ -113,6 +113,6 @@ antifraudMessages.json
 *.csv
 
 #cache & upload & other
-cache/*
-uploads/*
-other/*
+cache/
+uploads/
+other/
