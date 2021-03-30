@@ -21,6 +21,12 @@
                     v-bind:key="i"
                     >|{{ sms }}|</span
                   >
+                  <br />
+                  <span  style="color: green;"
+                    v-for="(calls, i) in row.item.objData.callsSent"
+                    v-bind:key="i"
+                    >|{{ calls }}|</span
+                  >
                 </div>
               </td>
               <td>
@@ -31,6 +37,12 @@
                     v-for="(sms, i) in row.item.objData.smsReceived"
                     v-bind:key="i"
                     >|{{ sms }}|</span
+                  >
+                  <br />
+                  <span  style="color: green;"
+                    v-for="(calls, i) in row.item.objData.callsReceived"
+                    v-bind:key="i"
+                    >|{{ calls }}|</span
                   >
                 </div>
               </td>

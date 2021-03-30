@@ -126,7 +126,8 @@ class SmsServer {
             }
             gateway.setDataValue('nSmsSent', 0);
             gateway.setDataValue('nSmsReceived', 0);
-            gateway.setDataValue('objData', gateway.objData);              
+            gateway.setDataValue('objData', gateway.objData);
+            gateway.changed('objData', true);           
             gateway
               .save()
               .then((gat) => {

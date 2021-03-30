@@ -320,12 +320,10 @@ export default {
       var lines=this.selectedGateway.objData.lines;
       var gatewayLine=lines.indexOf(this.selectedLine);
       this.axios
-        .post("/adminarea/gateway/dialCall", {
-          line: this.selectedLine,
+        .post("/adminarea/gateway/dialCall", {          
           gateway: this.selectedGateway,
-          gatewayLine: gatewayLine,
-          phonenumber: this.phoneNumber,
-          message: this.message,
+          line: gatewayLine,
+          phonenumber: this.phoneNumber,          
         })
         .then((request) => {
           console.log(request);

@@ -232,12 +232,13 @@ module.exports = {
       callback(results);
     });
   },
-  changeStateCalled(phone, callback) {
-    sql =
-      "UPDATE customers SET state='called' WHERE ("+
-      "mobilephone='" + phone +"' AND "+
-      "state <> 'contactedByCallInterested');"      
+  changeStateCalled(contactId, callback) {
+    sql ="UPDATE customers SET state='called' WHERE (id='" + contactId +"');"      
     this.execute_raw_update(sql, callback);
+  },
+  setClickByCall(iCampaign,iContact,clickType,callback) {
+    //Find customer by phone
+
   },
   changeStateContactedByCallInterested(phone, callback) {
     sql =
@@ -245,7 +246,7 @@ module.exports = {
       phone +
       "');";
     this.execute_raw_update(sql, callback);
-  },
+  }, 
   exportCampaignData(campaign, callback) {
     //Export contacts, clicks
     var contacts = [];
