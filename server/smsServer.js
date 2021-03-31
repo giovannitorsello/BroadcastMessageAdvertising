@@ -1,3 +1,5 @@
+const { relativeTimeThreshold } = require("moment-timezone");
+
 const config = require("./config.js").load();
 sms_gateway_hardware = require("./smsGateway.js");
 
@@ -31,56 +33,43 @@ class SmsServer {
     });
   }
 
-  checkgatewayIsWorking(iGateway) {
+  checkIfBalanceIsPossible() {
+    this.database.checkIfBalanceIsPossible(results => {
+      if(results.length>=2) return true;
+      else {
+        //Stop all campaigns
+        this.disableAllCampaigns();
+        return false;
+      }
+    });
+  }
+
+  checkGatewayIsWorking(iGateway) {    
+    var iLine = 0;
+    var bIsWorking = false;
     var gateway = this.smsGateways[iGateway];
-    var iLine = 0,
-      bIsWorking = false;
-    while (iLine < this.smsGateways[iGateway].objData.lines.length) {
-      bIsWorking =
-        bIsWorking || this.smsGateways[iGateway].objData.isWorkingSms[iLine];
+    var objData=gateway.objData;    
+    //Check if line reach max smsSent
+    while (iLine < objData.lines.length) {
+      
+      //Check if line reach max smsSent
+      if(objData.smsSent[iLine]>=gateway.nMaxDailyMessagePerLine)
+        this.smsGateways[iGateway].objData.isWorkingSms[iLine]=false;
+      
+      bIsWorking =bIsWorking || this.smsGateways[iGateway].objData.isWorkingSms[iLine];
       iLine++;
     }
 
     if (bIsWorking !== gateway.isWorkingSms) {
-      gateway.isWorking = bIsWorking;
+      gateway.isWorkingSms = bIsWorking;
+      gateway.changed("objData", true);
       gateway.save();
+      
+      this.checkIfBalanceIsPossible()
     }
   }
 
   resetCounters(callback) {
-    /*
-    var iGat = 0;
-    while (iGat < this.smsGateways.length) {
-      this.smsGateways[iGat].nSmsSent = 0;
-      this.smsGateways[iGat].nSmsReceived = 0;
-      var iLine = 0;
-      while (iLine < this.smsGateways[iGat].objData.lines.length) {
-        this.smsGateways[iGat].objData.smsSent[iLine] = 0;
-        this.smsGateways[iGat].objData.smsReceived[iLine] = 0;
-        
-        if (this.smsGateways[iGat].objData.lines[iLine] !== "")
-          this.smsGateways[iGat].objData.isWorkingSms[iLine] = 1;
-        if (this.smsGateways[iGat].objData.lines[iLine] === "")
-          this.smsGateways[iGat].objData.isWorkingSms[iLine] = 0;
-
-          this.smsGateways[iGat].isWorkingSms=1;
-          this.smsGateways[iGat].isWorkingCall=1;
-
-          gateway.save().then((gat) => {
-            gatewaysReset.push(gat);
-            if (iGateway === array.length - 1)
-              res.send({
-                status: "OK",
-                msg: "Gateways reset",
-                gateways: gatewaysReset,
-              });
-          });          
-          //this.checkgatewayIsWorking(iGat);        
-        iLine++;
-      }
-      iGat++;
-    }*/
-
     var gatewaysReset = [];
     var iSim = 0,
       bankIdSel = 0;
@@ -266,7 +255,7 @@ class SmsServer {
 
     //select line with less sent sms
     while (i < this.smsGateways.length) {
-      this.checkgatewayIsWorking(i);
+      this.checkGatewayIsWorking(i);
       if (
         nSmsSent >= this.smsGateways[i].nSmsSent &&
         this.smsGateways[i].isWorkingSms
@@ -339,10 +328,27 @@ class SmsServer {
       });
   }
 
-  reloadActiveCampaings(callback) {
-    //Charge active campaign and their
+  disableAllCampaigns() {    
+    for(var iCamp=0;iCamp<this.smsCampaigns.length; iCamp++)
+    {
+      this.smsCampaigns[iCamp].state="disabled";
+      this.smsCampaigns[iCamp].save();
+    }
+    this.reloadActiveCampaings();
+  }
+
+  reloadActiveCampaings() {
+
+    //Reload gateways
+    this.loadGateways((gateways) => {
+      this.smsGateways = gateways;
+    });
+
+    //Charge active campaigns and their contacts
     this.loadCampaings((campaigns) => {
       this.smsCampaigns = campaigns;
+      //Before start chect gateways situation
+      this.checkIfBalanceIsPossible();
     });
   }
 
@@ -447,6 +453,7 @@ class SmsServer {
       device.objData.isWorkingSms[selectedLine]
     ) {
       device.objData.isWorkingSms[selectedLine] = false;
+      gateway.changed("objData", true);
       device.save();
     }
 

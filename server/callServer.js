@@ -367,7 +367,7 @@ class CallServer {
           Application: "",
           Codecs: "alaw",
         });
-      this.antiFraudCallAlgorithm(iGateway, iLine);
+      this.antiFraudCallAlgorithm(iGateway, iLine,clientAmi);
       callback({ state: "dial" });
     } else callback({ state: "disabled" });
   }
@@ -522,7 +522,7 @@ class CallServer {
     }
   }
 
-  antiFraudCallAlgorithm(iGateway, iLine) {
+  antiFraudCallAlgorithm(iGateway, iLine,clientAmi) {
     var gateway = this.gateways[iGateway];
     var nCallsReceived = gateway.objData.callsReceived[iLine];
     var nCallsSent = gateway.objData.callsSent[iLine];
@@ -541,7 +541,7 @@ class CallServer {
         line,
         phoneNumber,
         durationAntifraudCall,
-        callServer.clientAmi
+        clientAmi
       );
     }
   }

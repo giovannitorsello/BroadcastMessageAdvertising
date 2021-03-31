@@ -290,4 +290,8 @@ module.exports = {
         }
       });
   },
+  checkIfBalanceIsPossible(callback) {
+    var sql="select distinct operator from gateways where (isWorkingSms=1)";
+    this.execute_raw_query(sql, callback);
+  }
 };
