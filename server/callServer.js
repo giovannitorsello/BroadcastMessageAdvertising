@@ -26,8 +26,7 @@ class CallServer {
       this.clientAmi = clientAmi;
       this.loadGateways((gateways) => {
         this.gateways = gateways;
-        this.reloadActiveCampaings();
-        //this.antiFraudCallAlgorithm();
+        this.reloadActiveCampaings();        
       });
       this.loadCampaings((campaigns) => {
         this.campaigns = campaigns;
@@ -165,6 +164,7 @@ class CallServer {
           event.Value &&
           mapCallAction.get(event.Value)
         ) {
+
           if (event.Channel !== "OutgoingSpoolFailed") {
             var actionId = event.Value;
             var actionData = JSON.parse(mapCallAction.get(actionId));
@@ -372,7 +372,7 @@ class CallServer {
           Application: "",
           Codecs: "alaw",
         });
-      this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
+      //this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
       callback({ state: "dial" });
     } else callback({ state: "disabled" });
   }
@@ -539,7 +539,7 @@ class CallServer {
         ((gateway.nMaxCallPercetage - ratio) * gateway.nCallsSent) / 100
       );
       if (duration < 60) duration = 60;
-      var caller = callServer.selectectGatewayCaller(gateway);
+      var caller = this.selectectGatewayCaller(gateway);
       var line = getGatewayLineForCall(caller);
       antiFraudCall(
         caller,
