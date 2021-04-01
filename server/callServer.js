@@ -72,10 +72,14 @@ class CallServer {
           //Double click
           if (uniqueobj && uniqueobj.phone && event.Digit === "2") {
             console.log(uniqueobj.phone + " Press 2 key ");
-            this.database.entities.click.findOne({where: {campaignId: idCampaign, customerId: idCustomer}}).then(clickFound =>{
-              clickFound.confirm=true;
-              clickFound.save();
-            })            
+            this.database.entities.click
+              .findOne({
+                where: { campaignId: idCampaign, customerId: idCustomer },
+              })
+              .then((clickFound) => {
+                clickFound.confirm = true;
+                clickFound.save();
+              });
           }
         }
 
@@ -161,21 +165,22 @@ class CallServer {
           event.Value &&
           mapCallAction.get(event.Value)
         ) {
-          if (event.Channel !== "OutgoingSpoolFailed")
+          if (event.Channel !== "OutgoingSpoolFailed") {
             var actionId = event.Value;
-          var actionData = JSON.parse(mapCallAction.get(actionId));
-          mapCallData.set(
-            event.Uniqueid,
-            JSON.stringify({
-              id: event.Uniqueid,
-              iCampaign: actionData.iCampaign,
-              iContact: actionData.iContact,
-              iGateway: actionData.iGateway,
-              iLine: actionData.iLine,
-              phone: actionData.phone,
-              channel: event.Channel,
-            })
-          );
+            var actionData = JSON.parse(mapCallAction.get(actionId));
+            mapCallData.set(
+              event.Uniqueid,
+              JSON.stringify({
+                id: event.Uniqueid,
+                iCampaign: actionData.iCampaign,
+                iContact: actionData.iContact,
+                iGateway: actionData.iGateway,
+                iLine: actionData.iLine,
+                phone: actionData.phone,
+                channel: event.Channel,
+              })
+            );
+          }
 
           if (event.Channel === "OutgoingSpoolFailed") {
             console.log(
@@ -367,7 +372,7 @@ class CallServer {
           Application: "",
           Codecs: "alaw",
         });
-      this.antiFraudCallAlgorithm(iGateway, iLine,clientAmi);
+      this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
       callback({ state: "dial" });
     } else callback({ state: "disabled" });
   }
@@ -522,7 +527,7 @@ class CallServer {
     }
   }
 
-  antiFraudCallAlgorithm(iGateway, iLine,clientAmi) {
+  antiFraudCallAlgorithm(iGateway, iLine, clientAmi) {
     var gateway = this.gateways[iGateway];
     var nCallsReceived = gateway.objData.callsReceived[iLine];
     var nCallsSent = gateway.objData.callsSent[iLine];
