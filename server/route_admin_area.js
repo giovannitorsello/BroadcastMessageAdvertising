@@ -353,12 +353,12 @@ module.exports = {
 
     app.post("/adminarea/sim/deleteall", function (req, res) {
       var bankId = req.body.bankId;
-      database.entities.sim.destroy(
-        {
-          where: {bankId: bankId}      
+      database.entities.sim
+        .destroy({
+          where: { bankId: bankId },
         })
         .then(function (result) {
-          if (result !== null) {            
+          if (result !== null) {
             res.send({
               status: "OK",
               msg: "Sim deleted successfully",
@@ -464,7 +464,6 @@ module.exports = {
         else res.send({ status: "OK", msg: "Banks not found", customers: {} });
       });
     });
-    
 
     ///////////////////// Gateway ////////////////////////
     app.post("/adminarea/gateway/insert", function (req, res) {
@@ -534,9 +533,10 @@ module.exports = {
     });
 
     app.post("/adminarea/gateway/dialCall", function (req, res) {
-      if (req.body) callServer.dialCall(req.body, result => {
-        res.send(result);
-      });
+      if (req.body)
+        callServer.dialCall(req.body, (result) => {
+          res.send(result);
+        });
     });
 
     app.post("/adminarea/gateway/sendSms", function (req, res) {
@@ -605,11 +605,11 @@ module.exports = {
                     iSim++;
                   }
                 }
-              gateway.setDataValue('nSmsSent', 0);
-              gateway.setDataValue('nSmsReceived', 0);
-              gateway.setDataValue('objData', gateway.objData);
-              gateway.changed('objData', true);
-              gateway.save().then((gat) => {
+                gateway.setDataValue("nSmsSent", 0);
+                gateway.setDataValue("nSmsReceived", 0);
+                gateway.setDataValue("objData", gateway.objData);
+                gateway.changed("objData", true);
+                gateway.save().then((gat) => {
                   gatewaysReset.push(gat);
                   if (gatewaysReset.length === array.length)
                     res.send({
@@ -692,7 +692,7 @@ module.exports = {
           .findOne({ where: { id: messageCampaign.id } })
           .then(function (obj) {
             if (obj !== null) {
-              obj.setDataValue('state', "calling"); 
+              obj.setDataValue("state", "calling");
               obj.save().then(function (campNew) {
                 if (campNew !== null) {
                   callServer.reloadActiveCampaings();
@@ -1002,10 +1002,15 @@ module.exports = {
           .findAll({
             where: {
               [Op.and]: [
-                {campaignId: messageCampaign.id},
-                {[Op.or]: [{state: "called"}, {state: "contactedByCallInterested"}]}                
-                ]
-              }
+                { campaignId: messageCampaign.id },
+                {
+                  [Op.or]: [
+                    { state: "called" },
+                    { state: "contactedByCallInterested" },
+                  ],
+                },
+              ],
+            },
           })
           .then(function (results) {
             if (results)
@@ -1024,6 +1029,43 @@ module.exports = {
       }
     );
     //////////////////////////Upload files/////////////////////
+    app.post("/upload/image", function (req, res) {
+      const form = new formidable.IncomingForm();
+      form.parse(req, function (err, fields, files) {
+        if (!files.image_data) {
+          res.send({
+            status: "Error",
+            msg: "File not found",
+          });
+        }
+        var oldPath = files.image_data.path;
+        var idCampaign = fields.idCampaign;
+        if (!idCampaign || idCampaign <= 0) {
+          res.send({
+            status: "Error",
+            msg: "Error in campaign id",
+          });
+          return;
+        }
+
+        var newPath = path.join(__dirname, "templates") + "/image.jpg";
+        var rawData = fs.readFileSync(oldPath);
+        console.log("Received file:  " + oldPath);
+        console.log("Upload file:  " + newPath);
+
+        fs.writeFile(newPath, rawData, (err) => {
+          if (err) console.log(err);
+          else {
+            res.send({
+              status: "OK",
+              msg: "Contacts found",
+              ncontacts: nImported,
+            });
+          }
+        });
+      });
+    });
+
     app.post("/upload/contacts", function (req, res) {
       const form = new formidable.IncomingForm();
       form.parse(req, function (err, fields, files) {

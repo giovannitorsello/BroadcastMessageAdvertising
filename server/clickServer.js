@@ -7,6 +7,7 @@ const http = require("http");
 function startClickServer(database) {
   this.server = http.createServer((req, res) => {
     if (req.url) {
+      var path = req.url.replace(/\/?(?:\?.*)?$/, '').toLowerCase();
       [hexIdCamp, hexIdCust, confirm] = req.url.substring(1).split("/");
       if (hexIdCamp === "favicon.ico") {
         res.writeHeader(200, { "Content-Type": "text/html" });
@@ -107,6 +108,10 @@ function startClickServer(database) {
             }
           });
       }
+
+      if(path==="/templates/image.jpg"){
+        serveStaticFile(res, '/templates/image.jpg', 'image/jpeg');
+      }
     }
   });
 
@@ -115,6 +120,28 @@ function startClickServer(database) {
     console.log(msg);
   });
 }
+
+function serveStaticFile(res, path, contentType, responseCode) {
+  if(!responseCode) responseCode = 200;
+
+  // __dirname will resolve to the directory the executing script resides in.
+  // So if your script resides in /home/sites/app.js, __dirname will resolve
+  // to /home/sites.
+
+  console.log(__dirname + path);
+
+  fs.readFile(__dirname + path, function(err, data) {
+      if(err) {
+          res.writeHead(500, { 'Content-Type' : 'text/plain' });
+          res.end('500 - Internal Error');
+      } 
+      else {
+          res.writeHead( responseCode, { 'Content-Type' : contentType });
+          res.end(data);
+      }
+  });
+}
+
 
 module.exports = {
   startServer(app, database) {

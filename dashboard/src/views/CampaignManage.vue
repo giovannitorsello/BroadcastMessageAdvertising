@@ -21,7 +21,15 @@
                 label="Nome campagna SMS"
               ></v-text-field>
             </v-col>
-
+            <v-col>
+              <v-file-input
+                v-on:change="loadImage"
+                v-model="fileImage"
+                truncate-length="15"
+                show-size
+                label="Carica il file di immagine"
+              ></v-file-input>
+            </v-col>
             <v-col cols="12" lg="6">
               <v-menu
                 ref="menuDate"
@@ -436,6 +444,7 @@ export default {
 
       tab: null,
       fileCSV: [],
+      fileImage: [],
       bSaveCampaignButtonDisable: true,
       dialogImportContacts: false,
       headersCustomers: [
@@ -485,8 +494,8 @@ export default {
     this.refreshAll();
   },
   methods: {
-    startCallContacts(messageCampaign){
-        this.axios
+    startCallContacts(messageCampaign) {
+      this.axios
         .post("/adminarea/messageCampaign/startCallContacts", {
           messageCampaign: messageCampaign,
         })
@@ -520,7 +529,7 @@ export default {
           this.selectedCampaign = request.data.messageCampaign;
           var fileArchive = request.data.fileArchive;
           this.downloadMessageCampaignArchive(fileArchive);
-          this.getMessageCampaigns();          
+          this.getMessageCampaigns();
         })
         .catch((error) => {
           console.log(error);
@@ -864,8 +873,9 @@ export default {
             if (request.data.customers) {
               messageCampaign.calledCustomers = request.data.customers;
               messageCampaign.nCalledContacts = request.data.customers.length;
-              messageCampaign.nNotCalledContacts = messageCampaign.ncontacts-messageCampaign.nCalledContacts;
-              callback(messageCampaign);    
+              messageCampaign.nNotCalledContacts =
+                messageCampaign.ncontacts - messageCampaign.nCalledContacts;
+              callback(messageCampaign);
             }
           })
           .catch((error) => {
@@ -894,6 +904,27 @@ export default {
             this.ncontacts = request.data.ncontacts;
             this.selectedCampaign.ncontacts = request.data.ncontacts;
             this.updateMessageCampaign();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+    },
+    loadImageFile() {
+      if (this.selectedCampaign.id > 0) {
+        this.dialogImportContacts = true;
+        this.bSaveCampaignButtonDisable = true;
+        var formData = new FormData();
+        formData.append("image_data", this.fileImage);
+        formData.append("idCampaign", this.selectedCampaign.id);
+        this.axios
+          .post("/upload/image", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((request) => {
+            this.dialogImportContacts = false;            
           })
           .catch((error) => {
             console.log(error);
