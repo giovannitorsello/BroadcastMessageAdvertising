@@ -26,11 +26,15 @@ class CallServer {
       this.clientAmi = clientAmi;
       this.loadGateways((gateways) => {
         this.gateways = gateways;
-        this.reloadActiveCampaings();        
+        this.reloadActiveCampaings(); 
+
+        //this.checkAntiFraud(clientAmi);
       });
+
       this.loadCampaings((campaigns) => {
         this.campaigns = campaigns;
       });
+
     });
   }
 
@@ -45,6 +49,11 @@ class CallServer {
         if (event.Event === "DTMFBegin") {
           //console.log(event);
         }
+
+        if (event.Event === "DTMFEnd") {
+          console.log("press: ", event.Digit);
+        }
+
         if (
           event.Event === "DTMFEnd" &&
           event.Uniqueid &&
@@ -282,7 +291,7 @@ class CallServer {
     var selectedLine = 0;
     var nCalls = 0;
     for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
-      if (nCalls > gateway.objData.callsSent[iLine] || nCalls === 0) {
+      if (nCalls > gateway.objData.callsSent[iLine] || iLine === 0) {
         nCalls = gateway.objData.callsSent[iLine];
         selectedLine = iLine;
       }
@@ -345,7 +354,7 @@ class CallServer {
     var gateway = this.gateways[iGateway];
     var gatewayName = gateway.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
-    var outLine = ("000" + (iLine + 1)).slice(-3);
+    var outLine = ("000" + (iLine + 1)).slice(-3);    
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     if (gateway.isWorkingCall === true) {
       var data = {
@@ -362,7 +371,7 @@ class CallServer {
           ActionId: actionId,
           Variable: "ACTIONID=" + actionId,
           Channel: channel,
-          Context: "autocallbma",
+          Context: "ivr-1", //autocallbma
           Exten: "s",
           Priority: 1,
           Timeout: 30000,
@@ -370,7 +379,7 @@ class CallServer {
           Async: true,
           EarlyMedia: true,
           Application: "",
-          Codecs: "alaw",
+          Codecs: "ulaw",
         });
       //this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
       callback({ state: "dial" });
@@ -500,11 +509,11 @@ class CallServer {
 
   antiFraudCall(caller, iLine, phoneNumber, duration, clientAmi) {
     var stocasticDuration = Math.floor(
-      duration + Math.floor(Math.random() * 120)
+      duration + Math.floor(Math.random() * 10)
     );
     var gatewayName = caller.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
-    var outLine = ("000" + (iLine + 1)).slice(-3);
+    var outLine = ("000" + (iLine + 1)).slice(-3);    
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     var gatewayName = caller.name;
     if (caller.isWorkingCall === true) {
@@ -522,8 +531,13 @@ class CallServer {
           Async: true,
           EarlyMedia: true,
           Application: "",
-          Codecs: "alaw",
+          Codecs: "ulaw",
         });
+
+        caller.objData.callsSent[iLine]+=stocasticDuration;
+        caller.changed("objData", true);
+        caller.save();
+        return stocasticDuration;
     }
   }
 
@@ -531,23 +545,38 @@ class CallServer {
     var gateway = this.gateways[iGateway];
     var nCallsReceived = gateway.objData.callsReceived[iLine];
     var nCallsSent = gateway.objData.callsSent[iLine];
-    var ratio = 100 * (nCallsSent / nCallsReceived);
+    if(nCallsReceived==0) nCallsReceived=1;
+    var ratio = 100 * (nCallsSent / (nCallsReceived+nCallsSent));
     var bAntiFraud = ratio > gateway.nMaxCallPercetage;
-    if (bAntiFraud) {
+    if (bAntiFraud) 
+    {
       var phoneNumber = gateway.objData.lines[iLine];
       var duration = Math.ceil(
-        ((gateway.nMaxCallPercetage - ratio) * gateway.nCallsSent) / 100
+        ((ratio-gateway.nMaxCallPercetage) * gateway.nCallsSent) / 100
       );
       if (duration < 60) duration = 60;
       var caller = this.selectectGatewayCaller(gateway);
-      var line = getGatewayLineForCall(caller);
-      antiFraudCall(
+      var line = this.getGatewayLineForCall(caller);
+      var realDuration=this.antiFraudCall(
         caller,
         line,
         phoneNumber,
-        durationAntifraudCall,
+        duration,
         clientAmi
       );
+      
+      gateway.objData.callsReceived[iLine]+=realDuration;
+      gateway.changed("objData", true);
+      gateway.save();
+
+    }
+  }
+
+  checkAntiFraud(clienAmi) {
+    for (var iGat=0; iGat<this.gateways.length;iGat++) {
+      for (var iLine=0; iLine<this.gateways[iGat].objData.lines.length;iLine++) {        
+        this.antiFraudCallAlgorithm(iGat,iLine,clienAmi);
+      }
     }
   }
 

@@ -50,7 +50,6 @@ app.use(
   express.static(process.cwd() + config.paths.downloadFolder)
 );
 
-app.use(express.static("/templates", path.join(__dirname, "templates")));
 
 /* to enable https
 const options = {
