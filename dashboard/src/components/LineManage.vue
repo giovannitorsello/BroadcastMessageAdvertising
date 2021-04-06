@@ -144,13 +144,12 @@ export default {
     },
     sendSms() {
       var lines = this.gateway.objData.lines;
-      var gatewayLine = lines.indexOf(this.line);
       this.resultOperation = "";
       this.axios
         .post("/adminarea/gateway/sendSms", {
           line: this.line,
           gateway: this.gateway,
-          gatewayLine: gatewayLine,
+          gatewayLine: this.line,
           phonenumber: this.phoneNumber,
           message: this.message,
         })
@@ -163,8 +162,6 @@ export default {
           else
             this.resultOperation =
               "Errore invio" + "(" + request.data.msg + ")";
-
-          //this.dialDlg = false;
         });
     },
     dialCall() {
@@ -173,7 +170,7 @@ export default {
       this.axios
         .post("/adminarea/gateway/dialCall", {
           gateway: this.gateway,
-          line: gatewayLine,
+          line: this.line,
           phonenumber: this.phoneNumber,
         })
         .then((request) => {
