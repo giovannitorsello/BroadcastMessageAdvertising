@@ -92,6 +92,7 @@ function startClickServer(database) {
                       database.entities.messageCampaign
                         .findOne({ where: { id: clickNew.campaignId } })
                         .then((camp) => {
+                          console.log("Begin create page - first click");
                           templateHTML = templateHTML.replace(
                             "%%LinkConfirm%%",
                             config.shortDomain + req.url + "/1"
@@ -108,6 +109,7 @@ function startClickServer(database) {
                             "%%UrlImg%%",
                             config.shortDomain+"/templates/images/"+idCampaign+".jpg"
                           );
+                          console.log("End create page - first click");
                           res.writeHeader(200, { "Content-Type": "text/html" });
                           res.write(templateHTML);
                           res.end();
