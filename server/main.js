@@ -50,10 +50,10 @@ var upload = multer({ dest: "./uploads/" });
 console.log("Path process is "+pathProcess);
 console.log("Path module is "+pathModule);
 
-app.use("/cache", express.static(pathModule + config.paths.cacheFolder));
+app.use("/cache", express.static(pathProcess + config.paths.cacheFolder));
 app.use(
   "/downloads",
-  express.static(pathModule + config.paths.downloadFolder)
+  express.static(pathProcess + config.paths.downloadFolder)
 );
 app.use(
   "/templates",

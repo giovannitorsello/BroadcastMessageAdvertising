@@ -106,7 +106,7 @@ function startClickServer(database) {
                           );
                           templateHTML = templateHTML.replace(
                             "%%UrlImg%%",
-                            config.shortDomain+"/templates/images/"+clickNew.campaignId+".jpg"
+                            config.shortDomain+"/templates/images/"+idCampaign+".jpg"
                           );
                           res.writeHeader(200, { "Content-Type": "text/html" });
                           res.write(templateHTML);
