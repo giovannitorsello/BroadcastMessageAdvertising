@@ -104,6 +104,10 @@ function startClickServer(database) {
                             "%%MessagePage2%%",
                             camp.messagePage2
                           );
+                          templateHTML = templateHTML.replace(
+                            "%%UrlImg%%",
+                            config.shortDomain+"/templates/images/"+clickNew.campaignId+".jpg"
+                          );
                           res.writeHeader(200, { "Content-Type": "text/html" });
                           res.write(templateHTML);
                           res.end();
