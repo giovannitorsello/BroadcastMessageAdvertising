@@ -13,6 +13,7 @@ var cors = require("cors");
 const clickServer=require("./clickServer.js");
 const smsServer=require("./smsServer.js");
 const callServer=require("./callServer.js");  
+const gatewayServer=require("./gatewayServer.js");
 var database = require("./database.js");
 
 const pathProcess=process.cwd();
@@ -78,6 +79,6 @@ database.setup(() => {
   clickServer.startServer(app,database);
   smsServer.startServer(app,database);
   callServer.startServer(app,database);
-
+  gatewayServer.startServer(app,database);
   routes_admin_area.load_routes(app, database, smsServer.smsServerIstance, callServer.callServerIstance);
 });
