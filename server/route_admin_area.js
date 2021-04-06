@@ -492,6 +492,7 @@ module.exports = {
         .findOne({ where: { id: gateway.id } })
         .then(function (gatewayFound) {
           Object.assign(gatewayFound, gateway);
+          gatewayFound.changed("objData", true);
           gatewayFound.save().then(function (savedGateway) {
             if (savedGateway) {
               res.send({
@@ -1048,7 +1049,7 @@ module.exports = {
           return;
         }
 
-        var newPath = path.join(__dirname, "templates") + "/image.jpg";
+        var newPath = path.join(__dirname, "templates") + "/images/"+idCampaign+".jpg";
         var rawData = fs.readFileSync(oldPath);
         console.log("Received file:  " + oldPath);
         console.log("Upload file:  " + newPath);
@@ -1056,11 +1057,14 @@ module.exports = {
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
+            var urlImageCampaign="http://"+config.server.hostname+":"+config.server.http_port+config.paths.templatesFolder+ "/images/"+idCampaign+".jpg";            
+            database.updateFileImage(idCampaign,urlImageCampaign, ()=> {
             res.send({
               status: "OK",
-              msg: "Contacts found",
-              ncontacts: nImported,
+              msg: "Images imported",
+              urlImageCampaign: urlImageCampaign        
             });
+          });
           }
         });
       });

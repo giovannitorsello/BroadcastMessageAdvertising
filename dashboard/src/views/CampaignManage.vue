@@ -21,15 +21,6 @@
                 label="Nome campagna SMS"
               ></v-text-field>
             </v-col>
-            <v-col>
-              <v-file-input
-                v-on:change="loadImage"
-                v-model="fileImage"
-                truncate-length="15"
-                show-size
-                label="Carica il file di immagine"
-              ></v-file-input>
-            </v-col>
             <v-col cols="12" lg="6">
               <v-menu
                 ref="menuDate"
@@ -191,6 +182,16 @@
         <v-tab-item v-if="selectedCampaign.id" id="message" key="message">
           <v-row>
             <v-col>
+              <v-btn
+                depressed
+                color="primary"
+                v-on:click="updateMessageCampaign"
+                >Salva campagna</v-btn
+              >
+            </v-col>
+          </v-row>
+          <v-row>
+            <v-col>
               <v-textarea
                 name="input-7-1"
                 filled
@@ -215,12 +216,16 @@
           </v-row>
           <v-row>
             <v-col>
-              <v-btn
-                depressed
-                color="primary"
-                v-on:click="updateMessageCampaign"
-                >Salva campagna</v-btn
-              >
+              <v-file-input
+                v-on:change="loadImageFile"
+                v-model="fileImage"
+                truncate-length="15"
+                show-size
+                label="Carica il file di immagine"
+              ></v-file-input>
+            </v-col>
+            <v-col>
+              <v-img :src="urlImageFile"></v-img>
             </v-col>
           </v-row>
         </v-tab-item>
@@ -416,6 +421,7 @@ export default {
       messagePage2:
         "Grazie, sarai ricontattato da un nostro operatore al più presto",
       messageText: "Testo di prova",
+      urlImageFile: "",
       beginDate: "",
       beginTime: "",
       date: new Date().toISOString().substr(0, 10),
@@ -567,6 +573,7 @@ export default {
                 this.messagePage1 = this.selectedCampaign.messagePage1;
               if (this.selectedCampaign.messagePage2)
                 this.messagePage2 = this.selectedCampaign.messagePage2;
+              if(this.selectedCampaign.imageFile) this.urlImageFile=this.selectedCampaign.imageFile;
             }
           })
           .catch((error) => {
@@ -917,6 +924,7 @@ export default {
         var formData = new FormData();
         formData.append("image_data", this.fileImage);
         formData.append("idCampaign", this.selectedCampaign.id);
+        console.log("Uploading image ...");
         this.axios
           .post("/upload/image", formData, {
             headers: {
@@ -924,7 +932,9 @@ export default {
             },
           })
           .then((request) => {
-            this.dialogImportContacts = false;            
+            this.dialogImportContacts = false;
+            this.urlImageFile =
+              request.data.urlImageCampaign + "?" + new Date().getTime();
           })
           .catch((error) => {
             console.log(error);

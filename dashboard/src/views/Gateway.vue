@@ -110,20 +110,14 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-btn class="primary" @click="insertGateway()">Inserisci</v-btn>
+        <v-btn class="primary" @click="insertGateway()"
+          >Inserisci/Aggiorna</v-btn
+        >
+        <v-btn classs="primary" @click="insertSimInGateway()"
+          >Carica sim nei gateway</v-btn
+        >
       </v-col>
     </v-row>
-
-    <v-card>
-      <p>Numeri di telefono</p>
-      <v-row v-if="selectedGateway && selectedGateway.objData">
-        <v-col v-for="line in selectedGateway.objData.lines" v-bind:key="line">
-          <v-btn @click="openPhoneDialDlg(selectedGateway, line)">{{
-            line
-          }}</v-btn>
-        </v-col>
-      </v-row>
-    </v-card>
 
     <v-row>
       <v-col>
@@ -177,69 +171,22 @@
         </v-data-table>
       </v-col>
     </v-row>
-    <v-btn classs="primary" @click="insertSimInGateway()"
-      >Carica sim nei gateway</v-btn
-    >
 
-    <v-dialog
-      v-model="dialDlg"
-      persistent
-      max-width="600px"
-      @keydown.esc="cancel"
-    >
-    
-      <v-card>
-        <v-card-title>Test per chiamate ed invio SMS - {{ this.selectedLine }}</v-card-title>
-        <v-card-text>
-          <v-text-field
-            v-model="phoneNumber"
-            counter="14"
-            hint="inserisci numero di destinazione"
-            label="Numero di telefono"
-          ></v-text-field>
-        </v-card-text>
-        <v-card-text>
-          <v-text-field
-            v-model="message"
-            counter="14"
-            hint="Messaggio di Test"
-            label="Messaggio"
-          ></v-text-field>
-        </v-card-text>
-        
-        <v-card-text>
-            <p style="color: black">Risultato: {{resultSendSms}}</p>
-        </v-card-text>
-
-        <v-card-actions class="pt-3">
-          <v-spacer></v-spacer>
-
-          <v-btn
-            color="primary"
-            class="body-2 font-weight-bold"
-            outlined
-            @click="dialCall()"
-            >Chiama</v-btn
+    <v-card>
+      <p>Numeri di telefono</p>
+      <template>
+        <v-row v-if="selectedGateway && selectedGateway.objData">
+          <v-col
+            v-for="(line, index) in selectedGateway.objData.lines"
+            v-bind:key="line"
           >
-
-          <v-btn
-            color="primary"
-            class="body-2 font-weight-bold"
-            outlined
-            @click="sendSms()"
-            >Invia SMS</v-btn
-          >
-
-          <v-btn
-            color="primary"
-            class="body-2 font-weight-bold"
-            outlined
-            @click="dialDlg = false"
-            >Chiudi</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+            <LineManage
+              :lineObject="{ gateway: selectedGateway, line: index }"
+            ></LineManage>
+          </v-col>
+        </v-row>
+      </template>
+    </v-card>
 
     <ConfirmDlg ref="confirm" />
     <NewOrUpdateDlg ref="neworupdate" />
@@ -251,13 +198,10 @@ export default {
   components: {
     ConfirmDlg: () => import("./ConfirmDlg"),
     NewOrUpdateDlg: () => import("./NewOrUpdateDlg"),
+    LineManage: () => import("../components/LineManage"),
   },
   data() {
     return {
-      dialDlg: false,
-      phoneNumber: "3939241987",
-      message: "Test di prova http://w.wfn.ovh/324/asd/2",
-      resultSendSms: "",
       headerGateways: [
         { text: "ID", value: "id" },
         { text: "Nome", value: "name" },
@@ -293,52 +237,8 @@ export default {
     this.loadBanks();
     this.loadGateways();
   },
+  computed: {},
   methods: {
-    sendSms() {
-      var lines=this.selectedGateway.objData.lines;
-      var gatewayLine=lines.indexOf(this.selectedLine);
-      this.resultSendSms="";
-      this.axios
-        .post("/adminarea/gateway/sendSms", {
-          line: this.selectedLine,
-          gateway: this.selectedGateway,
-          gatewayLine: gatewayLine,
-          phonenumber: this.phoneNumber,
-          message: this.message,
-        })
-        .then((request) => {
-          if(request.data.status==="send" || request.data.status==="sending")
-            this.resultSendSms="Inviato"+"("+request.data.msg+")";
-          else
-            this.resultSendSms="Errore invio"+"("+request.data.msg+")";
-
-
-          //this.dialDlg = false;
-        });
-    },
-    dialCall() {
-      var lines=this.selectedGateway.objData.lines;
-      var gatewayLine=lines.indexOf(this.selectedLine);
-      this.axios
-        .post("/adminarea/gateway/dialCall", {          
-          gateway: this.selectedGateway,
-          line: gatewayLine,
-          phonenumber: this.phoneNumber,          
-        })
-        .then((request) => {
-          console.log(request);
-          if(request.data.state==="dial")
-            this.resultSendSms="In chiamata ... (da linea "+(gatewayLine+1)+" )";
-          else
-            this.resultSendSms="Fallito";
-          
-        });
-    },
-    openPhoneDialDlg(gateway, line) {
-      this.resultSendSms="";
-      this.selectedLine=line;
-      this.dialDlg = true;
-    },
     toggleWorkingCall(gateway) {
       gateway.isWorkingCall = !gateway.isWorkingCall;
       this.updateGateway(gateway);
@@ -426,8 +326,7 @@ export default {
         });
     },
     selectGateway(gat) {
-      this.selectedGateway = {};
-      Object.assign(this.selectedGateway, gat);
+      this.selectedGateway = gat;
     },
     loadBanks() {
       this.banks = [];

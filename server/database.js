@@ -97,6 +97,7 @@ module.exports = {
         message: { type: Sequelize.STRING, allowNull: false },
         messagePage1: { type: Sequelize.STRING, allowNull: false },
         messagePage2: { type: Sequelize.STRING, allowNull: false },
+        imageFile: { type: Sequelize.STRING, allowNull: true },
         ncontacts: { type: Sequelize.INTEGER, allowNull: true },
         ncompleted: { type: Sequelize.INTEGER, allowNull: true },
         begin: { type: Sequelize.DATE, allowNull: true },
@@ -236,10 +237,6 @@ module.exports = {
     sql ="UPDATE customers SET state='called' WHERE (id='" + contactId +"');"      
     this.execute_raw_update(sql, callback);
   },
-  setClickByCall(iCampaign,iContact,clickType,callback) {
-    //Find customer by phone
-
-  },
   changeStateContactedByCallInterested(phone, callback) {
     sql =
       "UPDATE customers SET state='contactedByCallInterested' WHERE (mobilephone='" +
@@ -293,5 +290,12 @@ module.exports = {
   checkIfBalanceIsPossible(callback) {
     var sql="select distinct operator from gateways where (isWorkingSms=1)";
     this.execute_raw_query(sql, callback);
+  },
+  updateFileImage(idCampaign,urlImageCampaign,callback) {
+    sql =
+      "UPDATE messagecampaigns SET imageFile='"+urlImageCampaign+"' WHERE (id='" +
+      idCampaign +
+      "');";
+    this.execute_raw_update(sql, callback);
   }
 };

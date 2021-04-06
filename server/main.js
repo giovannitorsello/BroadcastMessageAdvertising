@@ -15,6 +15,8 @@ const smsServer=require("./smsServer.js");
 const callServer=require("./callServer.js");  
 var database = require("./database.js");
 
+const pathProcess=process.cwd();
+const pathModule=__dirname;
 
 //file per route sezioni
 var routes_admin_area = require("./route_admin_area.js");
@@ -44,12 +46,18 @@ app.use(bodyParser.json({ limit: "40000kb" }));
 //upload folder
 var upload = multer({ dest: "./uploads/" });
 //other static contents folders
-app.use("/cache", express.static(process.cwd() + config.paths.cacheFolder));
+console.log("Path process is "+pathProcess);
+console.log("Path module is "+pathModule);
+
+app.use("/cache", express.static(pathModule + config.paths.cacheFolder));
 app.use(
   "/downloads",
-  express.static(process.cwd() + config.paths.downloadFolder)
+  express.static(pathModule + config.paths.downloadFolder)
 );
-
+app.use(
+  "/templates",
+  express.static(pathModule + config.paths.templatesFolder)
+);
 
 /* to enable https
 const options = {
