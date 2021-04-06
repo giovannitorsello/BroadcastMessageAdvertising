@@ -95,7 +95,7 @@ function startClickServer(database) {
                           templateHTML = templateHTML.replace(
                             "%%LinkConfirm%%",
                             config.shortDomain + req.url + "/1"
-                          ); //config.shortDomain
+                          );
                           templateHTML = templateHTML.replace(
                             "%%MessagePage1%%",
                             camp.messagePage1
