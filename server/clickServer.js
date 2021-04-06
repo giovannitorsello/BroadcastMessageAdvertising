@@ -56,12 +56,13 @@ function startClickServer(database) {
               },
             })
             .then((clickExist) => {
-              if (clickExist) {
+              if (clickExist && clickExist.campaignId && clickExist.campaignId>0) {
                 //click exist no database update
                 //search campaign and send page
                 database.entities.messageCampaign
                   .findOne({ where: { id: clickExist.campaignId } })
                   .then((camp) => {
+                    console.log("Begin create page - second click");
                     templateHTML = templateHTML.replace(
                       "%%LinkConfirm%%",
                       config.shortDomain + req.url + "/1"
@@ -74,6 +75,11 @@ function startClickServer(database) {
                       "%%MessagePage2%%",
                       camp.messagePage2
                     );
+                    templateHTML = templateHTML.replace(
+                      "%%UrlImg%%",
+                      config.shortDomain+"/templates/images/"+idCampaign+".jpg"
+                    );
+                    console.log("End create page - second click");
                     res.writeHeader(200, { "Content-Type": "text/html" });
                     res.write(templateHTML);
                     res.end();
