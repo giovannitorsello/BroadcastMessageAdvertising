@@ -79,6 +79,6 @@ database.setup(() => {
   clickServer.startServer(app,database);
   smsServer.startServer(app,database);
   callServer.startServer(app,database);
-  gatewayServer.startServer(app,database);
+  //gatewayServer.startServer(app,database);
   routes_admin_area.load_routes(app, database, smsServer.smsServerIstance, callServer.callServerIstance);
 });
