@@ -1,7 +1,7 @@
 <template>
   <v-container v-if="gateway && gateway.objData">
     <v-btn @click="openPhoneDialDlg()"
-      >{{ line }} -- {{ gateway.objData.lines[line] }}</v-btn
+      >{{ line+1 }} -- {{ gateway.objData.lines[line] }}</v-btn
     >
     <v-spacer></v-spacer>
     <v-switch
@@ -25,7 +25,7 @@
     >
       <v-card>
         <v-card-title
-          >Test per chiamate ed invio SMS - {{ this.line }}</v-card-title
+          >Test per chiamate ed invio SMS - {{ this.linePhoneNumber }}</v-card-title
         >
         <v-card-text>
           <v-text-field
@@ -93,6 +93,7 @@ export default {
     lblStateSms: "SMS Si",
     gateway: {},
     line: 0,
+    linePhoneNumber: "",
     phoneNumber: "3939241987",
     message: "Test di prova http://w.wfn.ovh/324/asd/2",
     resultOperation: "",
@@ -144,12 +145,12 @@ export default {
     },
     sendSms() {
       var lines = this.gateway.objData.lines;
+      this.linePhoneNumber = lines[this.line];
       this.resultOperation = "";
       this.axios
         .post("/adminarea/gateway/sendSms", {
-          line: this.line,
           gateway: this.gateway,
-          gatewayLine: this.line,
+          line: this.line,          
           phonenumber: this.phoneNumber,
           message: this.message,
         })
@@ -158,7 +159,7 @@ export default {
             request.data.status === "send" ||
             request.data.status === "sending"
           )
-            this.resultOperation = "Inviato" + "(" + request.data.msg + ")";
+            this.resultOperation = "Inviato" + "( " + request.data.msg + " da "+this.linePhoneNumber+" )";
           else
             this.resultOperation =
               "Errore invio" + "(" + request.data.msg + ")";
@@ -166,7 +167,8 @@ export default {
     },
     dialCall() {
       var lines = this.gateway.objData.lines;
-      var gatewayLine = lines.indexOf(this.line);
+      this.linePhoneNumber = lines[this.line];
+      this.resultOperation = "";
       this.axios
         .post("/adminarea/gateway/dialCall", {
           gateway: this.gateway,
@@ -177,7 +179,7 @@ export default {
           console.log(request);
           if (request.data.state === "dial")
             this.resultOperation =
-              "In chiamata ... (da linea " + (gatewayLine + 1) + " )";
+              "In chiamata ... (da linea " + (this.line + 1) + " -- "+this.linePhoneNumber+" )";
           else this.resultOperation = "Fallito";
         });
     },

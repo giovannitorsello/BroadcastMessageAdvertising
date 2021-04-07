@@ -570,7 +570,7 @@ class SmsServer {
   sendSms(data, callback) {
     sms_gateway_hardware.sendSMS(
       data.gateway,
-      data.gatewayLine,
+      data.line,
       data.message,
       data.phonenumber,
       (res) => {
