@@ -27,8 +27,6 @@ class CallServer {
       this.loadGateways((gateways) => {
         this.gateways = gateways;
         this.reloadActiveCampaings();
-
-        //this.checkAntiFraud(clientAmi);
       });
 
       this.loadCampaings((campaigns) => {
@@ -123,51 +121,55 @@ class CallServer {
               );
               var iCampaign = uniqueobj.iCampaign;
               var iContact = uniqueobj.iContact;
-              var iGateway = uniqueobj.iGateway;    
+              var iGateway = uniqueobj.iGateway;
               var phoneNumber = uniqueobj.phone;
               ///Manage generated call
-              if (iCampaign && iContact && iGateway) {
+              if (
+                iCampaign !== null &&
+                iContact !== null &&
+                iGateway !== null
+              ) {
                 var campaign = this.campaigns[iCampaign];
-                var contacts = campaign.contacts;
-                var contact = contacts[iContact];
-                var gateway = this.gateways[iGateway];
-                var iLine = uniqueobj.iLine;
+                if (campaign && campaign.contacts) {
+                  var contacts = campaign.contacts;
+                  var contact = contacts[iContact];
+                  var gateway = this.gateways[iGateway];
+                  var iLine = uniqueobj.iLine;
 
-                var billsec = parseInt(event.Billsec);
-                var currentBillSecLine = parseInt(
-                  gateway.objData.callsSent[iLine]
-                );
-                var totalBillSecLine = billsec + currentBillSecLine;
-                //Update general gateway counter
-                gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
-                gateway.objData.callsSent[iLine] = totalBillSecLine;
-                gateway.changed("objData", true);
-                //Update gateway line data
-                gateway.save().then((gat) => {
-                  this.database.changeStateCalled(
-                    contact.id,
-                    function (results) {
-                      console.log("Update successfull");
-                      console.log(results);
-                    }
+                  var billsec = parseInt(event.Billsec);
+                  var currentBillSecLine = parseInt(
+                    gateway.objData.callsSent[iLine]
                   );
-                });
+                  var totalBillSecLine = billsec + currentBillSecLine;
+                  //Update general gateway counter
+                  gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
+                  gateway.objData.callsSent[iLine] = totalBillSecLine;
+                  gateway.changed("objData", true);
+                  //Update gateway line data
+                  gateway.save().then((gat) => {
+                    this.database.changeStateCalled(
+                      contact.id,
+                      function (results) {
+                        console.log("Update successfull");
+                        console.log(results);
+                      }
+                    );
+                  });
 
-                //Update state contact
-                contact.state = "contacted";
-                contact.save().then((cont) => {
-                  console.log("Contact " + cont.mobilephone + " updated");
-                });
+                  //Update state contact
+                  contact.state = "contacted";
+                  contact.save().then((cont) => {
+                    console.log("Contact " + cont.mobilephone + " updated");
+                  });
 
-                //avoid multiple computation
-                uniqueobj.computed = true;
-                mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
+                  //avoid multiple computation
+                  uniqueobj.computed = true;
+                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
+                } else if (phoneNumber) {
+                  console.log("Customer " + phoneNumber + " has answered");
+                  //Update state
+                }
               }
-              else if(phoneNumber) {
-                console.log("Customer "+phoneNumber + " has answered");
-                //Update state
-              }
-
             }
           }
         }
@@ -316,17 +318,21 @@ class CallServer {
     var selectedLine = 0;
     var nCalls = 0;
     for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
-      if (nCalls > gateway.objData.callsSent[iLine] || iLine === 0) {
-        nCalls = gateway.objData.callsSent[iLine];
-        selectedLine = iLine;
-      }
+      if (
+        gateway.objData.isWorkingCall[iLine] === 1 ||
+        gateway.objData.isWorkingCall[iLine] === true
+      )
+        if (nCalls > gateway.objData.callsSent[iLine] || iLine === 0) {
+          nCalls = gateway.objData.callsSent[iLine];
+          selectedLine = iLine;
+        }
     }
     return selectedLine;
   }
 
   generateCalls(iCampaign, clientAmi) {
     var campaign = this.campaigns[iCampaign];
-    var contacts = this.campaigns[iCampaign].contacts;    
+    var contacts = this.campaigns[iCampaign].contacts;
     var iGateway = 0;
     var iContacts = 0;
     var gateways = this.gateways;
@@ -334,36 +340,44 @@ class CallServer {
     var interval = {};
 
     interval = setInterval(() => {
-    if (!contacts[iContacts]) return;
-    if (!gateways[iGateway]) return;
-    var phone = contacts[iContacts].mobilephone;
-    var state = contacts[iContacts].state;
-    var gateway = gateways[iGateway];
+      if (!contacts[iContacts]) return;
+      if (!gateways[iGateway]) return;
+      var gateway = gateways[iGateway];
 
-    if (gateway.isWorkingCall === true && state === "toContact") {
-      //correct line problem
-      var line = this.getGatewayLineForCall(gateway);
-      this.dialCallAmi(
-        iCampaign,
-        iContacts,
-        iGateway,
-        line,
-        phone,
-        clientAmi,
-        (callData) => {}
-      );
-      iContacts++;
+      if (gateway.isWorkingCall === true) {
+        for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
+          if (
+            gateway.objData.isWorkingCall[iLine] === 1 ||
+            gateway.objData.isWorkingCall[iLine] === true
+          ) {
+            var phone = contacts[iContacts].mobilephone;
+            var state = contacts[iContacts].state;
+            //correct line problem
+            //var line = this.getGatewayLineForCall(gateway);
+            //Correct state problem
+            this.dialCallAmi(
+              iCampaign,
+              iContacts,
+              iGateway,
+              iLine,
+              phone,
+              clientAmi,
+              (callData) => {}
+            );
 
-      if (iContacts === contacts.length) {
-        campaign.setDataValue("state", "finished");
-        campaign.save().then((res) => {          
-          server.reloadActiveCampaings();
-        });
-        iContacts = 0;
+            iContacts++;
+            if (iContacts === contacts.length) {
+              campaign.setDataValue("state", "finished");
+              campaign.save().then((res) => {
+                server.reloadActiveCampaings();
+              });
+              iContacts = 0;
+            }
+          }
+        }
       }
-    }
-    iGateway++;
-    if (iGateway === gateways.length) iGateway = 0;
+      iGateway++;
+      if (iGateway === gateways.length) iGateway = 0;
     }, config.waitTimeCallServer);
 
     this.intervalCalls.push(interval);
@@ -411,8 +425,8 @@ class CallServer {
 
       setTimeout(() => {
         this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
-      },70000);
-      
+      }, 70000);
+
       callback({ state: "dial" });
     } else callback({ state: "disabled" });
   }
@@ -509,8 +523,7 @@ class CallServer {
       // Stop all call cycles
       for (var i = 0; i < this.campaigns.length; i++) {
         var camp = this.campaigns;
-        if (this.intervalCalls[i]) 
-          clearInterval(this.intervalCalls[i]);
+        if (this.intervalCalls[i]) clearInterval(this.intervalCalls[i]);
       }
 
       //Charge active campaign and their contacts
