@@ -11,7 +11,7 @@ class CallServer {
   selectedGateway = 0;
   selectedContact = 0;
   sendCallInterval = {};
-  interval = {};
+  intervalCalls = [];
   database = {};
   clientAmi = {};
   client = {};
@@ -52,56 +52,41 @@ class CallServer {
 
         if (event.Event === "DTMFEnd") {
           console.log("press: ", event.Digit);
+          var idCampaign = -1;
+          var idCustomer = -1;
           if (event.Uniqueid && mapCallData.get(event.Uniqueid)) {
             var uniqueobj = JSON.parse(mapCallData.get(event.Uniqueid));
             var iCampaign = uniqueobj.iCampaign;
-            var iContact = uniqueobj.iContact;            
-            if((!iCampaign || !iContact) && uniqueobj.phone) {
-              var phoneNumber=uniqueobj.phone;
-              var indexplus=phoneNumber.indexOf("+");
-              if(indexplus!=-1) phoneNumer=phoneNumber.substring(3);
-              this.database.entities.customer.findOne({where: {mobilephone: uniqueobj.phone}}).then(cust => {
-                const campaignHasId = (element) => element.id == cust.campaignId;
-                const customerHasId = (element) => element.id == cust.id;
-                iCampaign=this.campaigns.findIndex(campaignHasId);
-                iContact=this.campaigns.contacts.findIndex(customerHasId);
-              })
+            var iContact = uniqueobj.iContact;
+
+            // Manage call from customer
+            if ((!iCampaign || !iContact) && uniqueobj.phone) {
+              var phoneNumber = uniqueobj.phone;
+              var indexplus = phoneNumber.indexOf("+");
+              if (indexplus != -1) phoneNumber = phoneNumber.substring(3);
+              this.database.entities.customer
+                .findOne({ where: { mobilephone: phoneNumber } })
+                .then((cust) => {
+                  idCampaign = cust.campaignId;
+                  idCustomer = cust.id;
+                  this.insertClick(idCampaign, idCustomer, event.Digit);
+                });
             }
             // Manage answer from campaign
-            if (iCampaign && iContact) {
+            else if (iCampaign && iContact) {
               var campaign = this.campaigns[iCampaign];
               var contacts = campaign.contacts;
               var contact = contacts[iContact];
-
-              var idCampaign = campaign.id;
-              var idCustomer = contact.id;
-              //Single click
-              if (uniqueobj && uniqueobj.phone && event.Digit === "1") {
-                console.log(uniqueobj.phone + " Press 1 key ");
-                this.database.entities.click.create({
-                  campaignId: idCampaign,
-                  customerId: idCustomer,
-                  confirm: false,
-                });
-              }
-              //Double click
-              if (uniqueobj && uniqueobj.phone && event.Digit === "2") {
-                console.log(uniqueobj.phone + " Press 2 key ");
-                this.database.entities.click
-                  .findOne({
-                    where: { campaignId: idCampaign, customerId: idCustomer },
-                  })
-                  .then((clickFound) => {
-                    clickFound.confirm = true;
-                    clickFound.save();
-                  });
-              }
-            }            
+              idCampaign = campaign.id;
+              idCustomer = contact.id;
+              this.insertClick(idCampaign, idCustomer, event.Digit);
+            }
           }
         }
         //////// DTMF Section /////////////
 
         //////// NEW CHANNEL /////////////
+        //INCOMING CALL
         if (event.Event === "Newchannel" && event.CallerIDNum != "<unknown>") {
           var uniqueobj = {};
           uniqueobj.phone = event.CallerIDNum;
@@ -125,51 +110,64 @@ class CallServer {
           if (event.Disposition === "BUSY") {
           }
 
+          //////////// MANAGE ANSEWERED CALL //////////
           if (
             event.Disposition === "ANSWERED" &&
             event.UniqueID &&
             mapCallData.get(event.UniqueID)
           ) {
             var uniqueobj = JSON.parse(mapCallData.get(event.UniqueID));
-            if (
-              uniqueobj &&
-              uniqueobj.phone &&
-              !uniqueobj.computed &&
-              campaign &&
-              campaign.contacts
-            ) {
+            if (uniqueobj && uniqueobj.phone && !uniqueobj.computed) {
               console.log(
                 uniqueobj.phone + " exists by CDR (" + event.Disposition + ")"
               );
               var iCampaign = uniqueobj.iCampaign;
               var iContact = uniqueobj.iContact;
-              var campaign = this.campaigns[iCampaign];
-              var contacts = campaign.contacts;
-              var contact = contacts[iContact];
+              var iGateway = uniqueobj.iGateway;    
+              var phoneNumber = uniqueobj.phone;
+              ///Manage generated call
+              if (iCampaign && iContact && iGateway) {
+                var campaign = this.campaigns[iCampaign];
+                var contacts = campaign.contacts;
+                var contact = contacts[iContact];
+                var gateway = this.gateways[iGateway];
+                var iLine = uniqueobj.iLine;
 
-              var gateway = this.gateways[uniqueobj.iGateway];
-              var iLine = uniqueobj.iLine;
-
-              var billsec = parseInt(event.Billsec);
-              var currentBillSecLine = parseInt(
-                gateway.objData.callsSent[iLine]
-              );
-              var totalBillSecLine = billsec + currentBillSecLine;
-              //Update general gateway counter
-              gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
-              gateway.objData.callsSent[iLine] = totalBillSecLine;
-              gateway.changed("objData", true);
-              //Update gateway line data
-              gateway.save().then((gat) => {
-                this.database.changeStateCalled(contact.id, function (results) {
-                  console.log("Update successfull");
-                  console.log(results);
+                var billsec = parseInt(event.Billsec);
+                var currentBillSecLine = parseInt(
+                  gateway.objData.callsSent[iLine]
+                );
+                var totalBillSecLine = billsec + currentBillSecLine;
+                //Update general gateway counter
+                gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
+                gateway.objData.callsSent[iLine] = totalBillSecLine;
+                gateway.changed("objData", true);
+                //Update gateway line data
+                gateway.save().then((gat) => {
+                  this.database.changeStateCalled(
+                    contact.id,
+                    function (results) {
+                      console.log("Update successfull");
+                      console.log(results);
+                    }
+                  );
                 });
-              });
 
-              //avoid multiple computation
-              uniqueobj.computed = true;
-              mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
+                //Update state contact
+                contact.state = "contacted";
+                contact.save().then((cont) => {
+                  console.log("Contact " + cont.mobilephone + " updated");
+                });
+
+                //avoid multiple computation
+                uniqueobj.computed = true;
+                mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
+              }
+              else if(phoneNumber) {
+                console.log("Customer "+phoneNumber + " has answered");
+                //Update state
+              }
+
             }
           }
         }
@@ -327,14 +325,15 @@ class CallServer {
   }
 
   generateCalls(iCampaign, clientAmi) {
-    var contacts = this.campaigns[iCampaign].contacts;
+    var campaign = this.campaigns[iCampaign];
+    var contacts = this.campaigns[iCampaign].contacts;    
     var iGateway = 0;
     var iContacts = 0;
     var gateways = this.gateways;
     var server = this;
     var interval = {};
 
-    // interval = setInterval(() => {
+    interval = setInterval(() => {
     if (!contacts[iContacts]) return;
     if (!gateways[iGateway]) return;
     var phone = contacts[iContacts].mobilephone;
@@ -357,8 +356,7 @@ class CallServer {
 
       if (iContacts === contacts.length) {
         campaign.setDataValue("state", "finished");
-        campaign.save().then((res) => {
-          clearInterval(interval);
+        campaign.save().then((res) => {          
           server.reloadActiveCampaings();
         });
         iContacts = 0;
@@ -366,7 +364,9 @@ class CallServer {
     }
     iGateway++;
     if (iGateway === gateways.length) iGateway = 0;
-    //}, config.waitTimeCallServer);
+    }, config.waitTimeCallServer);
+
+    this.intervalCalls.push(interval);
   }
 
   dialCallAmi(
@@ -408,7 +408,11 @@ class CallServer {
           Application: "",
           Codecs: "ulaw",
         });
-      //this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
+
+      setTimeout(() => {
+        this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
+      },70000);
+      
       callback({ state: "dial" });
     } else callback({ state: "disabled" });
   }
@@ -505,7 +509,8 @@ class CallServer {
       // Stop all call cycles
       for (var i = 0; i < this.campaigns.length; i++) {
         var camp = this.campaigns;
-        if (camp.sendCallIntervall) clearInterval(camp.sendCallIntervall);
+        if (this.intervalCalls[i]) 
+          clearInterval(this.intervalCalls[i]);
       }
 
       //Charge active campaign and their contacts
@@ -621,6 +626,32 @@ class CallServer {
         }
     }
     return selGateway;
+  }
+
+  insertClick(campaignId, customerId, digit) {
+    var confirm = false;
+
+    //Single click
+    if (digit === "1") confirm = false;
+    if (digit === "2") confirm = true;
+
+    if (!confirm)
+      this.database.entities.click.create({
+        campaignId: campaignId,
+        customerId: customerId,
+        confirm: confirm,
+      });
+
+    //Double click
+    if (confirm)
+      this.database.entities.click
+        .findOne({
+          where: { campaignId: campaignId, customerId: customerId },
+        })
+        .then((clickFound) => {
+          clickFound.confirm = true;
+          clickFound.save();
+        });
   }
 }
 
