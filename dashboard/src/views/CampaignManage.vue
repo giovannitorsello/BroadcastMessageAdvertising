@@ -223,9 +223,14 @@
                 show-size
                 label="Carica il file di immagine"
               ></v-file-input>
-            </v-col>
+            </v-col>           
+          </v-row>
+          <v-row>
             <v-col>
-              <v-img :src="urlImageFile"></v-img>
+              <a :href="urlImageFile">Link di test</a>
+            </v-col>
+             <v-col>
+              <v-img height="200" width="200" :src="urlImageFile"></v-img>
             </v-col>
           </v-row>
         </v-tab-item>
@@ -935,6 +940,7 @@ export default {
             this.dialogImportContacts = false;
             this.urlImageFile =
               request.data.urlImageCampaign + "?" + new Date().getTime();
+              console.log(this.urlImageFile );
           })
           .catch((error) => {
             console.log(error);

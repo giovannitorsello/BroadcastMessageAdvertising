@@ -26,7 +26,7 @@ class CallServer {
       this.clientAmi = clientAmi;
       this.loadGateways((gateways) => {
         this.gateways = gateways;
-        this.reloadActiveCampaings(); 
+        this.reloadActiveCampaings();
 
         //this.checkAntiFraud(clientAmi);
       });
@@ -34,7 +34,6 @@ class CallServer {
       this.loadCampaings((campaigns) => {
         this.campaigns = campaigns;
       });
-
     });
   }
 
@@ -46,51 +45,70 @@ class CallServer {
         callback(this.client);
       })
       .on("event", (event) => {
+        //////// DTMF Section /////////////
         if (event.Event === "DTMFBegin") {
           //console.log(event);
         }
 
         if (event.Event === "DTMFEnd") {
           console.log("press: ", event.Digit);
-        }
-
-        if (
-          event.Event === "DTMFEnd" &&
-          event.Uniqueid &&
-          mapCallData.get(event.Uniqueid)
-        ) {
-          var uniqueobj = JSON.parse(mapCallData.get(event.Uniqueid));
-          var iCampaign = uniqueobj.iCampaign;
-          var iContact = uniqueobj.iContact;
-          var campaign = this.campaigns[iCampaign];
-          var contacts = campaign.contacts;
-          var contact = contacts[iContact];
-
-          var idCampaign = campaign.id;
-          var idCustomer = contact.id;
-          //Single click
-          if (uniqueobj && uniqueobj.phone && event.Digit === "1") {
-            console.log(uniqueobj.phone + " Press 1 key ");
-            this.database.entities.click.create({
-              campaignId: idCampaign,
-              customerId: idCustomer,
-              confirm: false,
-            });
-          }
-          //Double click
-          if (uniqueobj && uniqueobj.phone && event.Digit === "2") {
-            console.log(uniqueobj.phone + " Press 2 key ");
-            this.database.entities.click
-              .findOne({
-                where: { campaignId: idCampaign, customerId: idCustomer },
+          if (event.Uniqueid && mapCallData.get(event.Uniqueid)) {
+            var uniqueobj = JSON.parse(mapCallData.get(event.Uniqueid));
+            var iCampaign = uniqueobj.iCampaign;
+            var iContact = uniqueobj.iContact;            
+            if((!iCampaign || !iContact) && uniqueobj.phone) {
+              var phoneNumber=uniqueobj.phone;
+              var indexplus=phoneNumber.indexOf("+");
+              if(indexplus!=-1) phoneNumer=phoneNumber.substring(3);
+              this.database.entities.customer.findOne({where: {mobilephone: uniqueobj.phone}}).then(cust => {
+                const campaignHasId = (element) => element.id == cust.campaignId;
+                const customerHasId = (element) => element.id == cust.id;
+                iCampaign=this.campaigns.findIndex(campaignHasId);
+                iContact=this.campaigns.contacts.findIndex(customerHasId);
               })
-              .then((clickFound) => {
-                clickFound.confirm = true;
-                clickFound.save();
-              });
+            }
+            // Manage answer from campaign
+            if (iCampaign && iContact) {
+              var campaign = this.campaigns[iCampaign];
+              var contacts = campaign.contacts;
+              var contact = contacts[iContact];
+
+              var idCampaign = campaign.id;
+              var idCustomer = contact.id;
+              //Single click
+              if (uniqueobj && uniqueobj.phone && event.Digit === "1") {
+                console.log(uniqueobj.phone + " Press 1 key ");
+                this.database.entities.click.create({
+                  campaignId: idCampaign,
+                  customerId: idCustomer,
+                  confirm: false,
+                });
+              }
+              //Double click
+              if (uniqueobj && uniqueobj.phone && event.Digit === "2") {
+                console.log(uniqueobj.phone + " Press 2 key ");
+                this.database.entities.click
+                  .findOne({
+                    where: { campaignId: idCampaign, customerId: idCustomer },
+                  })
+                  .then((clickFound) => {
+                    clickFound.confirm = true;
+                    clickFound.save();
+                  });
+              }
+            }            
           }
         }
+        //////// DTMF Section /////////////
 
+        //////// NEW CHANNEL /////////////
+        if (event.Event === "Newchannel" && event.CallerIDNum != "<unknown>") {
+          var uniqueobj = {};
+          uniqueobj.phone = event.CallerIDNum;
+          mapCallData.set(event.Uniqueid, JSON.stringify(uniqueobj));
+        }
+
+        //////// CDR Section /////////////
         if (event.Event === "Cdr") {
           if (
             event.Channel === "OutgoingSpoolFailed" &&
@@ -113,7 +131,13 @@ class CallServer {
             mapCallData.get(event.UniqueID)
           ) {
             var uniqueobj = JSON.parse(mapCallData.get(event.UniqueID));
-            if (uniqueobj && uniqueobj.phone && !uniqueobj.computed) {
+            if (
+              uniqueobj &&
+              uniqueobj.phone &&
+              !uniqueobj.computed &&
+              campaign &&
+              campaign.contacts
+            ) {
               console.log(
                 uniqueobj.phone + " exists by CDR (" + event.Disposition + ")"
               );
@@ -149,23 +173,9 @@ class CallServer {
             }
           }
         }
+        //////// CDR Section /////////////
 
-        if (event.Event === "OriginateResponse") {
-          if (
-            event.Context === "autocallbma" &&
-            event.Response === "Failure" &&
-            event.Exten === "failed" &&
-            event.Uniqueid &&
-            mapCallData.get(event.Uniqueid)
-          ) {
-            var uniqueobj = JSON.parse(mapCallData.get(event.Uniqueid));
-            if (uniqueobj && uniqueobj.phone)
-              console.log(
-                uniqueobj.phone + " doesn't esist (OriginateResponse)"
-              );
-          }
-        }
-
+        //////// VARSET Section ///////////
         // Store association of UniqueID with Callee
         if (
           event.Event === "VarSet" &&
@@ -173,7 +183,6 @@ class CallServer {
           event.Value &&
           mapCallAction.get(event.Value)
         ) {
-
           if (event.Channel !== "OutgoingSpoolFailed") {
             var actionId = event.Value;
             var actionData = JSON.parse(mapCallAction.get(actionId));
@@ -196,6 +205,24 @@ class CallServer {
               event.Value +
                 " does not exists. (OutgoingSpoolFailed - failed extension - probably busy)"
             );
+          }
+        }
+        //////// VARSET Section ///////////
+
+        /////////////// ORIGINATE SECTION ////////////////
+        if (event.Event === "OriginateResponse") {
+          if (
+            event.Context === "autocallbma" &&
+            event.Response === "Failure" &&
+            event.Exten === "failed" &&
+            event.Uniqueid &&
+            mapCallData.get(event.Uniqueid)
+          ) {
+            var uniqueobj = JSON.parse(mapCallData.get(event.Uniqueid));
+            if (uniqueobj && uniqueobj.phone)
+              console.log(
+                uniqueobj.phone + " doesn't esist (OriginateResponse)"
+              );
           }
         }
 
@@ -354,7 +381,7 @@ class CallServer {
     var gateway = this.gateways[iGateway];
     var gatewayName = gateway.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
-    var outLine = ("000" + (iLine + 1)).slice(-3);    
+    var outLine = ("000" + (iLine + 1)).slice(-3);
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     if (gateway.isWorkingCall === true) {
       var data = {
@@ -513,7 +540,7 @@ class CallServer {
     );
     var gatewayName = caller.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
-    var outLine = ("000" + (iLine + 1)).slice(-3);    
+    var outLine = ("000" + (iLine + 1)).slice(-3);
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     var gatewayName = caller.name;
     if (caller.isWorkingCall === true) {
@@ -534,10 +561,10 @@ class CallServer {
           Codecs: "ulaw",
         });
 
-        caller.objData.callsSent[iLine]+=stocasticDuration;
-        caller.changed("objData", true);
-        caller.save();
-        return stocasticDuration;
+      caller.objData.callsSent[iLine] += stocasticDuration;
+      caller.changed("objData", true);
+      caller.save();
+      return stocasticDuration;
     }
   }
 
@@ -545,37 +572,39 @@ class CallServer {
     var gateway = this.gateways[iGateway];
     var nCallsReceived = gateway.objData.callsReceived[iLine];
     var nCallsSent = gateway.objData.callsSent[iLine];
-    if(nCallsReceived==0) nCallsReceived=1;
-    var ratio = 100 * (nCallsSent / (nCallsReceived+nCallsSent));
+    if (nCallsReceived == 0) nCallsReceived = 1;
+    var ratio = 100 * (nCallsSent / (nCallsReceived + nCallsSent));
     var bAntiFraud = ratio > gateway.nMaxCallPercetage;
-    if (bAntiFraud) 
-    {
+    if (bAntiFraud) {
       var phoneNumber = gateway.objData.lines[iLine];
       var duration = Math.ceil(
-        ((ratio-gateway.nMaxCallPercetage) * gateway.nCallsSent) / 100
+        ((ratio - gateway.nMaxCallPercetage) * gateway.nCallsSent) / 100
       );
       if (duration < 60) duration = 60;
       var caller = this.selectectGatewayCaller(gateway);
       var line = this.getGatewayLineForCall(caller);
-      var realDuration=this.antiFraudCall(
+      var realDuration = this.antiFraudCall(
         caller,
         line,
         phoneNumber,
         duration,
         clientAmi
       );
-      
-      gateway.objData.callsReceived[iLine]+=realDuration;
+
+      gateway.objData.callsReceived[iLine] += realDuration;
       gateway.changed("objData", true);
       gateway.save();
-
     }
   }
 
   checkAntiFraud(clienAmi) {
-    for (var iGat=0; iGat<this.gateways.length;iGat++) {
-      for (var iLine=0; iLine<this.gateways[iGat].objData.lines.length;iLine++) {        
-        this.antiFraudCallAlgorithm(iGat,iLine,clienAmi);
+    for (var iGat = 0; iGat < this.gateways.length; iGat++) {
+      for (
+        var iLine = 0;
+        iLine < this.gateways[iGat].objData.lines.length;
+        iLine++
+      ) {
+        this.antiFraudCallAlgorithm(iGat, iLine, clienAmi);
       }
     }
   }

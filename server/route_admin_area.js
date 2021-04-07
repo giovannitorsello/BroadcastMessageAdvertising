@@ -1057,7 +1057,7 @@ module.exports = {
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
-            var urlImageCampaign=config.shortdomain+":"+config.clickServer.port+config.paths.templatesFolder+ "/images/"+idCampaign+".jpg";            
+            var urlImageCampaign=config.shortDomain+config.paths.templatesFolder+ "/images/"+idCampaign+".jpg";            
             database.updateFileImage(idCampaign,urlImageCampaign, ()=> {
             res.send({
               status: "OK",

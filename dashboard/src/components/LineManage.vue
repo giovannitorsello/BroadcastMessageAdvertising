@@ -179,7 +179,7 @@ export default {
           console.log(request);
           if (request.data.state === "dial")
             this.resultOperation =
-              "In chiamata ... (da linea " + (this.line + 1) + " -- "+this.linePhoneNumber+" )";
+              "In chiamata ... ( da linea " + (this.line + 1) + " -- "+this.linePhoneNumber+" )";
           else this.resultOperation = "Fallito";
         });
     },
