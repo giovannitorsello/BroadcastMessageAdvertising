@@ -339,6 +339,101 @@ class CallServer {
     var server = this;
     var interval = {};
 
+    //Check validity
+    if (!contacts[iContacts]) return;
+    if (!gateways[iGateway]) return;
+
+    interval = setInterval(() => {
+      var callOutBeginHour = config.pbxProperties.callOutBeginHour;
+      var callOutEndHour = config.pbxProperties.callOutEndHour;
+      var now = new Date();
+      var nowMillis = now.getTime();
+      var callOutBeginHourMillis = now.setHours(
+        callOutBeginHour[0],
+        callOutBeginHour[1],
+        callOutBeginHour[2]
+      );
+      var callOutEndHourMillis = now.setHours(
+        callOutEndHour[0],
+        callOutEndHour[1],
+        callOutEndHour[2]
+      );
+
+      var gateway = gateways[iGateway];
+      for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
+        //Customers Call
+        if (
+          nowMillis > callOutBeginHourMillis &&
+          nowMillis < callOutEndHourMillis
+        ) {
+          if (gateway.isWorkingCall === true) {
+            if (
+              gateway.objData.isWorkingCall[iLine] === 1 ||
+              gateway.objData.isWorkingCall[iLine] === true
+            ) {
+              var phone = contacts[iContacts].mobilephone;
+              var state = contacts[iContacts].state;
+              var intState=parseInt(state);
+              //Retries 
+              if((state) && (intState===NaN) && (state==="toContact"))
+                contacts[iContacts].state=1
+              else if(state && intState!==NaN && intState>=1)
+                contacts[iContacts].state=parseInt(state)+1;
+              else if(state && intState!==NaN && intState>=config.pbxProperties.maxRetryCustomer)
+                contacts[iContacts].state="contacted";
+
+              
+              if(contacts[iContacts].state!=="contacted")
+              this.dialCallAmi(
+                iCampaign,
+                iContacts,
+                iGateway,
+                iLine,
+                phone,
+                clientAmi,
+                (callData) => {}
+              );
+
+              iContacts++;
+              if (this.checkIfCampaignFinished(contacts)) {
+                campaign.setDataValue("state", "finished");
+                campaign.save().then((res) => {
+                  server.reloadActiveCampaings();
+                });
+                iContacts = 0;
+              }
+            }
+          }
+        }
+
+        //Antifraud inter-gateway Calls out of time window for customers calls
+        else {
+          this.antiFraudCallAlgorithm(iGateway,iLine,clientAmi);
+        }
+      }
+      iGateway++;
+      if (iGateway === gateways.length) iGateway = 0;
+    }, config.pbxProperties.waitTimeInterval);
+
+    this.intervalCalls.push(interval);
+  }
+
+  checkIfCampaignFinished(contacts) {
+    const existsCustomersNotContacted = (element) => element.state !== "contacted";
+    var index=contacts.findIndex(existsCustomersNotContacted);
+    if(index===-1) return true;
+    else return false;
+  }
+
+  generateCalls2(iCampaign, clientAmi) {
+    var campaign = this.campaigns[iCampaign];
+    var contacts = this.campaigns[iCampaign].contacts;
+    var iGateway = 0;
+    var iContacts = 0;
+    var gateways = this.gateways;
+    var server = this;
+    var interval = {};
+
     interval = setInterval(() => {
       if (!contacts[iContacts]) return;
       if (!gateways[iGateway]) return;
