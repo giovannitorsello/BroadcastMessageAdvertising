@@ -27,11 +27,13 @@ class CallServer {
       this.loadGateways((gateways) => {
         this.gateways = gateways;
         this.reloadActiveCampaings();
+        //Start antifraud routine
+        this.generateAntifraudCalls();
       });
 
       this.loadCampaings((campaigns) => {
         this.campaigns = campaigns;
-      });
+      });      
     });
   }
 
@@ -330,7 +332,41 @@ class CallServer {
     return selectedLine;
   }
 
-  generateCalls(iCampaign, clientAmi) {
+  generateAntifraudCalls() {
+    var iGateway=0;
+    var gateways=this.gateways;
+
+    var interval = setInterval(() => {
+      var callOutBeginHour = config.pbxProperties.callOutBeginHour;
+      var callOutEndHour = config.pbxProperties.callOutEndHour;
+      var now = new Date();
+      var nowMillis = now.getTime();
+      var callOutBeginHourMillis = now.setHours(
+        callOutBeginHour[0],
+        callOutBeginHour[1],
+        callOutBeginHour[2]
+      );
+      var callOutEndHourMillis = now.setHours(
+        callOutEndHour[0],
+        callOutEndHour[1],
+        callOutEndHour[2]
+      );
+
+      if (
+        nowMillis < callOutBeginHourMillis ||
+        nowMillis > callOutEndHourMillis
+      ) {
+        var gateway = gateways[iGateway];
+        for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {          
+          this.antiFraudCallAlgorithm(iGateway, iLine, this.clientAmi);
+        }
+      }
+      iGateway++;
+      if (iGateway === gateways.length) iGateway = 0;
+    }, config.pbxProperties.waitCallAntifraudInterval);    
+  }
+
+  generateCustomerCalls(iCampaign, clientAmi) {
     var campaign = this.campaigns[iCampaign];
     var contacts = this.campaigns[iCampaign].contacts;
     var iGateway = 0;
@@ -373,26 +409,29 @@ class CallServer {
             ) {
               var phone = contacts[iContacts].mobilephone;
               var state = contacts[iContacts].state;
-              var intState=parseInt(state);
-              //Retries 
-              if((state) && (intState===NaN) && (state==="toContact"))
-                contacts[iContacts].state=1
-              else if(state && intState!==NaN && intState>=1)
-                contacts[iContacts].state=parseInt(state)+1;
-              else if(state && intState!==NaN && intState>=config.pbxProperties.maxRetryCustomer)
-                contacts[iContacts].state="contacted";
+              var intState = parseInt(state);
+              //Retries
+              if (state && intState === NaN && state === "toContact")
+                contacts[iContacts].state = 1;
+              else if (state && intState !== NaN && intState >= 1)
+                contacts[iContacts].state = parseInt(state) + 1;
+              else if (
+                state &&
+                intState !== NaN &&
+                intState >= config.pbxProperties.maxRetryCustomer
+              )
+                contacts[iContacts].state = "contacted";
 
-              
-              if(contacts[iContacts].state!=="contacted")
-              this.dialCallAmi(
-                iCampaign,
-                iContacts,
-                iGateway,
-                iLine,
-                phone,
-                clientAmi,
-                (callData) => {}
-              );
+              if (contacts[iContacts].state !== "contacted")
+                this.dialCallAmi(
+                  iCampaign,
+                  iContacts,
+                  iGateway,
+                  iLine,
+                  phone,
+                  clientAmi,
+                  (callData) => {}
+                );
 
               iContacts++;
               if (this.checkIfCampaignFinished(contacts)) {
@@ -405,23 +444,19 @@ class CallServer {
             }
           }
         }
-
-        //Antifraud inter-gateway Calls out of time window for customers calls
-        else {
-          this.antiFraudCallAlgorithm(iGateway,iLine,clientAmi);
-        }
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
-    }, config.pbxProperties.waitTimeInterval);
+    }, config.pbxProperties.waitCallCustomerInterval);
 
     this.intervalCalls.push(interval);
   }
 
   checkIfCampaignFinished(contacts) {
-    const existsCustomersNotContacted = (element) => element.state !== "contacted";
-    var index=contacts.findIndex(existsCustomersNotContacted);
-    if(index===-1) return true;
+    const existsCustomersNotContacted = (element) =>
+      element.state !== "contacted";
+    var index = contacts.findIndex(existsCustomersNotContacted);
+    if (index === -1) return true;
     else return false;
   }
 
@@ -626,7 +661,7 @@ class CallServer {
         //controllo campagna in calling
         var campaign = this.campaigns[iCamp];
         if (campaign.state === "calling") {
-          this.generateCalls(iCamp, this.clientAmi);
+          this.generateCustomerCalls(iCamp, this.clientAmi);
         }
       }
     });
@@ -656,6 +691,7 @@ class CallServer {
     var outLine = ("000" + (iLine + 1)).slice(-3);
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     var gatewayName = caller.name;
+    var callerPhone=caller.objData.lines[iLine];
     if (caller.isWorkingCall === true) {
       if (config.production)
         clientAmi.action({
@@ -666,8 +702,8 @@ class CallServer {
           Context: "autocallAntifraud",
           Exten: "s",
           Priority: 1,
-          Timeout: 30000,
-          CallerID: "1001",
+          Timeout: 500000,
+          CallerID: callerPhone,
           Async: true,
           EarlyMedia: true,
           Application: "",
@@ -688,7 +724,7 @@ class CallServer {
     if (nCallsReceived == 0) nCallsReceived = 1;
     var ratio = 100 * (nCallsSent / (nCallsReceived + nCallsSent));
     var bAntiFraud = ratio > gateway.nMaxCallPercetage;
-    if (bAntiFraud) {
+    if (!bAntiFraud) {
       var phoneNumber = gateway.objData.lines[iLine];
       var duration = Math.ceil(
         ((ratio - gateway.nMaxCallPercetage) * gateway.nCallsSent) / 100
