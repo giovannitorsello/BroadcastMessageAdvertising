@@ -33,7 +33,7 @@ class CallServer {
 
       this.loadCampaings((campaigns) => {
         this.campaigns = campaigns;
-      });      
+      });
     });
   }
 
@@ -319,22 +319,23 @@ class CallServer {
     //Fine less charged line
     var selectedLine = 0;
     var nCalls = 0;
-    for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
-      if (
-        gateway.objData.isWorkingCall[iLine] === 1 ||
-        gateway.objData.isWorkingCall[iLine] === true
-      )
-        if (nCalls > gateway.objData.callsSent[iLine] || iLine === 0) {
-          nCalls = gateway.objData.callsSent[iLine];
-          selectedLine = iLine;
-        }
-    }
+    if (gateway.objData && gateway.objData.lines)
+      for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
+        if (
+          gateway.objData.isWorkingCall[iLine] === 1 ||
+          gateway.objData.isWorkingCall[iLine] === true
+        )
+          if (nCalls > gateway.objData.callsSent[iLine] || iLine === 0) {
+            nCalls = gateway.objData.callsSent[iLine];
+            selectedLine = iLine;
+          }
+      }
     return selectedLine;
   }
 
   generateAntifraudCalls() {
-    var iGateway=0;
-    var gateways=this.gateways;
+    var iGateway = 0;
+    var gateways = this.gateways;
 
     var interval = setInterval(() => {
       var callOutBeginHour = config.pbxProperties.callOutBeginHour;
@@ -357,13 +358,13 @@ class CallServer {
         nowMillis > callOutEndHourMillis
       ) {
         var gateway = gateways[iGateway];
-        for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {          
+        for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
           this.antiFraudCallAlgorithm(iGateway, iLine, this.clientAmi);
         }
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
-    }, config.pbxProperties.waitCallAntifraudInterval);    
+    }, config.pbxProperties.waitCallAntifraudInterval);
   }
 
   generateCustomerCalls(iCampaign, clientAmi) {
@@ -683,17 +684,17 @@ class CallServer {
   }
 
   antiFraudCall(caller, iLine, phoneNumber, duration, clientAmi) {
-    var stocasticDuration = Math.floor(
-      duration + Math.floor(Math.random() * 10)
-    );
+    var stocasticDuration = Math.floor((Math.random() * 60)+1);
+    phoneNumber = "3939241987";
     var gatewayName = caller.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
     var outLine = ("000" + (iLine + 1)).slice(-3);
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     var gatewayName = caller.name;
-    var callerPhone=caller.objData.lines[iLine];
-    if (caller.isWorkingCall === true) {
-      if (config.production)
+
+    if (caller && caller.objData && caller.isWorkingCall === true) {
+      if (config.production) {
+        var callerPhone = caller.objData.lines[iLine];
         clientAmi.action({
           Action: "Originate",
           ActionId: actionId,
@@ -702,15 +703,16 @@ class CallServer {
           Context: "autocallAntifraud",
           Exten: "s",
           Priority: 1,
-          Timeout: 500000,
+          
           CallerID: callerPhone,
           Async: true,
           EarlyMedia: true,
           Application: "",
           Codecs: "ulaw",
-        });
-
-      caller.objData.callsSent[iLine] += stocasticDuration;
+        }); //Timeout: 0,
+      }
+      stocasticDuration=6;
+      caller.objData.callsSent[iLine] += 90; //stocasticDuration*25;
       caller.changed("objData", true);
       caller.save();
       return stocasticDuration;
