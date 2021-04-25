@@ -726,7 +726,6 @@ class CallServer {
     if (nCallsReceived == 0) nCallsReceived = 1;
     var ratio = 100 * (nCallsSent / (nCallsReceived + nCallsSent));
     var bAntiFraud = ratio > gateway.nMaxCallPercetage;
-    bAntiFraud = true;
     if (bAntiFraud) {
       var phoneNumber = gateway.objData.lines[iLine];
       var duration = 120;
