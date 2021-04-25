@@ -131,6 +131,7 @@ class CallServer {
                 iContact !== null &&
                 iGateway !== null
               ) {
+                
                 var campaign = this.campaigns[iCampaign];
                 if (campaign && campaign.contacts) {
                   var contacts = campaign.contacts;
@@ -145,7 +146,7 @@ class CallServer {
                   var totalBillSecLine = billsec + currentBillSecLine;
                   //Update general gateway counter
                   gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
-                  gateway.objData.callsSent[iLine] = totalBillSecLine;
+                  gateway.objData.callsSent[iLine] = totalBillSecLine;                  
                   gateway.changed("objData", true);
                   //Update gateway line data
                   gateway.save().then((gat) => {
@@ -684,8 +685,7 @@ class CallServer {
   }
 
   antiFraudCall(caller, iLine, phoneNumber, duration, clientAmi) {
-    var stocasticDuration = Math.floor((Math.random() * 60)+1);
-    phoneNumber = "3939241987";
+    var stocasticDuration = duration+Math.floor((Math.random() * 3)+1)*25;
     var gatewayName = caller.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
     var outLine = ("000" + (iLine + 1)).slice(-3);
@@ -703,16 +703,16 @@ class CallServer {
           Context: "autocallAntifraud",
           Exten: "s",
           Priority: 1,
-          
+          Timeout: 30000,
           CallerID: callerPhone,
           Async: true,
           EarlyMedia: true,
           Application: "",
           Codecs: "ulaw",
-        }); //Timeout: 0,
+        }); 
       }
-      stocasticDuration=6;
-      caller.objData.callsSent[iLine] += 90; //stocasticDuration*25;
+      
+      caller.objData.callsSent[iLine]+=stocasticDuration;
       caller.changed("objData", true);
       caller.save();
       return stocasticDuration;
@@ -726,12 +726,10 @@ class CallServer {
     if (nCallsReceived == 0) nCallsReceived = 1;
     var ratio = 100 * (nCallsSent / (nCallsReceived + nCallsSent));
     var bAntiFraud = ratio > gateway.nMaxCallPercetage;
-    if (!bAntiFraud) {
+    bAntiFraud = true;
+    if (bAntiFraud) {
       var phoneNumber = gateway.objData.lines[iLine];
-      var duration = Math.ceil(
-        ((ratio - gateway.nMaxCallPercetage) * gateway.nCallsSent) / 100
-      );
-      if (duration < 60) duration = 60;
+      var duration = 120;
       var caller = this.selectectGatewayCaller(gateway);
       var line = this.getGatewayLineForCall(caller);
       var realDuration = this.antiFraudCall(
