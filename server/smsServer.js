@@ -136,24 +136,56 @@ class SmsServer {
     this.smsCampaigns.forEach((campaign, index, arrCamp) => {
       //controllo campagna attiva
       if (campaign.state === "active") {
-        //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
         this.sendNextMessage(campaign, (response) => console.log(response));
+        //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
+
+        //invio tramite gateway internet
+        /*
+www.services.europsms.com/smpp-
+gateway.php?op=sendSMS2&smpp_id=QUIEMAIL&utenti_password=QUIPASS
+&tipologie_sms_id=2&destinatari_destination_addr=QUINUM&trasmissioni_me
+ssaggio=prova&trasmissioni_mittente=test
+
+http://www.services.europsms.com/smpp-
+gateway.php?op=txStatus&email=QUIEMAIL&password=QUIPASS&trasmission
+i_id=QUIIDRESTITUITODASERVIZIO
+        */
+        
+        
       }
     });
   }
 
-  sendNextMessage(campaign, callback) {
-    //Select next contact in couch database
-    // Gateways selection
-    var dateCampaign = Date.parse(campaign.begin);
-    var now = new Date().getTime();
+  sendNextMessage(campaign, callback) {    
     //Controllo su data ed ora di inizio
-    if (now > dateCampaign && campaign.state === "active") {
+    var dateCampaign = Date.parse(campaign.begin);
+    var now = new Date().getTime();    
+    if (now > dateCampaign && campaign.state === "active") {      
       var contact = this.selectCurrentContact(campaign);
-      var selecteGateway = this.selectCurrentGateway();
-      this.sendMessage(campaign, selecteGateway, contact, (response) => {
-        callback(response);
-      });
+      
+      
+      //invio tramite sistema GOIP
+      if(campaign.senderService===0) {
+        var selecteGateway = this.selectCurrentGateway();
+        this.sendMessage(campaign, selecteGateway, contact, (response) => {
+          callback(response);
+        });
+      }
+      
+      //invio tramite internet
+      if(campaign.senderService>0) {
+        var serviceName=config.senderServices[campaign.senderService].name;
+        var servicePlugin=config.senderServices[campaign.senderService].plugin;
+        var pluginFile="./internetGateways/"+servicePlugin;
+        var plugin=require(pluginFile);
+        var message = this.formatMessage(campaign, contact);
+
+        if(contact && contact.mobilephone && message)
+        plugin.sendSms(contact.mobilephone, message, "3939241987", 1, response => {
+          callback(response);
+        });
+      }
+      
     }
   }
 

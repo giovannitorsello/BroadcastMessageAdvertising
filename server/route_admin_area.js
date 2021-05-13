@@ -111,6 +111,10 @@ module.exports = {
       });
     });
 
+    app.post("/adminarea/customer/getSenderServices", function (req, res) {
+      res.send({ status: "OK", msg: "Caps found", senderServices: config.senderServices });      
+    });
+
     app.post("/adminarea/customer/getCaps", function (req, res) {
       database.execute_raw_query(
         "SELECT postcode, city from customers GROUP BY postcode, city;",
@@ -633,6 +637,7 @@ module.exports = {
       camp.message = messageCampaign.message;
       camp.messagePage1 = messageCampaign.messagePage1;
       camp.messagePage2 = messageCampaign.messagePage2;
+      camp.senderService = messageCampaign.senderService;
       camp.ncompleted = 0;
       camp.begin = messageCampaign.begin;
       camp.state = "disabled";

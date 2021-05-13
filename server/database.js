@@ -98,6 +98,7 @@ module.exports = {
         messagePage1: { type: Sequelize.STRING, allowNull: false },
         messagePage2: { type: Sequelize.STRING, allowNull: false },
         imageFile: { type: Sequelize.STRING, allowNull: true },
+        senderService: { type: Sequelize.INTEGER, allowNull: true },
         ncontacts: { type: Sequelize.INTEGER, allowNull: true },
         ncompleted: { type: Sequelize.INTEGER, allowNull: true },
         begin: { type: Sequelize.DATE, allowNull: true },

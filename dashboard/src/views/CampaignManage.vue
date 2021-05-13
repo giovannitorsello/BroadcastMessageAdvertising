@@ -21,6 +21,18 @@
                 label="Nome campagna SMS"
               ></v-text-field>
             </v-col>
+
+            <v-col>
+              <v-select
+                v-model="selectedSenderService.id"
+                :items="senderServices"
+                label="Metodo invio"
+                item-text="name"
+                item-value="id"
+              >
+              </v-select>
+            </v-col>
+
             <v-col cols="12" lg="6">
               <v-menu
                 ref="menuDate"
@@ -223,13 +235,13 @@
                 show-size
                 label="Carica il file di immagine"
               ></v-file-input>
-            </v-col>           
+            </v-col>
           </v-row>
           <v-row>
             <v-col>
               <a :href="urlImageFile">Link di test</a>
             </v-col>
-             <v-col>
+            <v-col>
               <v-img height="200" width="200" :src="urlImageFile"></v-img>
             </v-col>
           </v-row>
@@ -422,6 +434,7 @@ export default {
   data() {
     return {
       campaignName: "",
+      senderServices: [],
       messagePage1: "Vuoi ricevere maggiori informazioni senza impegno?",
       messagePage2:
         "Grazie, sarai ricontattato da un nostro operatore al più presto",
@@ -433,7 +446,7 @@ export default {
       time: "",
       menuDate: false,
       menuTime: false,
-
+      selectedSenderService: {},
       selectedCap: "",
       selectedCity: "",
       selectedState: "",
@@ -497,6 +510,7 @@ export default {
   mounted() {
     this.beginDate = new Date().toLocaleDateString("it-IT");
     this.beginTime = new Date().toLocaleTimeString("it-IT");
+    this.getSenderServices();
     this.getCaps();
     this.getCities();
     this.getProvinces();
@@ -578,7 +592,8 @@ export default {
                 this.messagePage1 = this.selectedCampaign.messagePage1;
               if (this.selectedCampaign.messagePage2)
                 this.messagePage2 = this.selectedCampaign.messagePage2;
-              if(this.selectedCampaign.imageFile) this.urlImageFile=this.selectedCampaign.imageFile;
+              if (this.selectedCampaign.imageFile)
+                this.urlImageFile = this.selectedCampaign.imageFile;
             }
           })
           .catch((error) => {
@@ -600,6 +615,8 @@ export default {
         });
     },
     insertMessageCampaign() {
+      console.log("Message service");
+      console.log(this.selectedSenderService.id);
       this.contacts = [];
       this.axios
         .post("/adminarea/messageCampaign/insert", {
@@ -609,6 +626,7 @@ export default {
             message: this.messageText.replace(/\n/g, " "), //useful to remove carriage return
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
+            senderService: this.selectedSenderService.id,
             begin: this.getBeginDate(),
           },
         })
@@ -625,7 +643,8 @@ export default {
         });
     },
     updateMessageCampaign() {
-      console.log(this.selectedCampaign);
+      console.log("Message service");
+      console.log(this.selectedSenderService.id);
       this.axios
         .post("/adminarea/messageCampaign/update", {
           messageCampaign: {
@@ -637,6 +656,7 @@ export default {
             message: this.messageText.replace(/\n/g, " "),
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
+            senderService: this.selectedSenderService.id
           },
         })
         .then((request) => {
@@ -814,6 +834,17 @@ export default {
           console.log(error);
         });
     },
+    getSenderServices() {
+      this.axios
+        .post("/adminarea/customer/getSenderServices", {          
+        })
+        .then((request) => {
+          this.senderServices = request.data.senderServices;
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
     getContacts() {
       this.axios
         .post("/adminarea/messageCampaign/getCampaignCustomers", {
@@ -940,7 +971,7 @@ export default {
             this.dialogImportContacts = false;
             this.urlImageFile =
               request.data.urlImageCampaign + "?" + new Date().getTime();
-              console.log(this.urlImageFile );
+            console.log(this.urlImageFile);
           })
           .catch((error) => {
             console.log(error);
