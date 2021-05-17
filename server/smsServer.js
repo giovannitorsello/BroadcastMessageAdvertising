@@ -180,9 +180,28 @@ i_id=QUIIDRESTITUITODASERVIZIO
         var plugin=require(pluginFile);
         var message = this.formatMessage(campaign, contact);
 
-        if(contact && contact.mobilephone && message)
-        plugin.sendSms(contact.mobilephone, message, "3939241987", 1, response => {
-          callback(response);
+
+        //Testing
+        if(contact && contact.mobilephone && message && config.production===false) {
+          console.log("Send to "+contact.mobilephone + " message: "+ message+" by internet");
+          contact.state = "contacted";
+          contact.save();
+          this.updateCampaignData(campaign, (response) => {
+            callback({msg: "Simulated, not in production"});
+          });          
+        }
+
+        //Production
+        if(contact && contact.mobilephone && message && config.production===true)
+        plugin.sendSms(contact.mobilephone, message, "default", 1, response => {              
+          if(response.id!==0 && response.msg==="OK") {
+            console.log("Send to "+contact.mobilephone + " message: "+ message+" by internet, with id="+response.id);
+            contact.state = "contacted";
+            contact.save();
+            this.updateCampaignData(campaign, (response) =>
+              callback(response)
+            );            
+          }
         });
       }
       
