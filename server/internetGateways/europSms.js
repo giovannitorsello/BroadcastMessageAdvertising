@@ -2,7 +2,6 @@ const axios = require("axios");
 module.exports = {
   sendSms(phonedest, message, phonesrc, classtype, callback) {
       var number="+39"+phonedest;
-      phonesrc="+393386304860"
       axios.get('http://www.services.europsms.com/smpp-gateway.php', {
         params: {
         op: "sendSMS2",

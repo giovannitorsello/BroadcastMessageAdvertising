@@ -175,7 +175,9 @@ i_id=QUIIDRESTITUITODASERVIZIO
       //invio tramite internet
       if(campaign.senderService>0) {
         var serviceName=config.senderServices[campaign.senderService].name;
-        var servicePlugin=config.senderServices[campaign.senderService].plugin;
+        var servicePlugin=config.senderServices[campaign.senderService].plugin
+        var senderPhone=config.senderServices[campaign.senderService].senderPhone;
+        var senderClass=config.senderServices[campaign.senderService].senderClass;
         var pluginFile="./internetGateways/"+servicePlugin;
         var plugin=require(pluginFile);
         var message = this.formatMessage(campaign, contact);
@@ -193,7 +195,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
 
         //Production
         if(contact && contact.mobilephone && message && config.production===true)
-        plugin.sendSms(contact.mobilephone, message, "default", 1, response => {              
+        plugin.sendSms(contact.mobilephone, message, senderPhone, senderClass, response => {              
           if(response.id!==0 && response.msg==="OK") {
             console.log("Send to "+contact.mobilephone + " message: "+ message+" by internet, with id="+response.id);
             contact.state = "contacted";
