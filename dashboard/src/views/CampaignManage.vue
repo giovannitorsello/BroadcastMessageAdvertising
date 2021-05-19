@@ -123,6 +123,7 @@
                   >
                     <td>{{ row.item.id }}</td>
                     <td>{{ row.item.name }}</td>
+                    <td>{{ row.item.senderService }}</td>
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
@@ -497,6 +498,7 @@ export default {
       headerCampaigns: [
         { text: "Codice", value: "id" },
         { text: "Nome campagna", value: "name" },
+        { text: "Metodo invio", value: "senderService" },
         { text: "Stato", value: "state" },
         { text: "Messagio", value: "message" },
         { text: "Numero contatti", value: "ncontacts" },
