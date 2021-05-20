@@ -195,6 +195,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
               " by internet"
           );
           contact.state = "contacted";
+          if(!contact.objData) contact.objData = {};
           contact.objData.idSender = 0;
           contact.changed("objData", true);
           contact.save().then((cont) => {
@@ -226,6 +227,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
                     response.id
                 );
                 contact.state = "contacted";
+                if(!contact.objData) contact.objData = {};
                 contact.objData.idSender = response.id;
                 contact.changed("objData", true);
                 contact.save().then((cont) => {
@@ -237,6 +239,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
               } else {
                 console.log("Error on contact: " + contact.mobilephone);
                 contact.state = "contacted";
+                if(!contact.objData) contact.objData = {};
                 contact.objData.idSender = 0;
                 contact.changed("objData", true);
                 contact.save().then((cont) => {

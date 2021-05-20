@@ -123,7 +123,7 @@
                   >
                     <td>{{ row.item.id }}</td>
                     <td>{{ row.item.name }}</td>
-                    <td>{{ row.item.senderService }}</td>
+                    <td>{{ senderServices[row.item.senderService].name }}</td>
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
