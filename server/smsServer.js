@@ -34,8 +34,8 @@ class SmsServer {
   }
 
   checkIfBalanceIsPossible() {
-    this.database.checkIfBalanceIsPossible(results => {
-      if(results.length>=2) return true;
+    this.database.checkIfBalanceIsPossible((results) => {
+      if (results.length >= 2) return true;
       else {
         //Stop all campaigns
         this.disableAllCampaigns();
@@ -44,19 +44,19 @@ class SmsServer {
     });
   }
 
-  checkGatewayIsWorking(iGateway) {    
+  checkGatewayIsWorking(iGateway) {
     var iLine = 0;
     var bIsWorking = false;
     var gateway = this.smsGateways[iGateway];
-    var objData=gateway.objData;    
+    var objData = gateway.objData;
     //Check if line reach max smsSent
     while (iLine < objData.lines.length) {
-      
       //Check if line reach max smsSent
-      if(objData.smsSent[iLine]>=gateway.nMaxDailyMessagePerLine)
-        this.smsGateways[iGateway].objData.isWorkingSms[iLine]=false;
-      
-      bIsWorking =bIsWorking || this.smsGateways[iGateway].objData.isWorkingSms[iLine];
+      if (objData.smsSent[iLine] >= gateway.nMaxDailyMessagePerLine)
+        this.smsGateways[iGateway].objData.isWorkingSms[iLine] = false;
+
+      bIsWorking =
+        bIsWorking || this.smsGateways[iGateway].objData.isWorkingSms[iLine];
       iLine++;
     }
 
@@ -64,8 +64,8 @@ class SmsServer {
       gateway.isWorkingSms = bIsWorking;
       gateway.changed("objData", true);
       gateway.save();
-      
-      this.checkIfBalanceIsPossible()
+
+      this.checkIfBalanceIsPossible();
     }
   }
 
@@ -113,20 +113,18 @@ class SmsServer {
                 iSim++;
               }
             }
-            gateway.setDataValue('nSmsSent', 0);
-            gateway.setDataValue('nSmsReceived', 0);
-            gateway.setDataValue('objData', gateway.objData);
-            gateway.changed('objData', true);           
-            gateway
-              .save()
-              .then((gat) => {
-                gatewaysReset.push(gat);
-                if (gatewaysReset.length === array.length) {
-                  this.loadGateways(gats => {
-                    callback(gats)
-                  });
-                }
-              });
+            gateway.setDataValue("nSmsSent", 0);
+            gateway.setDataValue("nSmsReceived", 0);
+            gateway.setDataValue("objData", gateway.objData);
+            gateway.changed("objData", true);
+            gateway.save().then((gat) => {
+              gatewaysReset.push(gat);
+              if (gatewaysReset.length === array.length) {
+                this.loadGateways((gats) => {
+                  callback(gats);
+                });
+              }
+            });
           });
       });
     });
@@ -150,63 +148,107 @@ http://www.services.europsms.com/smpp-
 gateway.php?op=txStatus&email=QUIEMAIL&password=QUIPASS&trasmission
 i_id=QUIIDRESTITUITODASERVIZIO
         */
-        
-        
       }
     });
   }
 
-  sendNextMessage(campaign, callback) {    
+  sendNextMessage(campaign, callback) {
     //Controllo su data ed ora di inizio
     var dateCampaign = Date.parse(campaign.begin);
-    var now = new Date().getTime();    
-    if (now > dateCampaign && campaign.state === "active") {      
+    var now = new Date().getTime();
+    if (now > dateCampaign && campaign.state === "active") {
       var contact = this.selectCurrentContact(campaign);
-      
-      
+
       //invio tramite sistema GOIP
-      if(campaign.senderService===0) {
+      if (campaign.senderService === 0) {
         var selecteGateway = this.selectCurrentGateway();
         this.sendMessage(campaign, selecteGateway, contact, (response) => {
           callback(response);
         });
       }
-      
+
       //invio tramite internet
-      if(campaign.senderService>0) {
-        var serviceName=config.senderServices[campaign.senderService].name;
-        var servicePlugin=config.senderServices[campaign.senderService].plugin
-        var senderPhone=config.senderServices[campaign.senderService].senderPhone;
-        var senderClass=config.senderServices[campaign.senderService].senderClass;
-        var pluginFile="./internetGateways/"+servicePlugin;
-        var plugin=require(pluginFile);
+      if (campaign.senderService > 0) {
+        var serviceName = config.senderServices[campaign.senderService].name;
+        var servicePlugin =
+          config.senderServices[campaign.senderService].plugin;
+        var senderPhone =
+          config.senderServices[campaign.senderService].senderPhone;
+        var senderClass =
+          config.senderServices[campaign.senderService].senderClass;
+        var pluginFile = "./internetGateways/" + servicePlugin;
+        var plugin = require(pluginFile);
         var message = this.formatMessage(campaign, contact);
 
-
         //Testing
-        if(contact && contact.mobilephone && message && config.production===false) {
-          console.log("Send to "+contact.mobilephone + " message: "+ message+" by internet");
+        if (
+          contact &&
+          contact.mobilephone &&
+          message &&
+          config.production === false
+        ) {
+          console.log(
+            "Send to " +
+              contact.mobilephone +
+              " message: " +
+              message +
+              " by internet"
+          );
           contact.state = "contacted";
-          contact.save();
-          this.updateCampaignData(campaign, (response) => {
-            callback({msg: "Simulated, not in production"});
-          });          
+          contact.objData.idSender = 0;
+          contact.changed("objData", true);
+          contact.save().then((cont) => {
+            console.log("Contact " + cont.mobilephone + " updated");
+            this.updateCampaignData(campaign, (response) => callback(response));
+          });
         }
 
         //Production
-        if(contact && contact.mobilephone && message && config.production===true)
-        plugin.sendSms(contact.mobilephone, message, senderPhone, senderClass, response => {              
-          if(response.id!==0 && response.msg==="OK") {
-            console.log("Send to "+contact.mobilephone + " message: "+ message+" by internet, with id="+response.id);
-            contact.state = "contacted";
-            contact.save();
-            this.updateCampaignData(campaign, (response) =>
-              callback(response)
-            );            
-          }
-        });
+        if (
+          contact &&
+          contact.mobilephone &&
+          message &&
+          config.production === true
+        )
+          plugin.sendSms(
+            contact.mobilephone,
+            message,
+            senderPhone,
+            senderClass,
+            (response) => {
+              if (response.id !== 0 && response.msg === "OK") {
+                console.log(
+                  "Send to " +
+                    contact.mobilephone +
+                    " message: " +
+                    message +
+                    " by internet, with id=" +
+                    response.id
+                );
+                contact.state = "contacted";
+                contact.objData.idSender = response.id;
+                contact.changed("objData", true);
+                contact.save().then((cont) => {
+                  console.log("Contact " + cont.mobilephone + " updated");
+                  this.updateCampaignData(campaign, (response) =>
+                    callback(response)
+                  );
+                });
+              } else {
+                console.log("Error on contact: " + contact.mobilephone);
+                contact.state = "contacted";
+                contact.objData.idSender = 0;
+                contact.changed("objData", true);
+                contact.save().then((cont) => {
+                  console.log("Contact " + cont.mobilephone + " updated");
+                  this.updateCampaignData(campaign, (response) =>
+                    callback(response)
+                  );
+                });
+              }
+            }
+          );
       }
-      
     }
   }
 
@@ -218,8 +260,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      (contact.state === "toContact" ||
-        contact.state === "called") &&
+      (contact.state === "toContact" || contact.state === "called") &&
       campaign.state === "active"
     ) {
       //Line selection
@@ -345,7 +386,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
           gateways = results;
           for (var i = 0; i < gateways.length; i++) {
             if (gateways[i].isWorkingSms)
-              this.nTotRadios += gateways[i].nRadios;            
+              this.nTotRadios += gateways[i].nRadios;
           }
           callback(gateways);
         }
@@ -381,17 +422,15 @@ i_id=QUIIDRESTITUITODASERVIZIO
       });
   }
 
-  disableAllCampaigns() {    
-    for(var iCamp=0;iCamp<this.smsCampaigns.length; iCamp++)
-    {
-      this.smsCampaigns[iCamp].state="disabled";
+  disableAllCampaigns() {
+    for (var iCamp = 0; iCamp < this.smsCampaigns.length; iCamp++) {
+      this.smsCampaigns[iCamp].state = "disabled";
       this.smsCampaigns[iCamp].save();
     }
     this.reloadActiveCampaings();
   }
 
   reloadActiveCampaings() {
-
     //Reload gateways
     this.loadGateways((gateways) => {
       this.smsGateways = gateways;
@@ -559,7 +598,8 @@ i_id=QUIIDRESTITUITODASERVIZIO
         var sim = this.sims[iSim];
         var gat = this.smsGateways[iGat];
         var senderOperator = gat.objData.operator[iLine];
-        var senderIsWorking=(gat.isWorkingSms===1 || gat.isWorkingSms===true);
+        var senderIsWorking =
+          gat.isWorkingSms === 1 || gat.isWorkingSms === true;
         if (bDifferentOperator) {
           if (receiverOperator != senderOperator && senderIsWorking) {
             if (nSmsSent >= gat.objData.smsSent[iLine]) {
