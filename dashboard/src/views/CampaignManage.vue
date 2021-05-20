@@ -494,6 +494,8 @@ export default {
         { text: "Telefono", value: "mobilephone" },
         { text: "Indirizzo", value: "address" },
         { text: "CAP", value: "postcode" },
+        { text: "Città", value: "city" },
+        { text: "Provincia", value: "adm1" }
       ],
       headerCampaigns: [
         { text: "Codice", value: "id" },
