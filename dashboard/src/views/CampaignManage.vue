@@ -884,6 +884,7 @@ export default {
                   address: customer.address,
                   mobilephone: customer.mobilephone,
                   postcode: customer.postcode,
+                  adm1: customer.adm1
                 };
                 this.interestedCustomers.push(interestedCustomer);
               });

@@ -865,7 +865,7 @@ module.exports = {
               res.send({
                 status: "OK",
                 msg: "Cliks campaign not found",
-                cloks: {},
+                clicks: {},
               });
           });
       }
