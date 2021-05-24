@@ -20,9 +20,12 @@ function startClickServer(database) {
           res.end();
           return;
         }
+        var ipClick = ""
         var idCampaign = parseInt(hexIdCamp, 36);
         var idCustomer = parseInt(hexIdCust, 36);
-        
+        if(res.connection && res.connection.remoteAddress)
+         ipClick=res.connection.remoteAddress
+
         //Second click
         if (confirm && confirm === "1") {
           database.entities.click
@@ -90,6 +93,7 @@ function startClickServer(database) {
                   .create({
                     campaignId: idCampaign,
                     customerId: idCustomer,
+                    ipAddress: ipClick,
                     confirm: false,
                   })
                   .then((clickNew) => {

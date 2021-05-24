@@ -115,6 +115,7 @@ module.exports = {
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
         customerId: { type: Sequelize.INTEGER, allowNull: false },
+        ipAddress: { type: Sequelize.STRING, allowNull: true },
         confirm: { type: Sequelize.BOOLEAN, allowNull: false },
       },
       {
