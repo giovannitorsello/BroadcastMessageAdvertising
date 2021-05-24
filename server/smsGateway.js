@@ -138,6 +138,7 @@ module.exports = {
           " to " +
           mobilephone
       );
+      console.log(message);
       callback({
         status: "send",
         msg: "temporary disabled",

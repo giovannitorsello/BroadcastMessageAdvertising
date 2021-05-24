@@ -880,6 +880,7 @@ export default {
                 var interestedCustomer = {
                   id: customer.id,
                   confirmed: strConfirm,
+                  ipAddress: customer.ipAddress,
                   firstname: customer.firstname,
                   lastname: customer.lastname,
                   address: customer.address,
