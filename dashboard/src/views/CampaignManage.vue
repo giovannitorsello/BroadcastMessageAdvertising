@@ -489,6 +489,7 @@ export default {
       headersInterestedCustomers: [
         { text: "ID", value: "id" },
         { text: "Conferma", value: "confirmed" },
+        { text: "Indirzzo IP", value: "ipAddress" },
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
         { text: "Telefono", value: "mobilephone" },
