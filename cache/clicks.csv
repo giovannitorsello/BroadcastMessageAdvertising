@@ -1,14 +1,2 @@
-Id;Conferme;Nome;Cognome;Telfono;Indirizzo;Cap;Citta;Provincia;Regione;Stato
-21;1 click;SANNA BARBARA;;3291511678;;;Sestu;CA ;;
-22;1 click;MASSIMILIANO;;3406483597;;;Cagliari;CA ;;
-23;1 click;ROSALIA;;3385923295;;;Decimomannu;CA ;;
-24;1 click;Caterina;;3488665763;;;Capoterra;CA ;;
-25;1 click;SIMONA ARIPPA;;3204435891;;;Decimomannu;CA ;;
-26;1 click;Giorgio;;3473859297;;;Cagliari;CA ;;
-27;1 click;GIUSEPPINA;;3403483644;;;Cagliari;CA ;;
-28;1 click;NO NOME;;3450738917;;;Decimomannu;CA ;;
-29;1 click;Chiara;;3913076122;;;Capoterra;CA ;;
-30;1 click;Nicolo;;3935583899;;;Cagliari;CA ;;
-31;1 click;LINA;;3395003235;;;Decimomannu;CA ;;
-32;1 click;MADEDDU MARIA TERE;;3498198714;;;ELMAS;CA ;;
-33;1 click;MADEDDU MARIA TERE;;3498198714;;;ELMAS;CA ;;
+Id;Conferme;IP;Nome;Cognome;Telfono;Indirizzo;Cap;Citta;Provincia;Regione;Stato
+1;1 click;127.0.0.1;Alessandro;Torsello;3516998269;MANCA;90151;PARTINICO;PA;;

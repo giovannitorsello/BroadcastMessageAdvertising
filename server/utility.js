@@ -265,6 +265,7 @@ module.exports = {
       header: [
         { id: "id", title: "Id" },
         { id: "confirm", title: "Conferme" },
+        { id: "ipAddress", title: "IP" },
         { id: "firstname", title: "Nome" },
         { id: "lastname", title: "Cognome" },
         { id: "mobilephone", title: "Telfono" },
@@ -302,6 +303,7 @@ module.exports = {
       clickData.push({
         id: click.id,
         confirm: strConfirm,
+        ipAddress: click.ipAddress,
         firstname: click.firstname,
         lastname: click.lastname,
         mobilephone: click.mobilephone,

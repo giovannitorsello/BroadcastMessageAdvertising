@@ -100,6 +100,7 @@
               <v-btn
                 depressed
                 color="primary"
+                :disabled="campaignName===''"
                 v-on:click="insertMessageCampaign"
                 >Inserisci campagna</v-btn
               >
