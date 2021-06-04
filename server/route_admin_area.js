@@ -112,7 +112,11 @@ module.exports = {
     });
 
     app.post("/adminarea/customer/getSenderServices", function (req, res) {
-      res.send({ status: "OK", msg: "Caps found", senderServices: config.senderServices });      
+      res.send({
+        status: "OK",
+        msg: "Caps found",
+        senderServices: config.senderServices,
+      });
     });
 
     app.post("/adminarea/customer/getCaps", function (req, res) {
@@ -628,6 +632,36 @@ module.exports = {
         });
     });
 
+    /////////////////////Internet gateway ////////////////////
+    app.post("/adminarea/internetGateway/getall", function (req, res) {
+      if (config.senderServices) {
+        var internetGateways=[];
+        for (var i = 1; i < config.senderServices.length; i++) {
+          var serviceName = config.senderServices[i].name;
+          var servicePlugin =config.senderServices[i].plugin;
+          var pluginFile = "./internetGateways/" + servicePlugin;
+          var plugin = require(pluginFile);
+          plugin.getStatus(2, (statusText) => {
+            internetGateways.add(config.senderServices[i])
+            internetGateways[i-1].credit=statusText;
+            console.log(statusText);
+          });
+          
+        }
+
+        res.send({
+          status: "OK",
+          msg: "Internet gateways found",
+          internetGateways: internetGateways,
+        });
+      } else
+        res.send({
+          status: "OK",
+          msg: "Intrernet gateways not found",
+          internetGateways: {},
+        });
+    });
+
     /////////////////////Message campaign ////////////////////
     app.post("/adminarea/messageCampaign/insert", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
@@ -1054,7 +1088,8 @@ module.exports = {
           return;
         }
 
-        var newPath = path.join(__dirname, "templates") + "/images/"+idCampaign+".jpg";
+        var newPath =
+          path.join(__dirname, "templates") + "/images/" + idCampaign + ".jpg";
         var rawData = fs.readFileSync(oldPath);
         console.log("Received file:  " + oldPath);
         console.log("Upload file:  " + newPath);
@@ -1062,14 +1097,19 @@ module.exports = {
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
           else {
-            var urlImageCampaign=config.shortDomain+config.paths.templatesFolder+ "/images/"+idCampaign+".jpg";            
-            database.updateFileImage(idCampaign,urlImageCampaign, ()=> {
-            res.send({
-              status: "OK",
-              msg: "Images imported",
-              urlImageCampaign: urlImageCampaign        
+            var urlImageCampaign =
+              config.shortDomain +
+              config.paths.templatesFolder +
+              "/images/" +
+              idCampaign +
+              ".jpg";
+            database.updateFileImage(idCampaign, urlImageCampaign, () => {
+              res.send({
+                status: "OK",
+                msg: "Images imported",
+                urlImageCampaign: urlImageCampaign,
+              });
             });
-          });
           }
         });
       });
