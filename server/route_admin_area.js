@@ -641,10 +641,10 @@ module.exports = {
           var servicePlugin =config.senderServices[i].plugin;
           var pluginFile = "./internetGateways/" + servicePlugin;
           var plugin = require(pluginFile);
-          plugin.getStatus(2, (statusText) => {
-            internetGateways.add(config.senderServices[i])
-            internetGateways[i-1].credit=statusText;
-            console.log(statusText);
+          plugin.getCreditEconomic((result) => {
+            //internetGateways.add(config.senderServices[i])
+            //internetGateways[i-1].credit=statusText;
+            //console.log(statusText);
           });
           
         }

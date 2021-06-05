@@ -188,6 +188,20 @@
       </template>
     </v-card>
 
+    <v-row>
+      <v-col>
+        <p>Servizi di invio internet</p>
+        <v-data-table
+          :headers="headerInternetGateways"
+          :items="internetGateways"
+          :items-per-page="30"
+          class="elevation-1"
+        >
+        </v-data-table>
+      </v-col>
+    </v-row>
+
+
     <ConfirmDlg ref="confirm" />
     <NewOrUpdateDlg ref="neworupdate" />
   </div>
@@ -227,15 +241,22 @@ export default {
         },
         { text: "Percentuale chiamatein uscita", value: "nMaxCallPercetage" },
       ],
+      headerInternetGateways: [
+        { text: "ID", value: "id" },
+        { text: "Nome", value: "name" },
+        { text: "Messaggi rimanenti", value: "credit" },
+      ],
       selectedGateway: {},
       selectedLine: {},
       gateways: [],
+      internetGateways: [],
       banks: [],
     };
   },
   mounted() {
     this.loadBanks();
     this.loadGateways();
+    this.loadInternetGateways();
   },
   computed: {},
   methods: {
@@ -348,6 +369,19 @@ export default {
         .then((request) => {
           if (request.data.gateways) {
             this.gateways = request.data.gateways;
+          }
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    },
+    loadInternetGateways() {
+      this.internetGateways = [];
+      this.axios
+        .post("/adminarea/internetGateway/getall")
+        .then((request) => {
+          if (request.data.internetGateways) {
+            this.internetGateways = request.data.internetGateways;
           }
         })
         .catch((error) => {

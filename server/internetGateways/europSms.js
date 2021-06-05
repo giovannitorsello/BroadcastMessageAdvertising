@@ -8,8 +8,8 @@ module.exports = {
       .get("http://www.services.europsms.com/smpp-gateway.php", {
         params: {
           op: "sendSMS2",
-          smpp_id: config.senderServices.login,
-          utenti_password: config.senderServices.password,
+          smpp_id: config.senderServices[1].login,
+          utenti_password: config.senderServices[1].password,
           tipologie_sms_id: classtype,
           destinatari_destination_addr: number,
           trasmissioni_messaggio: message,
@@ -32,8 +32,8 @@ module.exports = {
       .post("http://www.services.europsms.com/smpp-gateway.php", {
         params: {
           op: "txStatus",
-          email: config.senderServices.login,
-          password: config.senderServices.password,
+          email: config.senderServices[1].login,
+          password: config.senderServices[1].password,
           trasmissioni_id: id,
         },
       })
@@ -47,9 +47,37 @@ module.exports = {
       );
   },
 
-  getCredit(classSMS) {
+  getCreditEconomic(callback) {
     var url = "http://www.services.europsms.com/service.php?wsdl";
-    var args = { utente: config.senderServices.login, password=config.senderServices.password, tipologie_sms_id="2" };
+    var args = {
+      utente: config.senderServices[1].login,
+      password: config.senderServices[1].password,
+      tipologie_sms_id: "2",
+    };
+    soap.createClient(url, function (err, client) {
+      client.getWsSaldo(args, function (err, result) {
+        console.log(result);
+      });
+    });
+    /*soap
+      .createClient(url)
+      .then((client) => {
+        var result=client.getWsSaldo(args);
+        callback(result);
+      })
+      .then((result) => {
+        callback(result);
+        console.log(result);
+      });*/
+  },
+
+  getCreditProfessional() {
+    var url = "http://www.services.europsms.com/service.php?wsdl";
+    var args = {
+      utente: config.senderServices[1].login,
+      password: config.senderServices[1].password,
+      tipologie_sms_id: "1",
+    };
     soap
       .createClientAsync(url)
       .then((client) => {
