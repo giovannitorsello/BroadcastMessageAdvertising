@@ -633,30 +633,33 @@ module.exports = {
     });
 
     /////////////////////Internet gateway ////////////////////
-    app.post("/adminarea/internetGateway/getall", function (req, res) {
+    app.post("/adminarea/internetGateway/getall", async function (req, res) {
       if (config.senderServices) {
         var internetGateways=[];
         for (var i = 1; i < config.senderServices.length; i++) {
-          var serviceName = config.senderServices[i].name;
-          var servicePlugin =config.senderServices[i].plugin;
+          let service=Object.assign({}, config.senderServices[i]);
+          var servicePlugin =service.plugin;
           var pluginFile = "./internetGateways/" + servicePlugin;
           var plugin = require(pluginFile);
-          plugin.getCreditEconomic((result) => {
-            //internetGateways.add(config.senderServices[i])
-            //internetGateways[i-1].credit=statusText;
-            //console.log(statusText);
+          
+          await plugin.getCreditEconomic((result) => {
+            if(result.state==="OK") {
+              service.credit=result.credit;
+              internetGateways.push(service);
+
+              if(i===config.senderServices.length || i===config.senderServices.length-1)
+              res.send({
+                state: "OK",
+                msg: "Internet gateways found",
+                internetGateways: internetGateways,
+              });
+            }
           });
           
         }
-
-        res.send({
-          status: "OK",
-          msg: "Internet gateways found",
-          internetGateways: internetGateways,
-        });
       } else
         res.send({
-          status: "OK",
+          state: "OK",
           msg: "Intrernet gateways not found",
           internetGateways: {},
         });

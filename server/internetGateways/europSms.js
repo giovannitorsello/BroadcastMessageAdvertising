@@ -52,40 +52,35 @@ module.exports = {
     var args = {
       utente: config.senderServices[1].login,
       password: config.senderServices[1].password,
-      tipologie_sms_id: "2",
+      tipologie_sms_id: "1",
     };
     soap.createClient(url, function (err, client) {
       client.getWsSaldo(args, function (err, result) {
-        console.log(result);
+        if(!err && result && result.return && result.return.$value) {
+          callback({state: 'OK', msg: 'success', credit: result.return.$value})
+        }
+        else
+        callback({state: 'error', msg: 'error', error: err});
       });
     });
-    /*soap
-      .createClient(url)
-      .then((client) => {
-        var result=client.getWsSaldo(args);
-        callback(result);
-      })
-      .then((result) => {
-        callback(result);
-        console.log(result);
-      });*/
   },
 
-  getCreditProfessional() {
+  getCreditProfesional(callback) {
     var url = "http://www.services.europsms.com/service.php?wsdl";
     var args = {
       utente: config.senderServices[1].login,
       password: config.senderServices[1].password,
-      tipologie_sms_id: "1",
+      tipologie_sms_id: "2",
     };
-    soap
-      .createClientAsync(url)
-      .then((client) => {
-        return client.getWsSaldo(args);
-      })
-      .then((result) => {
-        console.log(result);
+    soap.createClient(url, function (err, client) {
+      client.getWsSaldo(args, function (err, result) {
+        if(!err && result && result.$value) {
+          callback({state: 'OK', msg: 'success', credit: $value})
+        }
+        else
+        callback({state: 'error', msg: 'error', error: err});
       });
+    });
   },
 };
 

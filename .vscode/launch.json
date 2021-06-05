@@ -1,21 +1,19 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "neverOpen",
-            "name": "nodemon",
-            "program": "${workspaceFolder}/server/main.js",
-            "request": "launch",
-            "restart": true,
-            "runtimeExecutable": "nodemon",
-            "skipFiles": [
-                "<node_internals>/**"
-            ],
-            "type": "pwa-node"
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "BMAServer",
+      "runtimeExecutable": "nodemon",
+      "program": "${workspaceFolder}/server/main.js",
+      "cwd": "${workspaceFolder}/",
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ]
 }
