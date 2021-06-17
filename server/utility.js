@@ -265,6 +265,7 @@ module.exports = {
       header: [
         { id: "id", title: "Id" },
         { id: "confirm", title: "Conferme" },
+        { id: "date", title: "Data" },
         { id: "ipAddress", title: "IP" },
         { id: "firstname", title: "Nome" },
         { id: "lastname", title: "Cognome" },
@@ -274,7 +275,7 @@ module.exports = {
         { id: "city", title: "Citta" },
         { id: "adm1", title: "Provincia" },
         { id: "adm2", title: "Regione" },
-        { id: "adm3", title: "Stato" },
+        { id: "adm3", title: "Stato" },        
       ],
     });
     const csvWriterNonInterested = createCsvWriter({
@@ -300,10 +301,13 @@ module.exports = {
     pkgData.clicks.forEach((click, index, arrClick) => {
       var strConfirm = "1 click";
       if (click.confirm) strConfirm = "2 click";
+      var options = {'month': '2-digit', 'day': '2-digit', year: 'numeric'};
+      var date = new Date(click.updatedAt).toLocaleString('it-IT', options);
       clickData.push({
         id: click.id,
         confirm: strConfirm,
-        ipAddress: click.ipAddress,
+        date: date,
+        ipAddress: click.ipAddress,        
         firstname: click.firstname,
         lastname: click.lastname,
         mobilephone: click.mobilephone,
@@ -312,8 +316,7 @@ module.exports = {
         city: click.city,
         adm1: click.adm1,
         adm2: click.adm2,
-        adm3: click.adm3,
-        country: click.country,
+        adm3: click.adm3               
       });
 
       if (index === pkgData.clicks.length - 1)

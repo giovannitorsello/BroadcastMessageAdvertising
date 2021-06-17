@@ -286,8 +286,61 @@
               </v-col>
             </v-row>
           </v-card>
+        </v-tab-item>       
+
+        <v-tab href="#interestedcustomers">
+          <v-card flat>
+            <v-card-text>Clienti interessati</v-card-text>
+          </v-card>
+        </v-tab>
+        <v-tab-item
+          v-if="selectedCampaign.id"
+          id="interestedcustomers"
+          key="interestedcustomers"
+        >
+          <v-btn color="primary" v-on:click="getInterestedContacts"
+            >Aggiorna la tabella</v-btn
+          >
+          <v-row>
+            <v-col>
+              <v-data-table
+                :headers="headersInterestedCustomers"
+                :items="interestedCustomers"
+                :items-per-page="30"
+                class="elevation-1"
+              >
+              </v-data-table>
+            </v-col>
+          </v-row>
         </v-tab-item>
 
+        <v-tab href="#noclickcustomers">
+          <v-card flat>
+            <v-card-text>Clienti non interessati</v-card-text>
+          </v-card>
+        </v-tab>
+        <v-tab-item
+          v-if="selectedCampaign.id"
+          id="noclickcustomers"
+          key="noclickcustomers"
+        >
+          <v-btn color="primary" v-on:click="getNoInterestedContacts"
+            >Aggiorna la tabella</v-btn
+          >
+          <v-row>
+            <v-col>
+              <v-data-table
+                :headers="headersCustomers"
+                :items="noInterestedCustomers"
+                :items-per-page="30"
+                class="elevation-1"
+              >
+              </v-data-table>
+            </v-col>
+          </v-row>
+        </v-tab-item>
+
+        <!--
         <v-tab href="#select">
           <v-card flat>
             <v-card-text>Filtro contatti</v-card-text>
@@ -349,58 +402,7 @@
             </v-col>
           </v-row>
         </v-tab-item>
-
-        <v-tab href="#interestedcustomers">
-          <v-card flat>
-            <v-card-text>Clienti interessati</v-card-text>
-          </v-card>
-        </v-tab>
-        <v-tab-item
-          v-if="selectedCampaign.id"
-          id="interestedcustomers"
-          key="interestedcustomers"
-        >
-          <v-btn color="primary" v-on:click="getInterestedContacts"
-            >Aggiorna la tabella</v-btn
-          >
-          <v-row>
-            <v-col>
-              <v-data-table
-                :headers="headersInterestedCustomers"
-                :items="interestedCustomers"
-                :items-per-page="30"
-                class="elevation-1"
-              >
-              </v-data-table>
-            </v-col>
-          </v-row>
-        </v-tab-item>
-
-        <v-tab href="#noclickcustomers">
-          <v-card flat>
-            <v-card-text>Clienti non interessati</v-card-text>
-          </v-card>
-        </v-tab>
-        <v-tab-item
-          v-if="selectedCampaign.id"
-          id="noclickcustomers"
-          key="noclickcustomers"
-        >
-          <v-btn color="primary" v-on:click="getNoInterestedContacts"
-            >Aggiorna la tabella</v-btn
-          >
-          <v-row>
-            <v-col>
-              <v-data-table
-                :headers="headersCustomers"
-                :items="noInterestedCustomers"
-                :items-per-page="30"
-                class="elevation-1"
-              >
-              </v-data-table>
-            </v-col>
-          </v-row>
-        </v-tab-item>
+        -->
       </v-tabs>
     </v-container>
 
@@ -490,6 +492,7 @@ export default {
       headersInterestedCustomers: [
         { text: "ID", value: "id" },
         { text: "Conferma", value: "confirmed" },
+        { text: "Data", value: "date" },
         { text: "Indirzzo IP", value: "ipAddress" },
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
@@ -497,7 +500,7 @@ export default {
         { text: "Indirizzo", value: "address" },
         { text: "CAP", value: "postcode" },
         { text: "Città", value: "city" },
-        { text: "Provincia", value: "adm1" }
+        { text: "Provincia", value: "adm1" }        
       ],
       headerCampaigns: [
         { text: "Codice", value: "id" },
@@ -877,7 +880,9 @@ export default {
                 var strConfirm = "";
                 if (customer.confirm) strConfirm = "2 click";
                 if (!customer.confirm) strConfirm = "1 click";
-
+                var options = {'weekday': 'long', 'month': '2-digit', 'day': '2-digit', year: 'numeric'};                
+                var date = new Date(customer.updatedAt).toLocaleString('it-IT', options);
+                
                 var interestedCustomer = {
                   id: customer.id,
                   confirmed: strConfirm,
@@ -887,7 +892,8 @@ export default {
                   address: customer.address,
                   mobilephone: customer.mobilephone,
                   postcode: customer.postcode,
-                  adm1: customer.adm1
+                  adm1: customer.adm1,
+                  date: date                   
                 };
                 this.interestedCustomers.push(interestedCustomer);
               });

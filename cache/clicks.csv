@@ -1,2 +1,2 @@
-Id;Conferme;IP;Nome;Cognome;Telfono;Indirizzo;Cap;Citta;Provincia;Regione;Stato
-1;1 click;127.0.0.1;Alessandro;Torsello;3516998269;MANCA;90151;PARTINICO;PA;;
+Id;Conferme;Data;IP;Nome;Cognome;Telfono;Indirizzo;Cap;Citta;Provincia;Regione;Stato
+1;1 click;24/05/2021;127.0.0.1;Alessandro;Torsello;3516998269;MANCA;90151;PARTINICO;PA;;
