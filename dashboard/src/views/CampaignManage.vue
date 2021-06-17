@@ -492,7 +492,7 @@ export default {
       headersInterestedCustomers: [
         { text: "ID", value: "id" },
         { text: "Conferma", value: "confirmed" },
-        { text: "Data", value: "date" },
+        { text: "Data", value: "clickDate" },
         { text: "Indirzzo IP", value: "ipAddress" },
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
@@ -881,19 +881,19 @@ export default {
                 if (customer.confirm) strConfirm = "2 click";
                 if (!customer.confirm) strConfirm = "1 click";
                 var options = {'weekday': 'long', 'month': '2-digit', 'day': '2-digit', year: 'numeric'};                
-                var date = new Date(customer.updatedAt).toLocaleString('it-IT', options);
+                var date = new Date(customer.clickDate).toLocaleString('it-IT', options);
                 
                 var interestedCustomer = {
                   id: customer.id,
                   confirmed: strConfirm,
+                  clickDate: date,
                   ipAddress: customer.ipAddress,
                   firstname: customer.firstname,
                   lastname: customer.lastname,
                   address: customer.address,
                   mobilephone: customer.mobilephone,
                   postcode: customer.postcode,
-                  adm1: customer.adm1,
-                  date: date                   
+                  adm1: customer.adm1             
                 };
                 this.interestedCustomers.push(interestedCustomer);
               });

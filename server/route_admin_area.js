@@ -1016,7 +1016,7 @@ module.exports = {
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         var sql =
-          "SELECT * from customers,clicks where (clicks.campaignId='" +
+          "SELECT customers.*,clicks.*, clicks.updatedAt As clickDate from customers,clicks where (clicks.campaignId='" +
           messageCampaign.id +
           "' AND " +
           "clicks.customerId=customers.id);";
