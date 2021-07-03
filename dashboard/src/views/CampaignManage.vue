@@ -209,22 +209,24 @@
               <v-textarea
                 name="input-7-1"
                 filled
-                label="Messaggio"
+                label="Messaggio (max 140 caratteri)"
                 auto-grow
-                counter
-                v-model="messageText"
+                counter="140"
+                v-model="messageText"                
               ></v-textarea>
               <v-text-field
                 name="input-7-1"
                 filled
-                label="Messaggio prima pagina web"
+                label="Messaggio prima pagina web  (max 2000 caratteri)"
                 v-model="messagePage1"
+                counter="2000"
               ></v-text-field>
               <v-text-field
                 name="input-7-1"
                 filled
-                label="Messaggio seconda pagina web"
+                label="Messaggio seconda pagina (max 2000 caratteri)"
                 v-model="messagePage2"
+                counter="2000"
               ></v-text-field>
             </v-col>
           </v-row>
