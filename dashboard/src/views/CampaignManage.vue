@@ -249,6 +249,38 @@
               <v-img height="200" width="200" :src="urlImageFile"></v-img>
             </v-col>
           </v-row>
+          <v-row>
+            <v-col>
+              <p>Sezione per chiamate audio</p>
+            </v-col>
+          </v-row>
+          <v-row>            
+            <v-col>
+              <v-file-input
+                v-on:change="loadAudio1"
+                v-model="fileAudio1"                
+                show-size
+                label="Audio chiamata in apertura"
+              ></v-file-input>
+            </v-col>            
+            <v-col>
+              <v-file-input
+                v-on:change="loadAudio2"
+                v-model="fileAudio2"
+                truncate-length="15"
+                show-size
+                label="Audio chiamata intermedio (dopo 1)"
+              ></v-file-input>
+            </v-col>
+            <v-col>
+              <v-file-input
+                v-on:change="loadAudio3"
+                v-model="fileAudio3"
+                show-size
+                label="Audio chiamata finale (dopo 2)"
+              ></v-file-input>
+            </v-col>            
+          </v-row>          
         </v-tab-item>
 
         <v-tab href="#uploadcontacts">
@@ -475,6 +507,9 @@ export default {
       tab: null,
       fileCSV: [],
       fileImage: [],
+      fileAudio1: "",
+      fileAudio2: "",
+      fileAudio3: "",
       bSaveCampaignButtonDisable: true,
       dialogImportContacts: false,
       headersCustomers: [
@@ -988,6 +1023,32 @@ export default {
             this.urlImageFile =
               request.data.urlImageCampaign + "?" + new Date().getTime();
             console.log(this.urlImageFile);
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      }
+    },
+    loadAudio1(){this.loadAudio(this.fileAudio1, "1");},
+    loadAudio2(){this.loadAudio(this.fileAudio2, "2");},
+    loadAudio3(){this.loadAudio(this.fileAudio3, "3");},
+    loadAudio(file, type) {
+      if (this.selectedCampaign.id > 0) {
+        this.dialogImportContacts = true;
+        this.bSaveCampaignButtonDisable = true;
+        var formData = new FormData();
+        formData.append("type", type);
+        formData.append("audio_data", file);
+        formData.append("idCampaign", this.selectedCampaign.id);
+        console.log("Uploading audio ...");
+        this.axios
+          .post("/upload/audio", formData, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          })
+          .then((request) => {
+            this.dialogImportContacts = false;            
           })
           .catch((error) => {
             console.log(error);

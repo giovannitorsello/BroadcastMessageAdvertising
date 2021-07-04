@@ -1072,6 +1072,42 @@ module.exports = {
       }
     );
     //////////////////////////Upload files/////////////////////
+    app.post("/upload/audio", function (req, res) {
+      const form = new formidable.IncomingForm();
+      form.parse(req, function (err, fields, files) {
+        if (!files.audio_data) {
+          res.send({
+            status: "Error",
+            msg: "File not found",
+          });
+        }
+        var oldPath = files.audio_data.path;
+        var idCampaign = fields.idCampaign;
+        var type = fields.type;
+        if (!idCampaign || idCampaign <= 0) {
+          res.send({
+            status: "Error",
+            msg: "Error in campaign id",
+          });
+          return;
+        }
+
+        var newPath =
+          path.join(__dirname, "templates") + "/audio/" + idCampaign+"_"+type + ".wav";
+        var rawData = fs.readFileSync(oldPath);
+        console.log("Received file:  " + oldPath);
+        console.log("Upload file:  " + newPath);
+
+        fs.writeFile(newPath, rawData, (err) => {
+          if (err) console.log(err);
+          res.send({
+            status: "OK",
+            msg: "File loaded"
+          });      
+        });
+      });
+    });
+
     app.post("/upload/image", function (req, res) {
       const form = new formidable.IncomingForm();
       form.parse(req, function (err, fields, files) {
