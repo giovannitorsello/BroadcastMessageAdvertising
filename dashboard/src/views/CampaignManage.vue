@@ -495,7 +495,7 @@ export default {
         { text: "ID", value: "id" },
         { text: "Conferma", value: "confirmed" },
         { text: "Data", value: "clickDate" },
-        { text: "Indirzzo IP", value: "ipAddress" },
+        { text: "Indirizzo IP", value: "ipAddress" },
         { text: "Nome", value: "firstname" },
         { text: "Cognome", value: "lastname" },
         { text: "Telefono", value: "mobilephone" },

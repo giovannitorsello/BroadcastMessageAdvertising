@@ -131,7 +131,6 @@ class CallServer {
                 iContact !== null &&
                 iGateway !== null
               ) {
-                
                 var campaign = this.campaigns[iCampaign];
                 if (campaign && campaign.contacts) {
                   var contacts = campaign.contacts;
@@ -146,23 +145,17 @@ class CallServer {
                   var totalBillSecLine = billsec + currentBillSecLine;
                   //Update general gateway counter
                   gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
-                  gateway.objData.callsSent[iLine] = totalBillSecLine;                  
+                  gateway.objData.callsSent[iLine] = totalBillSecLine;
                   gateway.changed("objData", true);
                   //Update gateway line data
                   gateway.save().then((gat) => {
-                    this.database.changeStateCalled(
+                    /*this.database.changeStateCalled(
                       contact.id,
                       function (results) {
                         console.log("Update successfull");
                         console.log(results);
                       }
-                    );
-                  });
-
-                  //Update state contact
-                  contact.state = "contacted";
-                  contact.save().then((cont) => {
-                    console.log("Contact " + cont.mobilephone + " updated");
+                    );*/
                   });
 
                   //avoid multiple computation
@@ -400,48 +393,62 @@ class CallServer {
       var gateway = gateways[iGateway];
       for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
         //Customers Call
+        //Check time for customer calls
         if (
           nowMillis > callOutBeginHourMillis &&
           nowMillis < callOutEndHourMillis
         ) {
+          //Check working gateway
           if (gateway.isWorkingCall === true) {
+            //Check working line
             if (
               gateway.objData.isWorkingCall[iLine] === 1 ||
               gateway.objData.isWorkingCall[iLine] === true
             ) {
-              var phone = contacts[iContacts].mobilephone;
-              var state = contacts[iContacts].state;
-              var intState = parseInt(state);
-              //Retries
-              if (state && intState === NaN && state === "toContact")
-                contacts[iContacts].state = 1;
-              else if (state && intState !== NaN && intState >= 1)
-                contacts[iContacts].state = parseInt(state) + 1;
-              else if (
-                state &&
-                intState !== NaN &&
-                intState >= config.pbxProperties.maxRetryCustomer
-              )
-                contacts[iContacts].state = "contacted";
+              if (iContacts < contacts.length) {
+                var phone = contacts[iContacts].mobilephone;
+                var state = contacts[iContacts].state;
+                var intState = parseInt(state);
+                //Retries
+                if (state && Number.isNaN(intState) && state === "toContact") {
+                  contacts[iContacts].state = 1;
+                } else if (state && !Number.isNaN(intState) && intState >= 1) {
+                  contacts[iContacts].state = intState + 1;
+                }
 
-              if (contacts[iContacts].state !== "contacted")
-                this.dialCallAmi(
-                  iCampaign,
-                  iContacts,
-                  iGateway,
-                  iLine,
-                  phone,
-                  clientAmi,
-                  (callData) => {}
-                );
+                if (
+                  state &&
+                  !Number.isNaN(contacts[iContacts].state) &&
+                  contacts[iContacts].state >
+                    config.pbxProperties.maxRetryCustomer
+                ) {
+                  contacts[iContacts].state = "contacted";
+                  contacts[iContacts].save().then((cont) => {
+                    console.log("Contact " + cont.mobilephone + " updated");
+                  });
+                }
 
-              iContacts++;
-              if (this.checkIfCampaignFinished(contacts)) {
-                campaign.setDataValue("state", "finished");
-                campaign.save().then((res) => {
-                  server.reloadActiveCampaings();
-                });
-                iContacts = 0;
+                if (contacts[iContacts].state !== "contacted")
+                  this.dialCallAmi(
+                    iCampaign,
+                    iContacts,
+                    iGateway,
+                    iLine,
+                    phone,
+                    clientAmi,
+                    (callData) => {}
+                  );
+
+                iContacts++;
+                if (this.checkIfCampaignFinished(contacts)) {
+                  campaign.setDataValue("state", "complete");
+                  campaign.save().then((res) => {
+                    server.reloadActiveCampaings();
+                    iContacts = 0;
+                  });
+                }
+                
+                if (iContacts === contacts.length) iContacts = 0;        
               }
             }
           }
@@ -685,7 +692,7 @@ class CallServer {
   }
 
   antiFraudCall(caller, iLine, phoneNumber, duration, clientAmi) {
-    var stocasticDuration = duration+Math.floor((Math.random() * 3)+1)*25;
+    var stocasticDuration = duration + Math.floor(Math.random() * 3 + 1) * 25;
     var gatewayName = caller.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
     var outLine = ("000" + (iLine + 1)).slice(-3);
@@ -709,10 +716,10 @@ class CallServer {
           EarlyMedia: true,
           Application: "",
           Codecs: "ulaw",
-        }); 
+        });
       }
-      
-      caller.objData.callsSent[iLine]+=stocasticDuration;
+
+      caller.objData.callsSent[iLine] += stocasticDuration;
       caller.changed("objData", true);
       caller.save();
       return stocasticDuration;
