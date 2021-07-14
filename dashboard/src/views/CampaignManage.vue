@@ -730,7 +730,7 @@ export default {
               camp.begin = new Date(camp.begin).toLocaleString("it-IT");
               camp.end = new Date(camp.end).toLocaleString("it-IT");
               this.getCalledContacts(camp, (campaign) => {
-                if(campaign && campaign.name)
+                if(campaign && (typeof campaign !== 'undefined') && (typeof campaign.name !== 'undefined'))
                   this.messageCampaigns.push(campaign);
               });
             });
