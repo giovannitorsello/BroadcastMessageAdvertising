@@ -490,7 +490,7 @@ export default {
       selectedState: "",
       selectedProvince: "",
       selectedCountry: "",
-      selectedCampaign: { name: "", contacts: [], message: {} },
+      selectedCampaign: { id: 0, name: "", contacts: [], message: {} },
       ncontacts: 0,
       messageCampaigns: [],
       contacts: [],
@@ -663,13 +663,23 @@ export default {
     insertMessageCampaign() {
       console.log("Message service");
       console.log(this.selectedSenderService.id);
+      if(!this.selectedSenderService || 
+         typeof this.selectedSenderService === 'undefined' ||
+         typeof this.selectedSenderService.id === 'undefined' ||
+         this.selectedSenderService.id===null || 
+         this.selectedSenderService.id==='') {
+        alert("Scegli il tipo di servizio di invio");
+        return;
+      }
+      
       this.contacts = [];
+      if(this.selectedSenderService && this.selectedSenderService.id>=0)
       this.axios
         .post("/adminarea/messageCampaign/insert", {
           messageCampaign: {
             name: this.campaignName,
             ncontacts: this.contacts.length,
-            message: this.messageText.replace(/\n/g, " "), //useful to remove carriage return
+            message: this.messageText.replace(/\n/g, " "), //used to remove carriage return
             messagePage1: this.messagePage1,
             messagePage2: this.messagePage2,
             senderService: this.selectedSenderService.id,
@@ -729,7 +739,7 @@ export default {
             request.data.messageCampaigns.forEach((camp) => {
               camp.begin = new Date(camp.begin).toLocaleString("it-IT");
               camp.end = new Date(camp.end).toLocaleString("it-IT");
-              this.getCalledContacts(camp, (campaign) => {
+              this.getCalledContacts(camp, (campaign) => {                
                 if(campaign && (typeof campaign !== 'undefined') && (typeof campaign.name !== 'undefined'))
                   this.messageCampaigns.push(campaign);
               });

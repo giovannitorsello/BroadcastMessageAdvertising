@@ -1,2 +1,2 @@
 Id;NomeCampagna;Messaggio;Inizio;Fine;Stato;NumeroContatti;NumeroCompletati
-1;TestCampagnaTelefonica;Testo di prova;24/5/2021, 16:57:36;24/5/2021, 17:04:24;disabled;7;7
+1;TestCampagnaTelefonica;Testo di prova;Mon May 24 2021 16:57:36 GMT+0200 (Ora legale dell’Europa centrale);Mon May 24 2021 17:04:24 GMT+0200 (Ora legale dell’Europa centrale);disabled;1;0
