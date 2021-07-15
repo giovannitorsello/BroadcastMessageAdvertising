@@ -635,27 +635,29 @@ module.exports = {
     /////////////////////Internet gateway ////////////////////
     app.post("/adminarea/internetGateway/getall", async function (req, res) {
       if (config.senderServices) {
-        var internetGateways=[];
+        var internetGateways = [];
         for (var i = 1; i < config.senderServices.length; i++) {
-          let service=Object.assign({}, config.senderServices[i]);
-          var servicePlugin =service.plugin;
+          let service = Object.assign({}, config.senderServices[i]);
+          var servicePlugin = service.plugin;
           var pluginFile = "./internetGateways/" + servicePlugin;
           var plugin = require(pluginFile);
-          
+
           await plugin.getCreditEconomic((result) => {
-            if(result.state==="OK") {
-              service.credit=result.credit;
+            if (result.state === "OK") {
+              service.credit = result.credit;
               internetGateways.push(service);
 
-              if(i===config.senderServices.length || i===config.senderServices.length-1)
-              res.send({
-                state: "OK",
-                msg: "Internet gateways found",
-                internetGateways: internetGateways,
-              });
+              if (
+                i === config.senderServices.length ||
+                i === config.senderServices.length - 1
+              )
+                res.send({
+                  state: "OK",
+                  msg: "Internet gateways found",
+                  internetGateways: internetGateways,
+                });
             }
           });
-          
         }
       } else
         res.send({
@@ -727,25 +729,27 @@ module.exports = {
         });
     });
 
-    app.post(
-      "/adminarea/messageCampaign/startCallContacts",
+    app.post("/adminarea/messageCampaign/startCallContacts",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.messageCampaign
           .findOne({ where: { id: messageCampaign.id } })
           .then(function (obj) {
             if (obj !== null) {
-              obj.setDataValue("state", "calling");
-              obj.save().then(function (campNew) {
-                if (campNew !== null) {
-                  callServer.reloadActiveCampaings();
-                } else {
-                  res.send({
-                    status: "error",
-                    msg: "Message campaign start error",
-                    messageCampaign: campNew,
-                  });
-                }
+              //Audio file conversion
+              utility.setAudioForAsterisk(obj, function () {
+                obj.setDataValue("state", "calling");
+                obj.save().then(function (campNew) {
+                  if (campNew !== null) {
+                    callServer.reloadActiveCampaings();
+                  } else {
+                    res.send({
+                      status: "error",
+                      msg: "Message campaign start error",
+                      messageCampaign: campNew,
+                    });
+                  }
+                });
               });
             }
           });
@@ -1093,7 +1097,12 @@ module.exports = {
         }
 
         var newPath =
-          path.join(__dirname, "templates") + "/audio/" + idCampaign+"_"+type + ".wav";
+          path.join(__dirname, "templates") +
+          "/audio/" +
+          idCampaign +
+          "_" +
+          type +
+          ".wav";
         var rawData = fs.readFileSync(oldPath);
         console.log("Received file:  " + oldPath);
         console.log("Upload file:  " + newPath);
@@ -1102,8 +1111,8 @@ module.exports = {
           if (err) console.log(err);
           res.send({
             status: "OK",
-            msg: "File loaded"
-          });      
+            msg: "File loaded",
+          });
         });
       });
     });

@@ -8,6 +8,9 @@ const es = require("event-stream");
 const fs = require("fs");
 const uuid = require("uuid");
 var moment = require("moment");
+const path = require('path');
+const spawn = require('child_process').spawn;
+
 const couchdb = require("./couchdb.js");
 const database = require("./database.js");
 
@@ -390,4 +393,19 @@ module.exports = {
       });
     });
   },
+  setAudioForAsterisk(campaign, callback) {
+    var fileIn1=path.join(__dirname, "templates") + "/audio/" + idCampaign+"_1.wav";
+    var fileIn2=path.join(__dirname, "templates") + "/audio/" + idCampaign+"_2.wav";
+    var fileIn3=path.join(__dirname, "templates") + "/audio/" + idCampaign+"_3.wav";
+
+    var fileOut1=config.pbxProperties.audioPath+"/"+config.pbxProperties.audioFilename1;
+    var fileOut2=config.pbxProperties.audioPath+"/"+config.pbxProperties.audioFilename2;
+    var fileOut3=config.pbxProperties.audioPath+"/"+config.pbxProperties.audioFilename3;
+    //G722 conversion
+    //ffmpeg -i vm-intro.wav -ar 16000 -acodec g722 vm-intro.g722
+    spawn("ffmpeg", ["-y","-i",fileIn1, "-ar 16000", "-acodec g722", fileOut1]);
+    spawn("ffmpeg", ["-y","-i",fileIn2, "-ar 16000", "-acodec g722", fileOut2]);
+    spawn("ffmpeg", ["-y","-i",fileIn3, "-ar 16000", "-acodec g722", fileOut3]);
+    callback();
+  }
 };
