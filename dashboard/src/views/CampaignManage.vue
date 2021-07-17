@@ -260,7 +260,7 @@
                 v-on:change="loadAudio1"
                 v-model="fileAudio1"                
                 show-size
-                accept=".wav"
+                accept="audio/wav"
                 label="Audio chiamata in apertura"
               ></v-file-input>
             </v-col>            
@@ -270,7 +270,7 @@
                 v-model="fileAudio2"
                 truncate-length="15"
                 show-size
-                accept=".wav"
+                accept="audio/wav"
                 label="Audio chiamata intermedio (dopo 1)"
               ></v-file-input>
             </v-col>
@@ -279,7 +279,7 @@
                 v-on:change="loadAudio3"
                 v-model="fileAudio3"
                 show-size
-                accept=".wav"
+                accept="audio/wav"
                 label="Audio chiamata finale (dopo 2)"
               ></v-file-input>
             </v-col>            
