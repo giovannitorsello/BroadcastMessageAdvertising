@@ -413,6 +413,8 @@ module.exports = {
     var cmdLine=config.pbxProperties.cmdlineConverter;
     cmdLine=cmdLine.replace('%FileIn%',fileIn);
     cmdLine=cmdLine.replace('%FileOut%',fileOut);
+    console.log("Launch coneverter...");
+    console.log(cmdLine);
     child_process.exec(cmdLine, (error, stdout, stderr) => {
       if (error) {
         console.log(error.stack);
