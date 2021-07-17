@@ -422,9 +422,11 @@ module.exports = {
         console.log('Signal received: '+error.signal);
         callback({status: 'Error', msg: error.stack});
       }
-      console.log('Child Process STDOUT: '+stdout);
-      console.log('Child Process STDERR: '+stderr);
-      callback({status: 'OK', msg: stdout});
+      else {
+        console.log('Child Process STDOUT: '+stdout);
+        console.log('Child Process STDERR: '+stderr);
+        callback({status: 'OK', msg: stdout});
+      }
     });    
   }
 };
