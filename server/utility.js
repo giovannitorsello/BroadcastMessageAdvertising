@@ -6,10 +6,11 @@ const createCsvWriter = require("csv-writer").createObjectCsvWriter;
 const admZip = require("adm-zip");
 const es = require("event-stream");
 const fs = require("fs");
+var textEncoding = require('text-encoding');  
 const uuid = require("uuid");
 var moment = require("moment");
 const path = require('path');
-const spawn = require('child_process').spawn;
+const child_process = require('child_process');
 
 const couchdb = require("./couchdb.js");
 const database = require("./database.js");
@@ -407,5 +408,21 @@ module.exports = {
     spawn("ffmpeg", ["-y","-i",fileIn2, "-ar 16000", "-acodec g722", fileOut2]);
     spawn("ffmpeg", ["-y","-i",fileIn3, "-ar 16000", "-acodec g722", fileOut3]);
     callback();
+  },
+  convertAudioForAsterisk(fileIn, fileOut, callback) {
+    var cmdLine=config.pbxProperties.cmdlineConverter;
+    cmdLine=cmdLine.replace('%FileIn%',fileIn);
+    cmdLine=cmdLine.replace('%FileOut%',fileOut);
+    child_process.exec(cmdLine, (error, stdout, stderr) => {
+      if (error) {
+        console.log(error.stack);
+        console.log('Error code: '+error.code);
+        console.log('Signal received: '+error.signal);
+        callback({status: 'Error', msg: error.stack});
+      }
+      console.log('Child Process STDOUT: '+stdout);
+      console.log('Child Process STDERR: '+stderr);
+      callback({status: 'OK', msg: stdout});
+    });    
   }
 };

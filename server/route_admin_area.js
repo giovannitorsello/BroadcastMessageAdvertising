@@ -737,7 +737,7 @@ module.exports = {
           .then(function (obj) {
             if (obj !== null) {
               //Audio file conversion
-              utility.setAudioForAsterisk(obj, function () {
+              //utility.setAudioForAsterisk(obj, function () {
                 obj.setDataValue("state", "calling");
                 obj.save().then(function (campNew) {
                   if (campNew !== null) {
@@ -749,7 +749,7 @@ module.exports = {
                       messageCampaign: campNew,
                     });
                   }
-                });
+              //  });
               });
             }
           });
@@ -1101,18 +1101,29 @@ module.exports = {
           "/audio/" +
           idCampaign +
           "_" +
-          type +
-          ".wav";
+          type;
         var rawData = fs.readFileSync(oldPath);
         console.log("Received file:  " + oldPath);
         console.log("Upload file:  " + newPath);
 
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
-          res.send({
-            status: "OK",
-            msg: "File loaded",
-          });
+          if (!err){
+            var fileIn=path.join(__dirname, "templates") + "/audio/" + idCampaign+"_"+type;
+            var fileOut=config.pbxProperties.audioPath+"/"+config.pbxProperties.audioFilenames[type];
+            utility.convertAudioForAsterisk(fileIn,fileOut, (result) => {
+              if(result.status==='OK')
+              res.send({
+                status: "OK",
+                msg: "File loaded and conversion OK",
+              });
+              else
+              res.send({
+                status: "error",
+                msg: "Error in conversion file.",
+              });
+            })
+          }          
         });
       });
     });

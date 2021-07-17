@@ -1059,7 +1059,12 @@ export default {
             },
           })
           .then((request) => {
-            this.dialogImportContacts = false;            
+            this.dialogImportContacts = false;
+            console.log(request);
+            if(request.data.status==='OK')
+              alert("File audio convertito correttamente");
+            else
+              alert("Errore inserimento file audio. Supportato solo il formato WAV");
           })
           .catch((error) => {
             console.log(error);

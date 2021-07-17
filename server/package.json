@@ -40,6 +40,7 @@
     "sequelize": "^6.6.2",
     "sip": "^0.0.4",
     "soap": "^0.39.0",
+    "text-encoding": "^0.7.0",
     "util": "^0.10.4",
     "uuid": "^8.3.2",
     "worker-farm": "^1.7.0"
