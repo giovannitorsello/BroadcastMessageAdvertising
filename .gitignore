@@ -112,6 +112,11 @@ antifraudMessages.json
 #datafile
 *.csv
 
+#audiofile
+*.wav
+*.mp3
+*.mp4
+
 #cache & upload & other
 cache/
 uploads/
