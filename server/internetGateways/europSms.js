@@ -56,11 +56,11 @@ module.exports = {
     };
     soap.createClient(url, function (err, client) {
       client.getWsSaldo(args, function (err, result) {
-        if(!err && result && result.return && result.return.$value) {
+        if(!err && result && result.return) {
           callback({state: 'OK', msg: 'success', credit: result.return.$value})
         }
         else
-        callback({state: 'error', msg: 'error', error: err});
+          callback({state: 'error', msg: 'error', error: err});
       });
     });
   },
