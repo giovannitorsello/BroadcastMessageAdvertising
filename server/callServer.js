@@ -77,7 +77,7 @@ class CallServer {
               var contact = contacts[iContact];
               idCampaign = campaign.id;
               idCustomer = contact.id;
-              this.insertClick(idCampaign, idCustomer, event.Digit);
+              this.insertClick(contact, event.Digit);
             }
           }
         }
@@ -788,6 +788,7 @@ class CallServer {
     if (digit === "1") confirm = false;
     if (digit === "2") confirm = true;
 
+    //Single click
     if (!confirm)
       this.database.entities.click
         .findOne({
