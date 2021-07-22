@@ -59,8 +59,8 @@ class CallServer {
             var iCampaign = uniqueobj.iCampaign;
             var iContact = uniqueobj.iContact;
 
-            // Manage call from customer
-            if ((!iCampaign || !iContact) && uniqueobj.phone) {
+            // Manage call from customer phone number
+            if (uniqueobj.phone) {
               var phoneNumber = uniqueobj.phone;
               var indexplus = phoneNumber.indexOf("+");
               if (indexplus != -1) phoneNumber = phoneNumber.substring(3);
