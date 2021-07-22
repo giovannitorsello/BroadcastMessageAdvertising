@@ -780,10 +780,10 @@ class CallServer {
     var confirm = false;
     var idCampaign = cust.campaignId;
     var idCustomer = cust.id;
-    console.log("Click vocal campaign: "+idCampaign);
-    console.log("Click vocal customer: "+idCustomer);
-    console.log("Click vocal digit: "+digit);
-    
+    console.log("Click vocal campaign: " + idCampaign);
+    console.log("Click vocal customer: " + idCustomer);
+    console.log("Click vocal digit: " + digit);
+
     //Single click
     if (digit === "1") confirm = false;
     if (digit === "2") confirm = true;
@@ -795,13 +795,19 @@ class CallServer {
         })
         .then((clickFound) => {
           if (!clickFound)
-            this.database.entities.click.create({
-              campaignId: idCampaign,
-              customerId: idCustomer,
-              confirm: confirm,
-            }).then((clickCreated) => {
-              console.log("Single click inserted "+idCampaign+" "+idCustomer);
-            });
+            this.database.entities.click
+              .create({
+                campaignId: idCampaign,
+                customerId: idCustomer,
+                confirm: confirm,
+              })
+              .then((clickCreated) => {
+                cust.state = "contacted";
+                cust.save().then((c) => {
+                  console.log("Single click inserted " + idCampaign + " " + idCustomer);
+                  console.log("Saved customer: " + c.id);
+                });                
+              });
         });
 
     //Double click
@@ -810,16 +816,16 @@ class CallServer {
         .findOne({
           where: { campaignId: idCampaign, customerId: idCustomer },
         })
-        .then((clickFound) => {
-          console.log("Double click inserted "+idCampaign+" "+idCustomer);
+        .then((clickFound) => {          
           clickFound.confirm = true;
-          clickFound.save();
+          clickFound.save().then((clickSaved) => {
+            cust.state = "contacted";
+            cust.save().then((c) => {
+              console.log("Double click inserted " + idCampaign + " " + idCustomer);
+              console.log("Saved customer: " + c.id);
+            });
+          });
         });
-
-    cust.state = "contacted";
-    cust.save().then((c) => {
-      console.log("Saved customer: " + c.id);
-    });
   }
 }
 
