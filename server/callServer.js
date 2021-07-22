@@ -64,20 +64,13 @@ class CallServer {
               var phoneNumber = uniqueobj.phone;
               var indexplus = phoneNumber.indexOf("+");
               if (indexplus != -1) phoneNumber = phoneNumber.substring(3);
-              this.database.entities.customer
-                .findOne({ where: { mobilephone: phoneNumber } })
-                .then((cust) => {
-                  this.insertClick(cust, event.Digit);
-                });
-            }
-            // Manage answer from campaign
-            else if (iCampaign && iContact) {
-              var campaign = this.campaigns[iCampaign];
-              var contacts = campaign.contacts;
-              var contact = contacts[iContact];
-              idCampaign = campaign.id;
-              idCustomer = contact.id;
-              this.insertClick(contact, event.Digit);
+              this.findActiveCustomerFromPhoneNumber(phoneNumber, (result) => {
+                this.insertClick(
+                  result.idCampaign,
+                  result.idCustomer,
+                  event.Digit
+                );
+              });
             }
           }
         }
@@ -776,14 +769,22 @@ class CallServer {
     return selGateway;
   }
 
-  insertClick(cust, digit) {
-    var confirm = false;
-    var idCampaign = cust.campaignId;
-    var idCustomer = cust.id;
+  findActiveCustomerFromPhoneNumber(phonenumber, callback) {
+    var query =
+      "select messagecampaigns.id as idCampaign, customers.id as idCustomer from messagecampaigns inner join customers where messagecampaigns.state<>'disabled' and customers.campaignId=messagecampaigns.id and mobilephone='" +
+      phonenumber +
+      "' LIMIT 1;";
+    this.database.execute_raw_query(query, (result) => {
+      if (result.length === 1) callback(result[0]);
+      else callback({ idCampaign: 0, idCustomer: 0 });
+    });
+  }
+
+  insertClick(idCampaign, idCustomer, digit) {
     console.log("Click vocal campaign: " + idCampaign);
     console.log("Click vocal customer: " + idCustomer);
     console.log("Click vocal digit: " + digit);
-
+    var confirm = false;
     //Single click
     if (digit === "1") confirm = false;
     if (digit === "2") confirm = true;
@@ -803,11 +804,9 @@ class CallServer {
                 confirm: confirm,
               })
               .then((clickCreated) => {
-                cust.state = "contacted";
-                cust.save().then((c) => {
-                  console.log("Single click inserted " + idCampaign + " " + idCustomer);
-                  console.log("Saved customer: " + c.id);
-                });                
+                console.log(
+                  "Single click inserted " + idCampaign + " " + idCustomer
+                );
               });
         });
 
@@ -817,16 +816,22 @@ class CallServer {
         .findOne({
           where: { campaignId: idCampaign, customerId: idCustomer },
         })
-        .then((clickFound) => {          
+        .then((clickFound) => {
           clickFound.confirm = true;
           clickFound.save().then((clickSaved) => {
-            cust.state = "contacted";
-            cust.save().then((c) => {
-              console.log("Double click inserted " + idCampaign + " " + idCustomer);
-              console.log("Saved customer: " + c.id);
-            });
+            console.log(
+              "Double click inserted " + idCampaign + " " + idCustomer
+            );
           });
         });
+
+    //Mark customer as contacted
+    this.database.entities.customer.findOne({ where: { id: idCustomer } }).then((cust) => {
+      cust.state = "contacted";
+      cust.save().then((c) => {
+        console.log("Saved customer: " + c.id);
+      });
+    });
   }
 }
 
