@@ -780,7 +780,10 @@ class CallServer {
     var confirm = false;
     var idCampaign = cust.campaignId;
     var idCustomer = cust.id;
-
+    console.log("Click vocal campaign: "+idCampaign);
+    console.log("Click vocal customer: "+idCampaign);
+    console.log("Click vocal digit: "+digit);
+    
     //Single click
     if (digit === "1") confirm = false;
     if (digit === "2") confirm = true;
