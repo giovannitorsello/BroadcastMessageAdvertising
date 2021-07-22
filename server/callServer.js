@@ -70,6 +70,10 @@ class CallServer {
                   idCampaign = cust.campaignId;
                   idCustomer = cust.id;
                   this.insertClick(idCampaign, idCustomer, event.Digit);
+                  cust.state="contacted";
+                  cust.save().then((c) => {
+                    console.log("Saved customer: "+c.id);
+                  });;
                 });
             }
             // Manage answer from campaign
@@ -809,5 +813,5 @@ module.exports = {
   callServerIstance: {},
   startServer(app, database) {
     this.callServerIstance = new CallServer(app, database);
-  },
+  }
 };
