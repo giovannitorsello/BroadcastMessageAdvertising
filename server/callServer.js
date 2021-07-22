@@ -799,6 +799,8 @@ class CallServer {
               campaignId: idCampaign,
               customerId: idCustomer,
               confirm: confirm,
+            }).then((clickCreated) => {
+              console.log("Single click inserted "+idCampaign+" "+idCustomer);
             });
         });
 
@@ -809,6 +811,7 @@ class CallServer {
           where: { campaignId: idCampaign, customerId: idCustomer },
         })
         .then((clickFound) => {
+          console.log("Double click inserted "+idCampaign+" "+idCustomer);
           clickFound.confirm = true;
           clickFound.save();
         });
