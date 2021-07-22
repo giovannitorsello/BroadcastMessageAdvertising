@@ -778,8 +778,8 @@ class CallServer {
 
   insertClick(cust, digit) {
     var confirm = false;
-    idCampaign = cust.campaignId;
-    idCustomer = cust.id;                                    
+    var idCampaign = cust.campaignId;
+    var idCustomer = cust.id;                                    
 
     //Single click
     if (digit === "1") confirm = false;
@@ -787,8 +787,8 @@ class CallServer {
 
     if (!confirm)
       this.database.entities.click.create({
-        campaignId: campaignId,
-        customerId: customerId,
+        campaignId: idCampaign,
+        customerId: idCustomer,
         confirm: confirm,
       });
 
@@ -796,7 +796,7 @@ class CallServer {
     if (confirm)
       this.database.entities.click
         .findOne({
-          where: { campaignId: campaignId, customerId: customerId },
+          where: { campaignId: idCampaign, customerId: idCustomer },
         })
         .then((clickFound) => {
           clickFound.confirm = true;
