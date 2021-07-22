@@ -68,11 +68,11 @@ class CallServer {
                 .findOne({ where: { mobilephone: phoneNumber } })
                 .then((cust) => {
                   idCampaign = cust.campaignId;
-                  idCustomer = cust.id;
-                  this.insertClick(idCampaign, idCustomer, event.Digit);
+                  idCustomer = cust.id;                  
                   cust.state="contacted";
                   cust.save().then((c) => {
                     console.log("Saved customer: "+c.id);
+                    this.insertClick(idCampaign, idCustomer, event.Digit);
                   });;
                 });
             }
