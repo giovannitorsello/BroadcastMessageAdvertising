@@ -781,7 +781,7 @@ class CallServer {
     var idCampaign = cust.campaignId;
     var idCustomer = cust.id;
     console.log("Click vocal campaign: "+idCampaign);
-    console.log("Click vocal customer: "+idCampaign);
+    console.log("Click vocal customer: "+idCustomer);
     console.log("Click vocal digit: "+digit);
     
     //Single click
