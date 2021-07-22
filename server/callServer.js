@@ -67,13 +67,7 @@ class CallServer {
               this.database.entities.customer
                 .findOne({ where: { mobilephone: phoneNumber } })
                 .then((cust) => {
-                  idCampaign = cust.campaignId;
-                  idCustomer = cust.id;                  
-                  cust.state="contacted";
-                  cust.save().then((c) => {
-                    console.log("Saved customer: "+c.id);
-                    this.insertClick(idCampaign, idCustomer, event.Digit);
-                  });;
+                  this.insertClick(cust, event.Digit);                  
                 });
             }
             // Manage answer from campaign
@@ -782,8 +776,10 @@ class CallServer {
     return selGateway;
   }
 
-  insertClick(campaignId, customerId, digit) {
+  insertClick(cust, digit) {
     var confirm = false;
+    idCampaign = cust.campaignId;
+    idCustomer = cust.id;                                    
 
     //Single click
     if (digit === "1") confirm = false;
@@ -806,6 +802,11 @@ class CallServer {
           clickFound.confirm = true;
           clickFound.save();
         });
+
+      cust.state="contacted";
+      cust.save().then((c) => {
+        console.log("Saved customer: "+c.id);                    
+      });
   }
 }
 
