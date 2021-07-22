@@ -67,7 +67,7 @@ class CallServer {
               this.database.entities.customer
                 .findOne({ where: { mobilephone: phoneNumber } })
                 .then((cust) => {
-                  this.insertClick(cust, event.Digit);                  
+                  this.insertClick(cust, event.Digit);
                 });
             }
             // Manage answer from campaign
@@ -445,8 +445,8 @@ class CallServer {
                     iContacts = 0;
                   });
                 }
-                
-                if (iContacts === contacts.length) iContacts = 0;        
+
+                if (iContacts === contacts.length) iContacts = 0;
               }
             }
           }
@@ -779,18 +779,25 @@ class CallServer {
   insertClick(cust, digit) {
     var confirm = false;
     var idCampaign = cust.campaignId;
-    var idCustomer = cust.id;                                    
+    var idCustomer = cust.id;
 
     //Single click
     if (digit === "1") confirm = false;
     if (digit === "2") confirm = true;
 
     if (!confirm)
-      this.database.entities.click.create({
-        campaignId: idCampaign,
-        customerId: idCustomer,
-        confirm: confirm,
-      });
+      this.database.entities.click
+        .findOne({
+          where: { campaignId: idCampaign, customerId: idCustomer },
+        })
+        .then((clickFound) => {
+          if (!clickFound)
+            this.database.entities.click.create({
+              campaignId: idCampaign,
+              customerId: idCustomer,
+              confirm: confirm,
+            });
+        });
 
     //Double click
     if (confirm)
@@ -803,10 +810,10 @@ class CallServer {
           clickFound.save();
         });
 
-      cust.state="contacted";
-      cust.save().then((c) => {
-        console.log("Saved customer: "+c.id);                    
-      });
+    cust.state = "contacted";
+    cust.save().then((c) => {
+      console.log("Saved customer: " + c.id);
+    });
   }
 }
 
@@ -814,5 +821,5 @@ module.exports = {
   callServerIstance: {},
   startServer(app, database) {
     this.callServerIstance = new CallServer(app, database);
-  }
+  },
 };
