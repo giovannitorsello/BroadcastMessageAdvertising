@@ -112,6 +112,8 @@
           <v-row>
             <v-col>
               <v-data-table
+                sort-by.sync="id"
+                sort-desc.sync="sortDesc"
                 :headers="headerCampaigns"
                 :items="messageCampaigns"
                 :items-per-page="30"
