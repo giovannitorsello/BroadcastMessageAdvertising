@@ -853,7 +853,8 @@ module.exports = {
     });
 
     app.post("/adminarea/messageCampaign/getAll", function (req, res) {
-      database.entities.messageCampaign.findAll().then(function (results) {
+      database.entities.messageCampaign.findAll(
+        {order: [['id', 'DESC']]}).then(function (results) {
         if (results)
           res.send({
             status: "OK",
