@@ -140,13 +140,7 @@ class CallServer {
                   gateway.changed("objData", true);
                   //Update gateway line data
                   gateway.save().then((gat) => {
-                    /*this.database.changeStateCalled(
-                      contact.id,
-                      function (results) {
-                        console.log("Update successfull");
-                        console.log(results);
-                      }
-                    );*/
+                    console.log("Gateway data updated "+gateway.name);
                   });
 
                   //avoid multiple computation
@@ -413,13 +407,13 @@ class CallServer {
                   contacts[iContacts].state >
                     config.pbxProperties.maxRetryCustomer
                 ) {
-                  contacts[iContacts].state = "contacted";
+                  contacts[iContacts].state = "called";
                   contacts[iContacts].save().then((cont) => {
                     console.log("Contact " + cont.mobilephone + " updated");
                   });
                 }
 
-                if (contacts[iContacts].state !== "contacted")
+                if (contacts[iContacts].state !== "called")
                   this.dialCallAmi(
                     iCampaign,
                     iContacts,
@@ -454,7 +448,7 @@ class CallServer {
 
   checkIfCampaignFinished(contacts) {
     const existsCustomersNotContacted = (element) =>
-      element.state !== "contacted";
+      element.state !== "called";
     var index = contacts.findIndex(existsCustomersNotContacted);
     if (index === -1) return true;
     else return false;
@@ -827,7 +821,7 @@ class CallServer {
 
     //Mark customer as contacted
     this.database.entities.customer.findOne({ where: { id: idCustomer } }).then((cust) => {
-      cust.state = "contacted";
+      cust.state = "called";
       cust.save().then((c) => {
         console.log("Saved customer: " + c.id);
       });
