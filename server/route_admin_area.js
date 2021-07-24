@@ -1076,6 +1076,40 @@ module.exports = {
           });
       }
     );
+
+    app.post(
+      "/adminarea/messageCampaign/getCampaignNoAnswerCustomers",
+      function (req, res) {
+        var messageCampaign = req.body.messageCampaign;
+        database.entities.customer
+          .findAll({
+            where: {
+              [Op.and]: [
+                { campaignId: messageCampaign.id },
+                {
+                  [Op.or]: [
+                    { state: "noanswer" }                    
+                  ],
+                },
+              ],
+            },
+          })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Customers noanswer found",
+                customers: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Customers called not found",
+                customers: {},
+              });
+          });
+      }
+    );
     //////////////////////////Upload files/////////////////////
     app.post("/upload/audio", function (req, res) {
       const form = new formidable.IncomingForm();

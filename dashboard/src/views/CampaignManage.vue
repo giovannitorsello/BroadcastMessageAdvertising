@@ -100,7 +100,7 @@
               <v-btn
                 depressed
                 color="primary"
-                :disabled="campaignName===''"
+                :disabled="campaignName === ''"
                 v-on:click="insertMessageCampaign"
                 >Inserisci campagna</v-btn
               >
@@ -130,7 +130,7 @@
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
-                    <td>{{ row.item.nCalledContacts }}</td>
+                    <td>{{ row.item.nCalledContacts }} - {{ row.item.nNoAnswerContacts }}</td>
                     <td>{{ row.item.ncompleted }}</td>
                     <td>{{ row.item.begin }}</td>
                     <td>{{ row.item.end }}</td>
@@ -214,7 +214,7 @@
                 label="Messaggio (max 140 caratteri)"
                 auto-grow
                 counter="140"
-                v-model="messageText"                
+                v-model="messageText"
               ></v-textarea>
               <v-text-field
                 name="input-7-1"
@@ -256,16 +256,16 @@
               <p>Sezione per chiamate audio</p>
             </v-col>
           </v-row>
-          <v-row>            
+          <v-row>
             <v-col>
               <v-file-input
                 v-on:change="loadAudio1"
-                v-model="fileAudio1"                
+                v-model="fileAudio1"
                 show-size
                 accept="audio/wav"
                 label="Audio chiamata in apertura"
               ></v-file-input>
-            </v-col>            
+            </v-col>
             <v-col>
               <v-file-input
                 v-on:change="loadAudio2"
@@ -284,8 +284,8 @@
                 accept="audio/wav"
                 label="Audio chiamata finale (dopo 2)"
               ></v-file-input>
-            </v-col>            
-          </v-row>          
+            </v-col>
+          </v-row>
         </v-tab-item>
 
         <v-tab href="#uploadcontacts">
@@ -325,7 +325,7 @@
               </v-col>
             </v-row>
           </v-card>
-        </v-tab-item>       
+        </v-tab-item>
 
         <v-tab href="#interestedcustomers">
           <v-card flat>
@@ -473,661 +473,713 @@
 </template>
 
 <script>
-export default {
-  data() {
-    return {
-      campaignName: "",
-      senderServices: [],
-      messagePage1: "Vuoi ricevere maggiori informazioni senza impegno?",
-      messagePage2:
-        "Grazie, sarai ricontattato da un nostro operatore al più presto",
-      messageText: "Testo di prova",
-      urlImageFile: "",
-      beginDate: "",
-      beginTime: "",
-      date: new Date().toISOString().substr(0, 10),
-      time: "",
-      menuDate: false,
-      menuTime: false,
-      selectedSenderService: {},
-      selectedCap: "",
-      selectedCity: "",
-      selectedState: "",
-      selectedProvince: "",
-      selectedCountry: "",
-      selectedCampaign: { id: 0, name: "", contacts: [], message: {} },
-      ncontacts: 0,
-      messageCampaigns: [],
-      contacts: [],
-      filteredContacts: [],
-      interestedCustomers: [],
-      noInterestedCustomers: [],
-      calledCustomers: [],
-      caps: [],
-      cities: [],
-      provinces: [],
-      states: [],
-      countries: [],
+  export default {
+    data() {
+      return {
+        campaignName: "",
+        senderServices: [],
+        messagePage1: "Vuoi ricevere maggiori informazioni senza impegno?",
+        messagePage2:
+          "Grazie, sarai ricontattato da un nostro operatore al più presto",
+        messageText: "Testo di prova",
+        urlImageFile: "",
+        beginDate: "",
+        beginTime: "",
+        date: new Date().toISOString().substr(0, 10),
+        time: "",
+        menuDate: false,
+        menuTime: false,
+        selectedSenderService: {},
+        selectedCap: "",
+        selectedCity: "",
+        selectedState: "",
+        selectedProvince: "",
+        selectedCountry: "",
+        selectedCampaign: { id: 0, name: "", contacts: [], message: {} },
+        ncontacts: 0,
+        messageCampaigns: [],
+        contacts: [],
+        filteredContacts: [],
+        interestedCustomers: [],
+        noInterestedCustomers: [],
+        calledCustomers: [],
+        caps: [],
+        cities: [],
+        provinces: [],
+        states: [],
+        countries: [],
 
-      tab: null,
-      fileCSV: [],
-      fileImage: [],
-      fileAudio1: "",
-      fileAudio2: "",
-      fileAudio3: "",
-      bSaveCampaignButtonDisable: true,
-      dialogImportContacts: false,
-      headersCustomers: [
-        { text: "ID", value: "id" },
-        { text: "Stato", value: "state" },
-        { text: "Campagna", value: "campaignId" },
-        { text: "Nome", value: "firstname" },
-        { text: "Cognome", value: "lastname" },
-        { text: "Telefono", value: "mobilephone" },
-        { text: "Indirizzo", value: "address" },
-        { text: "Città", value: "city" },
-        { text: "Provincia", value: "adm1" },
-        { text: "Regione", value: "adm2" },
-        { text: "Stato", value: "adm3" },
-        { text: "CAP", value: "postcode" },
-      ],
-      headersInterestedCustomers: [
-        { text: "ID", value: "id" },
-        { text: "Conferma", value: "confirmed" },
-        { text: "Data", value: "clickDate" },
-        { text: "Indirizzo IP", value: "ipAddress" },
-        { text: "Nome", value: "firstname" },
-        { text: "Cognome", value: "lastname" },
-        { text: "Telefono", value: "mobilephone" },
-        { text: "Indirizzo", value: "address" },
-        { text: "CAP", value: "postcode" },
-        { text: "Città", value: "city" },
-        { text: "Provincia", value: "adm1" }        
-      ],
-      headerCampaigns: [
-        { text: "Codice", value: "id" },
-        { text: "Nome campagna", value: "name" },
-        { text: "Metodo invio", value: "senderService" },
-        { text: "Stato", value: "state" },
-        { text: "Messagio", value: "message" },
-        { text: "Numero contatti", value: "ncontacts" },
-        { text: "Chiamate effettuate", value: "nCalledContacts" },
-        { text: "Messaggi inviati", value: "ncompleted" },
-        { text: "Inizio", value: "begin" },
-        { text: "Fine", value: "end" },
-      ],
-    };
-  },
-  mounted() {
-    this.beginDate = new Date().toLocaleDateString("it-IT");
-    this.beginTime = new Date().toLocaleTimeString("it-IT");
-    this.getSenderServices();
-    this.getCaps();
-    this.getCities();
-    this.getProvinces();
-    this.getStates();
-    this.getCountries();
-    this.refreshAll();
-  },
-  methods: {
-    startCallContacts(messageCampaign) {
-      this.axios
-        .post("/adminarea/messageCampaign/startCallContacts", {
-          messageCampaign: messageCampaign,
-        })
-        .then((request) => {
-          this.selectedCampaign = request.data.messageCampaign;
-          this.getMessageCampaigns();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+        tab: null,
+        fileCSV: [],
+        fileImage: [],
+        fileAudio1: "",
+        fileAudio2: "",
+        fileAudio3: "",
+        bSaveCampaignButtonDisable: true,
+        dialogImportContacts: false,
+        headersCustomers: [
+          { text: "ID", value: "id" },
+          { text: "Stato", value: "state" },
+          { text: "Campagna", value: "campaignId" },
+          { text: "Nome", value: "firstname" },
+          { text: "Cognome", value: "lastname" },
+          { text: "Telefono", value: "mobilephone" },
+          { text: "Indirizzo", value: "address" },
+          { text: "Città", value: "city" },
+          { text: "Provincia", value: "adm1" },
+          { text: "Regione", value: "adm2" },
+          { text: "Stato", value: "adm3" },
+          { text: "CAP", value: "postcode" },
+        ],
+        headersInterestedCustomers: [
+          { text: "ID", value: "id" },
+          { text: "Conferma", value: "confirmed" },
+          { text: "Data", value: "clickDate" },
+          { text: "Indirizzo IP", value: "ipAddress" },
+          { text: "Nome", value: "firstname" },
+          { text: "Cognome", value: "lastname" },
+          { text: "Telefono", value: "mobilephone" },
+          { text: "Indirizzo", value: "address" },
+          { text: "CAP", value: "postcode" },
+          { text: "Città", value: "city" },
+          { text: "Provincia", value: "adm1" },
+        ],
+        headerCampaigns: [
+          { text: "Codice", value: "id" },
+          { text: "Nome campagna", value: "name" },
+          { text: "Metodo invio", value: "senderService" },
+          { text: "Stato", value: "state" },
+          { text: "Messagio", value: "message" },
+          { text: "Numero contatti", value: "ncontacts" },
+          { text: "Chiamate risposte e non risposte", value: "nCalledContacts" },
+          { text: "Messaggi inviati", value: "ncompleted" },
+          { text: "Inizio", value: "begin" },
+          { text: "Fine", value: "end" },
+        ],
+      };
     },
-    startCampaign(messageCampaign) {
-      this.axios
-        .post("/adminarea/messageCampaign/start", {
-          messageCampaign: messageCampaign,
-        })
-        .then((request) => {
-          this.selectedCampaign = request.data.messageCampaign;
-          this.getMessageCampaigns();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    pauseCampaign(messageCampaign) {
-      this.axios
-        .post("/adminarea/messageCampaign/pause", {
-          messageCampaign: messageCampaign,
-        })
-        .then((request) => {
-          this.selectedCampaign = request.data.messageCampaign;
-          var fileArchive = request.data.fileArchive;
-          this.downloadMessageCampaignArchive(fileArchive);
-          this.getMessageCampaigns();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    deleteCampaign(messageCampaign) {
-      this.axios
-        .post("/adminarea/messageCampaign/delete", {
-          messageCampaign: messageCampaign,
-        })
-        .then((request) => {
-          var fileArchive = request.data.fileArchive;
-          this.downloadMessageCampaignArchive(fileArchive);
-          this.getMessageCampaigns();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    selectCampaign(campaign) {
-      if (campaign.id > 0) {
-        this.selectedCampaign = campaign;
-        this.axios
-          .post("/adminarea/messageCampaign/getCampaign", {
-            messageCampaign: campaign,
-          })
-          .then((request) => {
-            if (request.data.messageCampaign) {
-              this.selectedCampaign = request.data.messageCampaign;
-              this.ncontacts = this.selectedCampaign.ncontacts;
-
-              if (this.selectedCampaign.message)
-                this.messageText = this.selectedCampaign.message;
-              if (this.selectedCampaign.messagePage1)
-                this.messagePage1 = this.selectedCampaign.messagePage1;
-              if (this.selectedCampaign.messagePage2)
-                this.messagePage2 = this.selectedCampaign.messagePage2;
-              if (this.selectedCampaign.imageFile)
-                this.urlImageFile = this.selectedCampaign.imageFile;
-            }
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-      }
-    },
-    cleanContacts(campaign) {
-      this.axios
-        .post("/adminarea/messageCampaign/cleanContacts", {
-          messageCampaign: messageCampaign,
-        })
-        .then((request) => {
-          this.selectedCampaign = request.data.messageCampaign;
-          this.getMessageCampaigns();
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    insertMessageCampaign() {
-      console.log("Message service");
-      console.log(this.selectedSenderService.id);
-      if(!this.selectedSenderService || 
-         typeof this.selectedSenderService === 'undefined' ||
-         typeof this.selectedSenderService.id === 'undefined' ||
-         this.selectedSenderService.id===null || 
-         this.selectedSenderService.id==='') {
-        alert("Scegli il tipo di servizio di invio");
-        return;
-      }
-      
-      this.contacts = [];
-      if(this.selectedSenderService && this.selectedSenderService.id>=0)
-      this.axios
-        .post("/adminarea/messageCampaign/insert", {
-          messageCampaign: {
-            name: this.campaignName,
-            ncontacts: this.contacts.length,
-            message: this.messageText.replace(/\n/g, " "), //used to remove carriage return
-            messagePage1: this.messagePage1,
-            messagePage2: this.messagePage2,
-            senderService: this.selectedSenderService.id,
-            begin: this.getBeginDate(),
-          },
-        })
-        .then((request) => {
-          this.selectedCampaign = request.data.messageCampaign;
-          this.messageCampaigns.push(request.data.messageCampaign);
-          this.contacts = this.messageCampaigns.contacts;
-          this.fileCSV = [];
-          console.log("Campaign insert");
-          console.log(this.selectedCampaign);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    updateMessageCampaign() {
-      console.log("Message service");
-      console.log(this.selectedSenderService.id);
-      this.axios
-        .post("/adminarea/messageCampaign/update", {
-          messageCampaign: {
-            id: this.selectedCampaign.id,
-            name: this.selectedCampaign.name,
-            state: this.selectedCampaign.state,
-            contacts: this.contacts,
-            ncontacts: this.selectedCampaign.ncontacts,
-            message: this.messageText.replace(/\n/g, " "),
-            messagePage1: this.messagePage1,
-            messagePage2: this.messagePage2,
-            senderService: this.selectedSenderService.id
-          },
-        })
-        .then((request) => {
-          this.selectedCampaign = request.data.messageCampaign;
-          this.ncontacts = this.selectedCampaign.ncontacts;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    filterContactsCampaign() {
-      this.contacts = this.filteredContacts;
-      this.updateMessageCampaign();
-    },
-    getCampaigns() {
+    mounted() {
+      this.beginDate = new Date().toLocaleDateString("it-IT");
+      this.beginTime = new Date().toLocaleTimeString("it-IT");
+      this.getSenderServices();
+      this.getCaps();
+      this.getCities();
+      this.getProvinces();
+      this.getStates();
+      this.getCountries();
       this.refreshAll();
     },
-    getMessageCampaigns() {
-      this.messageCampaigns = [];
-      this.axios
-        .post("/adminarea/messageCampaign/getAll")
-        .then((request) => {
-          if (request.data.messageCampaigns) {
-            request.data.messageCampaigns.forEach((camp) => {
-              camp.begin = new Date(camp.begin).toLocaleString("it-IT");
-              camp.end = new Date(camp.end).toLocaleString("it-IT");
-              this.getCalledContacts(camp, (campaign) => {                
-                if(campaign && (typeof campaign !== 'undefined') && (typeof campaign.name !== 'undefined'))
-                  this.messageCampaigns.push(campaign);
-              });
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getCaps() {
-      this.axios
-        .post("/adminarea/customer/getCaps")
-        .then((request) => {
-          if (request.data.caps) {
-            this.caps = [];
-            request.data.caps.forEach((element) => {
-              this.caps.push({
-                text: element.postcode + " -- " + element.city,
-                value: element.postcode,
-              });
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getCities() {
-      this.axios
-        .post("/adminarea/customer/getCities")
-        .then((request) => {
-          if (request.data.cities) {
-            this.cities = [];
-            request.data.cities.forEach((element) => {
-              this.cities.push({
-                text: element.city,
-                value: element.city,
-              });
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getProvinces() {
-      this.axios
-        .post("/adminarea/customer/getProvinces")
-        .then((request) => {
-          if (request.data.provinces) {
-            this.provinces = [];
-            request.data.provinces.forEach((element) => {
-              this.provinces.push({ text: element.adm1, value: element.adm1 });
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getStates() {
-      this.axios
-        .post("/adminarea/customer/getStates")
-        .then((request) => {
-          if (request.data.states) {
-            this.states = [];
-            request.data.states.forEach((element) => {
-              this.states.push({ text: element.adm2, value: element.adm2 });
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getCountries() {
-      this.axios
-        .post("/adminarea/customer/getCountries")
-        .then((request) => {
-          if (request.data.countries) {
-            this.countries = [];
-            request.data.countries.forEach((element) => {
-              this.countries.push({ text: element.adm3, value: element.adm3 });
-            });
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    selectByCap() {
-      this.axios
-        .post("/adminarea/customer/selectByCap", {
-          selectedCap: this.selectedCap,
-        })
-        .then((request) => {
-          this.filteredContacts = request.data.customers;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    selectByCity() {
-      this.axios
-        .post("/adminarea/customer/selectByCity", {
-          selectedCity: this.selectedCity,
-        })
-        .then((request) => {
-          this.filteredContacts = request.data.customers;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    selectByProvince() {
-      this.axios
-        .post("/adminarea/customer/selectByProvince", {
-          selectedProvince: this.selectedProvince,
-        })
-        .then((request) => {
-          this.filteredContacts = request.data.customers;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    selectByState() {
-      this.axios
-        .post("/adminarea/customer/selectByState", {
-          selectedState: this.selectedState,
-        })
-        .then((request) => {
-          this.filteredContacts = request.data.customers;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    selectByCountry() {
-      this.axios
-        .post("/adminarea/customer/selectByCountries", {
-          selectedCountry: this.selectedCountry,
-        })
-        .then((request) => {
-          this.filteredContacts = request.data.customers;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getSenderServices() {
-      this.axios
-        .post("/adminarea/customer/getSenderServices", {          
-        })
-        .then((request) => {
-          this.senderServices = request.data.senderServices;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getContacts() {
-      this.axios
-        .post("/adminarea/messageCampaign/getCampaignCustomers", {
-          messageCampaign: this.selectedCampaign,
-        })
-        .then((request) => {
-          this.contacts = request.data.customers;
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    },
-    getInterestedContacts() {
-      console.log("Get interested");
-      this.interestedCustomers = [];
-      if (this.selectedCampaign && this.selectedCampaign.id > 0)
+    methods: {
+      startCallContacts(messageCampaign) {
         this.axios
-          .post("/adminarea/messageCampaign/getCampaignInterestedCustomers", {
-            messageCampaign: this.selectedCampaign,
-          })
-          .then((request) => {
-            if (request.data.customers) {
-              request.data.customers.forEach((customer) => {
-                var strConfirm = "";
-                if (customer.confirm) strConfirm = "2 click";
-                if (!customer.confirm) strConfirm = "1 click";
-                var options = {'weekday': 'long', 'month': '2-digit', 'day': '2-digit', year: 'numeric'};                
-                var date = new Date(customer.clickDate).toLocaleString('it-IT', options);
-                
-                var interestedCustomer = {
-                  id: customer.id,
-                  confirmed: strConfirm,
-                  clickDate: date,
-                  ipAddress: customer.ipAddress,
-                  firstname: customer.firstname,
-                  lastname: customer.lastname,
-                  address: customer.address,
-                  mobilephone: customer.mobilephone,
-                  postcode: customer.postcode,
-                  adm1: customer.adm1             
-                };
-                this.interestedCustomers.push(interestedCustomer);
-              });
-            }
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-    },
-    getNoInterestedContacts() {
-      this.interestedCustomers = [];
-      if (this.selectedCampaign && this.selectedCampaign.id > 0)
-        this.axios
-          .post("/adminarea/messageCampaign/getCampaignNoInterestedCustomers", {
-            messageCampaign: this.selectedCampaign,
-          })
-          .then((request) => {
-            if (request.data.customers) {
-              this.noInterestedCustomers = request.data.customers;
-            }
-          })
-          .catch((error) => {
-            console.log(error);
-          });
-    },
-    getCalledContacts(messageCampaign, callback) {
-      this.interestedCustomers = [];
-      if (messageCampaign && messageCampaign.id > 0)
-        this.axios
-          .post("/adminarea/messageCampaign/getCampaignCalledCustomers", {
+          .post("/adminarea/messageCampaign/startCallContacts", {
             messageCampaign: messageCampaign,
           })
           .then((request) => {
-            if (request.data.customers) {
-              messageCampaign.calledCustomers = request.data.customers;
-              messageCampaign.nCalledContacts = request.data.customers.length;
-              messageCampaign.nNotCalledContacts =
-                messageCampaign.ncontacts - messageCampaign.nCalledContacts;
-              callback(messageCampaign);
+            this.selectedCampaign = request.data.messageCampaign;
+            this.getMessageCampaigns();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      startCampaign(messageCampaign) {
+        this.axios
+          .post("/adminarea/messageCampaign/start", {
+            messageCampaign: messageCampaign,
+          })
+          .then((request) => {
+            this.selectedCampaign = request.data.messageCampaign;
+            this.getMessageCampaigns();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      pauseCampaign(messageCampaign) {
+        this.axios
+          .post("/adminarea/messageCampaign/pause", {
+            messageCampaign: messageCampaign,
+          })
+          .then((request) => {
+            this.selectedCampaign = request.data.messageCampaign;
+            var fileArchive = request.data.fileArchive;
+            this.downloadMessageCampaignArchive(fileArchive);
+            this.getMessageCampaigns();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      deleteCampaign(messageCampaign) {
+        this.axios
+          .post("/adminarea/messageCampaign/delete", {
+            messageCampaign: messageCampaign,
+          })
+          .then((request) => {
+            var fileArchive = request.data.fileArchive;
+            this.downloadMessageCampaignArchive(fileArchive);
+            this.getMessageCampaigns();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      selectCampaign(campaign) {
+        if (campaign.id > 0) {
+          this.selectedCampaign = campaign;
+          this.axios
+            .post("/adminarea/messageCampaign/getCampaign", {
+              messageCampaign: campaign,
+            })
+            .then((request) => {
+              if (request.data.messageCampaign) {
+                this.selectedCampaign = request.data.messageCampaign;
+                this.ncontacts = this.selectedCampaign.ncontacts;
+
+                if (this.selectedCampaign.message)
+                  this.messageText = this.selectedCampaign.message;
+                if (this.selectedCampaign.messagePage1)
+                  this.messagePage1 = this.selectedCampaign.messagePage1;
+                if (this.selectedCampaign.messagePage2)
+                  this.messagePage2 = this.selectedCampaign.messagePage2;
+                if (this.selectedCampaign.imageFile)
+                  this.urlImageFile = this.selectedCampaign.imageFile;
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        }
+      },
+      cleanContacts(campaign) {
+        this.axios
+          .post("/adminarea/messageCampaign/cleanContacts", {
+            messageCampaign: messageCampaign,
+          })
+          .then((request) => {
+            this.selectedCampaign = request.data.messageCampaign;
+            this.getMessageCampaigns();
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      insertMessageCampaign() {
+        console.log("Message service");
+        console.log(this.selectedSenderService.id);
+        if (
+          !this.selectedSenderService ||
+          typeof this.selectedSenderService === "undefined" ||
+          typeof this.selectedSenderService.id === "undefined" ||
+          this.selectedSenderService.id === null ||
+          this.selectedSenderService.id === ""
+        ) {
+          alert("Scegli il tipo di servizio di invio");
+          return;
+        }
+
+        this.contacts = [];
+        if (this.selectedSenderService && this.selectedSenderService.id >= 0)
+          this.axios
+            .post("/adminarea/messageCampaign/insert", {
+              messageCampaign: {
+                name: this.campaignName,
+                ncontacts: this.contacts.length,
+                message: this.messageText.replace(/\n/g, " "), //used to remove carriage return
+                messagePage1: this.messagePage1,
+                messagePage2: this.messagePage2,
+                senderService: this.selectedSenderService.id,
+                begin: this.getBeginDate(),
+              },
+            })
+            .then((request) => {
+              this.selectedCampaign = request.data.messageCampaign;
+              this.messageCampaigns.push(request.data.messageCampaign);
+              this.contacts = this.messageCampaigns.contacts;
+              this.fileCSV = [];
+              console.log("Campaign insert");
+              console.log(this.selectedCampaign);
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+      },
+      updateMessageCampaign() {
+        console.log("Message service");
+        console.log(this.selectedSenderService.id);
+        this.axios
+          .post("/adminarea/messageCampaign/update", {
+            messageCampaign: {
+              id: this.selectedCampaign.id,
+              name: this.selectedCampaign.name,
+              state: this.selectedCampaign.state,
+              contacts: this.contacts,
+              ncontacts: this.selectedCampaign.ncontacts,
+              message: this.messageText.replace(/\n/g, " "),
+              messagePage1: this.messagePage1,
+              messagePage2: this.messagePage2,
+              senderService: this.selectedSenderService.id,
+            },
+          })
+          .then((request) => {
+            this.selectedCampaign = request.data.messageCampaign;
+            this.ncontacts = this.selectedCampaign.ncontacts;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      filterContactsCampaign() {
+        this.contacts = this.filteredContacts;
+        this.updateMessageCampaign();
+      },
+      getCampaigns() {
+        this.refreshAll();
+      },
+      getMessageCampaigns() {
+        this.messageCampaigns = [];
+        this.axios
+          .post("/adminarea/messageCampaign/getAll")
+          .then((request) => {
+            if (request.data.messageCampaigns) {
+              request.data.messageCampaigns.forEach((camp) => {
+                camp.begin = new Date(camp.begin).toLocaleString("it-IT");
+                camp.end = new Date(camp.end).toLocaleString("it-IT");
+                //update counter only for calling campaigns                
+                  this.getCalledContacts(camp, (campTemp) => {
+                    this.getNoAnswerContacts(campTemp, (campaign) => {
+                      if (
+                        campaign &&
+                        typeof campaign !== "undefined" &&
+                        typeof campaign.name !== "undefined"
+                      )
+                        this.messageCampaigns.push(campaign);
+                    });
+                  });                
+              });
             }
           })
           .catch((error) => {
             console.log(error);
           });
-    },
-    refreshAll() {
-      this.getMessageCampaigns();
-    },
-    loadCSVFile() {
-      if (this.selectedCampaign.id > 0) {
-        this.dialogImportContacts = true;
-        this.bSaveCampaignButtonDisable = true;
-        var formData = new FormData();
-        formData.append("csv_data", this.fileCSV);
-        formData.append("idCampaign", this.selectedCampaign.id);
+      },
+      getCaps() {
         this.axios
-          .post("/upload/contacts", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
+          .post("/adminarea/customer/getCaps")
           .then((request) => {
-            this.dialogImportContacts = false;
-            this.contacts = [];
-            this.ncontacts = request.data.ncontacts;
-            this.selectedCampaign.ncontacts = request.data.ncontacts;
-            this.updateMessageCampaign();
+            if (request.data.caps) {
+              this.caps = [];
+              request.data.caps.forEach((element) => {
+                this.caps.push({
+                  text: element.postcode + " -- " + element.city,
+                  value: element.postcode,
+                });
+              });
+            }
           })
           .catch((error) => {
             console.log(error);
           });
-      }
-    },
-    loadImageFile() {
-      if (this.selectedCampaign.id > 0) {
-        this.dialogImportContacts = true;
-        this.bSaveCampaignButtonDisable = true;
-        var formData = new FormData();
-        formData.append("image_data", this.fileImage);
-        formData.append("idCampaign", this.selectedCampaign.id);
-        console.log("Uploading image ...");
+      },
+      getCities() {
         this.axios
-          .post("/upload/image", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
+          .post("/adminarea/customer/getCities")
           .then((request) => {
-            this.dialogImportContacts = false;
-            this.urlImageFile =
-              request.data.urlImageCampaign + "?" + new Date().getTime();
-            console.log(this.urlImageFile);
+            if (request.data.cities) {
+              this.cities = [];
+              request.data.cities.forEach((element) => {
+                this.cities.push({
+                  text: element.city,
+                  value: element.city,
+                });
+              });
+            }
           })
           .catch((error) => {
             console.log(error);
           });
-      }
-    },
-    loadAudio1(){this.loadAudio(this.fileAudio1, "1");},
-    loadAudio2(){this.loadAudio(this.fileAudio2, "2");},
-    loadAudio3(){this.loadAudio(this.fileAudio3, "3");},
-    loadAudio(file, type) {
-      if (this.selectedCampaign.id > 0) {
-        this.dialogImportContacts = true;
-        this.bSaveCampaignButtonDisable = true;
-        var formData = new FormData();
-        formData.append("type", type);
-        formData.append("audio_data", file);
-        formData.append("idCampaign", this.selectedCampaign.id);
-        console.log("Uploading audio ...");
+      },
+      getProvinces() {
         this.axios
-          .post("/upload/audio", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          })
+          .post("/adminarea/customer/getProvinces")
           .then((request) => {
-            this.dialogImportContacts = false;
-            console.log(request);
-            if(request.data.status==='OK')
-              alert("File audio convertito correttamente");
-            else
-              alert("Errore inserimento file audio. Supportato solo il formato WAV");
+            if (request.data.provinces) {
+              this.provinces = [];
+              request.data.provinces.forEach((element) => {
+                this.provinces.push({
+                  text: element.adm1,
+                  value: element.adm1,
+                });
+              });
+            }
           })
           .catch((error) => {
             console.log(error);
           });
-      }
-    },
-    parseDate(date) {
-      if (!date) return null;
-      const [day, month, year] = date.split("/");
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-    },
-    formatDate(date) {
-      if (!date) return null;
-      const [year, month, day] = date.split("-");
-      this.beginDate = `${day}/${month}/${year}`;
-      return `${day}/${month}/${year}`;
-    },
-    saveTime(time) {
-      this.beginTime = time;
-    },
-    getBeginDate() {
-      const [day, month, year] = this.beginDate.split("/");
-      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${
-        this.beginTime
-      }:00.000`;
-    },
-    downloadMessageCampaignArchive(fileArchive) {
-      var zipCampaignArchive = fileArchive.fileArchive;
-      this.axios({
-        url: "/downloads/" + zipCampaignArchive,
-        method: "GET",
-        responseType: "blob",
-      }).then((response) => {
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", zipCampaignArchive);
-        document.body.appendChild(link);
-        link.click();
-      });
-    },
-  },
-  computed: {
-    computedDateFormatted() {
-      return this.formatDate(this.date);
-    },
-    disableSaveCampaignButton() {
-      if (fileCSV.length === 0) return false;
+      },
+      getStates() {
+        this.axios
+          .post("/adminarea/customer/getStates")
+          .then((request) => {
+            if (request.data.states) {
+              this.states = [];
+              request.data.states.forEach((element) => {
+                this.states.push({ text: element.adm2, value: element.adm2 });
+              });
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      getCountries() {
+        this.axios
+          .post("/adminarea/customer/getCountries")
+          .then((request) => {
+            if (request.data.countries) {
+              this.countries = [];
+              request.data.countries.forEach((element) => {
+                this.countries.push({
+                  text: element.adm3,
+                  value: element.adm3,
+                });
+              });
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      selectByCap() {
+        this.axios
+          .post("/adminarea/customer/selectByCap", {
+            selectedCap: this.selectedCap,
+          })
+          .then((request) => {
+            this.filteredContacts = request.data.customers;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      selectByCity() {
+        this.axios
+          .post("/adminarea/customer/selectByCity", {
+            selectedCity: this.selectedCity,
+          })
+          .then((request) => {
+            this.filteredContacts = request.data.customers;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      selectByProvince() {
+        this.axios
+          .post("/adminarea/customer/selectByProvince", {
+            selectedProvince: this.selectedProvince,
+          })
+          .then((request) => {
+            this.filteredContacts = request.data.customers;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      selectByState() {
+        this.axios
+          .post("/adminarea/customer/selectByState", {
+            selectedState: this.selectedState,
+          })
+          .then((request) => {
+            this.filteredContacts = request.data.customers;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      selectByCountry() {
+        this.axios
+          .post("/adminarea/customer/selectByCountries", {
+            selectedCountry: this.selectedCountry,
+          })
+          .then((request) => {
+            this.filteredContacts = request.data.customers;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      getSenderServices() {
+        this.axios
+          .post("/adminarea/customer/getSenderServices", {})
+          .then((request) => {
+            this.senderServices = request.data.senderServices;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      getContacts() {
+        this.axios
+          .post("/adminarea/messageCampaign/getCampaignCustomers", {
+            messageCampaign: this.selectedCampaign,
+          })
+          .then((request) => {
+            this.contacts = request.data.customers;
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      getInterestedContacts() {
+        console.log("Get interested");
+        this.interestedCustomers = [];
+        if (this.selectedCampaign && this.selectedCampaign.id > 0)
+          this.axios
+            .post("/adminarea/messageCampaign/getCampaignInterestedCustomers", {
+              messageCampaign: this.selectedCampaign,
+            })
+            .then((request) => {
+              if (request.data.customers) {
+                request.data.customers.forEach((customer) => {
+                  var strConfirm = "";
+                  if (customer.confirm) strConfirm = "2 click";
+                  if (!customer.confirm) strConfirm = "1 click";
+                  var options = {
+                    weekday: "long",
+                    month: "2-digit",
+                    day: "2-digit",
+                    year: "numeric",
+                  };
+                  var date = new Date(customer.clickDate).toLocaleString(
+                    "it-IT",
+                    options
+                  );
 
-      return this.bSaveCampaignButtonDisable;
+                  var interestedCustomer = {
+                    id: customer.id,
+                    confirmed: strConfirm,
+                    clickDate: date,
+                    ipAddress: customer.ipAddress,
+                    firstname: customer.firstname,
+                    lastname: customer.lastname,
+                    address: customer.address,
+                    mobilephone: customer.mobilephone,
+                    postcode: customer.postcode,
+                    adm1: customer.adm1,
+                  };
+                  this.interestedCustomers.push(interestedCustomer);
+                });
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+      },
+      getNoInterestedContacts() {
+        this.interestedCustomers = [];
+        if (this.selectedCampaign && this.selectedCampaign.id > 0)
+          this.axios
+            .post(
+              "/adminarea/messageCampaign/getCampaignNoInterestedCustomers",
+              {
+                messageCampaign: this.selectedCampaign,
+              }
+            )
+            .then((request) => {
+              if (request.data.customers) {
+                this.noInterestedCustomers = request.data.customers;
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+      },
+      getCalledContacts(messageCampaign, callback) {
+        this.interestedCustomers = [];
+        if (messageCampaign && messageCampaign.id > 0)
+          this.axios
+            .post("/adminarea/messageCampaign/getCampaignCalledCustomers", {
+              messageCampaign: messageCampaign,
+            })
+            .then((request) => {
+              if (request.data.customers) {
+                messageCampaign.calledCustomers = request.data.customers;
+                messageCampaign.nCalledContacts = request.data.customers.length;
+                messageCampaign.nNotCalledContacts =
+                  messageCampaign.ncontacts - messageCampaign.nCalledContacts;
+                callback(messageCampaign);
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+      },
+      getNoAnswerContacts(messageCampaign, callback) {
+        this.interestedCustomers = [];
+        if (messageCampaign && messageCampaign.id > 0)
+          this.axios
+            .post("/adminarea/messageCampaign/getCampaignNoAnswerCustomers", {
+              messageCampaign: messageCampaign,
+            })
+            .then((request) => {
+              if (request.data.customers) {
+                messageCampaign.noAnswerCustomers = request.data.customers;
+                messageCampaign.nNoAnswerContacts =
+                  request.data.customers.length;
+                callback(messageCampaign);
+              }
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+      },
+      refreshAll() {
+        this.getMessageCampaigns();
+      },
+      loadCSVFile() {
+        if (this.selectedCampaign.id > 0) {
+          this.dialogImportContacts = true;
+          this.bSaveCampaignButtonDisable = true;
+          var formData = new FormData();
+          formData.append("csv_data", this.fileCSV);
+          formData.append("idCampaign", this.selectedCampaign.id);
+          this.axios
+            .post("/upload/contacts", formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            })
+            .then((request) => {
+              this.dialogImportContacts = false;
+              this.contacts = [];
+              this.ncontacts = request.data.ncontacts;
+              this.selectedCampaign.ncontacts = request.data.ncontacts;
+              this.updateMessageCampaign();
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        }
+      },
+      loadImageFile() {
+        if (this.selectedCampaign.id > 0) {
+          this.dialogImportContacts = true;
+          this.bSaveCampaignButtonDisable = true;
+          var formData = new FormData();
+          formData.append("image_data", this.fileImage);
+          formData.append("idCampaign", this.selectedCampaign.id);
+          console.log("Uploading image ...");
+          this.axios
+            .post("/upload/image", formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            })
+            .then((request) => {
+              this.dialogImportContacts = false;
+              this.urlImageFile =
+                request.data.urlImageCampaign + "?" + new Date().getTime();
+              console.log(this.urlImageFile);
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        }
+      },
+      loadAudio1() {
+        this.loadAudio(this.fileAudio1, "1");
+      },
+      loadAudio2() {
+        this.loadAudio(this.fileAudio2, "2");
+      },
+      loadAudio3() {
+        this.loadAudio(this.fileAudio3, "3");
+      },
+      loadAudio(file, type) {
+        if (this.selectedCampaign.id > 0) {
+          this.dialogImportContacts = true;
+          this.bSaveCampaignButtonDisable = true;
+          var formData = new FormData();
+          formData.append("type", type);
+          formData.append("audio_data", file);
+          formData.append("idCampaign", this.selectedCampaign.id);
+          console.log("Uploading audio ...");
+          this.axios
+            .post("/upload/audio", formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            })
+            .then((request) => {
+              this.dialogImportContacts = false;
+              console.log(request);
+              if (request.data.status === "OK")
+                alert("File audio convertito correttamente");
+              else
+                alert(
+                  "Errore inserimento file audio. Supportato solo il formato WAV"
+                );
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        }
+      },
+      parseDate(date) {
+        if (!date) return null;
+        const [day, month, year] = date.split("/");
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+      },
+      formatDate(date) {
+        if (!date) return null;
+        const [year, month, day] = date.split("-");
+        this.beginDate = `${day}/${month}/${year}`;
+        return `${day}/${month}/${year}`;
+      },
+      saveTime(time) {
+        this.beginTime = time;
+      },
+      getBeginDate() {
+        const [day, month, year] = this.beginDate.split("/");
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")} ${
+          this.beginTime
+        }:00.000`;
+      },
+      downloadMessageCampaignArchive(fileArchive) {
+        var zipCampaignArchive = fileArchive.fileArchive;
+        this.axios({
+          url: "/downloads/" + zipCampaignArchive,
+          method: "GET",
+          responseType: "blob",
+        }).then((response) => {
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement("a");
+          link.href = url;
+          link.setAttribute("download", zipCampaignArchive);
+          document.body.appendChild(link);
+          link.click();
+        });
+      },
     },
-  },
-  watch: {
-    date(val) {
-      this.dateFormatted = this.formatDate(this.date);
+    computed: {
+      computedDateFormatted() {
+        return this.formatDate(this.date);
+      },
+      disableSaveCampaignButton() {
+        if (fileCSV.length === 0) return false;
+
+        return this.bSaveCampaignButtonDisable;
+      },
     },
-  },
-};
+    watch: {
+      date(val) {
+        this.dateFormatted = this.formatDate(this.date);
+      },
+    },
+  };
 </script>
 
 <style></style>

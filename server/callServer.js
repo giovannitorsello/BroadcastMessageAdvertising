@@ -407,13 +407,13 @@ class CallServer {
                   contacts[iContacts].state >
                     config.pbxProperties.maxRetryCustomer
                 ) {
-                  contacts[iContacts].state = "called";
+                  contacts[iContacts].state = "noanswer";
                   contacts[iContacts].save().then((cont) => {
                     console.log("Contact " + cont.mobilephone + " updated");
                   });
                 }
 
-                if (contacts[iContacts].state !== "called")
+                if (contacts[iContacts].state !== "called" || contacts[iContacts].state !== "noanswer")
                   this.dialCallAmi(
                     iCampaign,
                     iContacts,
@@ -475,10 +475,7 @@ class CallServer {
             gateway.objData.isWorkingCall[iLine] === true
           ) {
             var phone = contacts[iContacts].mobilephone;
-            var state = contacts[iContacts].state;
-            //correct line problem
-            //var line = this.getGatewayLineForCall(gateway);
-            //Correct state problem
+            var state = contacts[iContacts].state;            
             this.dialCallAmi(
               iCampaign,
               iContacts,
@@ -491,7 +488,7 @@ class CallServer {
 
             iContacts++;
             if (iContacts === contacts.length) {
-              campaign.setDataValue("state", "finished");
+              campaign.setDataValue("state", "complete");
               campaign.save().then((res) => {
                 server.reloadActiveCampaings();
               });
