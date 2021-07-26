@@ -736,12 +736,15 @@ module.exports = {
           .findOne({ where: { id: messageCampaign.id } })
           .then(function (obj) {
             if (obj !== null) {
-              //Audio file conversion
-              //utility.setAudioForAsterisk(obj, function () {
                 obj.setDataValue("state", "calling");
                 obj.save().then(function (campNew) {
                   if (campNew !== null) {
                     callServer.reloadActiveCampaings();
+                    res.send({
+                      status: "OK",
+                      msg: "Call campaign is started",
+                      messageCampaign: campNew,
+                    });
                   } else {
                     res.send({
                       status: "error",
@@ -767,6 +770,11 @@ module.exports = {
             obj.save().then(function (campNew) {
               if (campNew !== null) {
                 smsServer.reloadActiveCampaings();
+                res.send({
+                  status: "OK",
+                  msg: "Message campaign started",
+                  messageCampaign: campNew,
+                });
               } else {
                 res.send({
                   status: "error",

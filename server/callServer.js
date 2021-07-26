@@ -140,7 +140,7 @@ class CallServer {
                   gateway.changed("objData", true);
                   //Update gateway line data
                   gateway.save().then((gat) => {
-                    console.log("Gateway data updated "+gateway.name);
+                    console.log("Gateway data updated " + gateway.name);
                   });
 
                   //avoid multiple computation
@@ -387,33 +387,27 @@ class CallServer {
           if (gateway.isWorkingCall === true) {
             //Check working line
             if (
-              gateway.objData.isWorkingCall[iLine] === 1 ||
-              gateway.objData.isWorkingCall[iLine] === true
+              (gateway.objData.isWorkingCall[iLine] === 1 ||
+                gateway.objData.isWorkingCall[iLine] === true) &&
+              gateway.objData.callsSent[iLine] < (gateway.nMaxDailyCallPerLine*60)
             ) {
               if (iContacts < contacts.length) {
                 var phone = contacts[iContacts].mobilephone;
-                var state = contacts[iContacts].state;
-                var intState = parseInt(state);
-                //Retries
-                if (state && Number.isNaN(intState) && state === "toContact") {
-                  contacts[iContacts].state = 1;
-                } else if (state && !Number.isNaN(intState) && intState >= 1) {
-                  contacts[iContacts].state = intState + 1;
-                }
+                var ncalls = parseInt(contacts[iContacts].ncalls) + 1;
+                contacts[iContacts].ncalls = ncalls;
 
-                if (
-                  state &&
-                  !Number.isNaN(contacts[iContacts].state) &&
-                  contacts[iContacts].state >
-                    config.pbxProperties.maxRetryCustomer
-                ) {
-                  contacts[iContacts].state = "noanswer";
-                  contacts[iContacts].save().then((cont) => {
-                    console.log("Contact " + cont.mobilephone + " updated");
-                  });
-                }
+                if (ncalls > config.pbxProperties.maxRetryCustomer) {
+                  contacts[iContacts].state = "noanswer";            
+                  contacts[iContacts].ncalls = ncalls-1; //For correct visualization
+                }      
+                else
+                  contacts[iContacts].state = "toContact";                  
+                                
+                contacts[iContacts].save().then((cont) => {
+                  console.log("Contact " + cont.mobilephone + " -- ncalls: "+ncalls+ " -- state: "+cont.state);
+                });
 
-                if (contacts[iContacts].state !== "called" || contacts[iContacts].state !== "noanswer")
+                if (contacts[iContacts].state === "toContact")
                   this.dialCallAmi(
                     iCampaign,
                     iContacts,
@@ -447,8 +441,7 @@ class CallServer {
   }
 
   checkIfCampaignFinished(contacts) {
-    const existsCustomersNotContacted = (element) =>
-      element.state !== "called";
+    const existsCustomersNotContacted = (element) => element.state !== "called";
     var index = contacts.findIndex(existsCustomersNotContacted);
     if (index === -1) return true;
     else return false;
@@ -475,7 +468,7 @@ class CallServer {
             gateway.objData.isWorkingCall[iLine] === true
           ) {
             var phone = contacts[iContacts].mobilephone;
-            var state = contacts[iContacts].state;            
+            var state = contacts[iContacts].state;
             this.dialCallAmi(
               iCampaign,
               iContacts,
@@ -612,12 +605,10 @@ class CallServer {
         camps.forEach((camp) => {
           this.database.entities.customer
             .findAll({
-              where: { campaignId: camp.id, state: "toContact" },
-              order: [["state", "DESC"]],
+              where: { campaignId: camp.id, state: "toContact" }
             })
             .then((contacts) => {
-              camp.contacts = contacts;
-              camp.ncontacts = contacts.length;
+              camp.contacts = contacts;              
               campaigns.push(camp);
               callback(campaigns);
             });
@@ -817,12 +808,14 @@ class CallServer {
         });
 
     //Mark customer as contacted
-    this.database.entities.customer.findOne({ where: { id: idCustomer } }).then((cust) => {
-      cust.state = "called";
-      cust.save().then((c) => {
-        console.log("Saved customer: " + c.id);
+    this.database.entities.customer
+      .findOne({ where: { id: idCustomer } })
+      .then((cust) => {
+        cust.state = "called";
+        cust.save().then((c) => {
+          console.log("Saved customer: " + c.id);
+        });
       });
-    });
   }
 }
 

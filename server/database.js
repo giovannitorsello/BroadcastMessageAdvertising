@@ -82,7 +82,8 @@ module.exports = {
         adm2: { type: Sequelize.STRING, allowNull: true }, //Regione
         adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
-        state: { type: Sequelize.STRING, defaultValue: "toContact" }, //toContact, contacted
+        state: { type: Sequelize.STRING, defaultValue: "toContact" }, //toContact, contacted, called, noanwer
+        ncalls: { type: Sequelize.INTEGER, defaultvalue: 0 },
         objData: { type: DataTypes.JSON },
       },
       {

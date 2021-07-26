@@ -97,14 +97,14 @@
         <v-text-field
           v-model="selectedGateway.nMaxDailyCallPerLine"
           counter="22"
-          hint="numero massimo di chiamate per SIM"
-          label="Max call per SIM"
+          hint="massimo minuti di chiamate per SIM"
+          label="Max minuti chiamate giornalieri per SIM"
         ></v-text-field>
         <v-text-field
           v-model="selectedGateway.nMaxCallPercetage"
           counter="22"
-          hint="percentuale massima di chiamete"
-          label="Percentuale massima di chiamate"
+          hint="percentuale massima di chiamete in uscita"
+          label="Percentuale massima di chiamate in uscita"
         ></v-text-field>
       </v-col>
     </v-row>

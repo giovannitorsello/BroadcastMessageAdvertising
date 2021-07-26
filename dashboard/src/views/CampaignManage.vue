@@ -141,7 +141,7 @@
                         dark
                         x-small
                         color="pink"
-                        @click="startCallContacts(row.item)"
+                        @click="startCallContacts(row.item)"                        
                       >
                         <v-icon dark>mdi-phone</v-icon>
                       </v-btn>
@@ -153,7 +153,7 @@
                         dark
                         x-small
                         color="green"
-                        @click="startCampaign(row.item)"
+                        @click="startCampaign(row.item)"                        
                       >
                         <v-icon dark>mdi-play</v-icon>
                       </v-btn>
@@ -520,6 +520,7 @@
         headersCustomers: [
           { text: "ID", value: "id" },
           { text: "Stato", value: "state" },
+          { text: "Chiamate", value: "ncalls" },
           { text: "Campagna", value: "campaignId" },
           { text: "Nome", value: "firstname" },
           { text: "Cognome", value: "lastname" },
