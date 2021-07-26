@@ -441,10 +441,12 @@ class CallServer {
   }
 
   checkIfCampaignFinished(contacts) {
-    const existsCustomersNotContacted = (element) => element.state !== "called";
+    const existsCustomersNotContacted = (element) => element.state === "toContact";
     var index = contacts.findIndex(existsCustomersNotContacted);
-    if (index === -1) return true;
-    else return false;
+    if (index === -1) 
+      return true;
+    else 
+      return false;
   }
 
   generateCalls2(iCampaign, clientAmi) {
