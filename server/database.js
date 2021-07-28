@@ -115,7 +115,7 @@ module.exports = {
     Click.init(
       {
         campaignId: { type: Sequelize.INTEGER, allowNull: false },
-        customerId: { type: Sequelize.INTEGER, allowNull: false },
+        customerId: { type: Sequelize.INTEGER, allowNull: false, unique: true},
         ipAddress: { type: Sequelize.STRING, allowNull: true },
         confirm: { type: Sequelize.BOOLEAN, allowNull: false },
       },

@@ -134,20 +134,7 @@ class SmsServer {
     this.smsCampaigns.forEach((campaign, index, arrCamp) => {
       //controllo campagna attiva
       if (campaign.state === "active") {
-        this.sendNextMessage(campaign, (response) => console.log(response));
-        //Seleziona automaticamente il messaggio successivo e il dispositivo da utilizzare
-
-        //invio tramite gateway internet
-        /*
-www.services.europsms.com/smpp-
-gateway.php?op=sendSMS2&smpp_id=QUIEMAIL&utenti_password=QUIPASS
-&tipologie_sms_id=2&destinatari_destination_addr=QUINUM&trasmissioni_me
-ssaggio=prova&trasmissioni_mittente=test
-
-http://www.services.europsms.com/smpp-
-gateway.php?op=txStatus&email=QUIEMAIL&password=QUIPASS&trasmission
-i_id=QUIIDRESTITUITODASERVIZIO
-        */
+        this.sendNextMessage(campaign, (response) => console.log(response));        
       }
     });
   }
@@ -263,7 +250,7 @@ i_id=QUIIDRESTITUITODASERVIZIO
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      (contact.state === "toContact" || contact.state === "called") &&
+      (contact.state === "toContact") && // || contact.state === "called"
       campaign.state === "active"
     ) {
       //Line selection
