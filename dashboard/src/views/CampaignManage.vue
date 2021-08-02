@@ -133,19 +133,7 @@
                     <td>{{ row.item.nCalledContacts }} - {{ row.item.nNoAnswerContacts }}</td>
                     <td>{{ row.item.ncompleted }}</td>
                     <td>{{ row.item.begin }}</td>
-                    <td>{{ row.item.end }}</td>
-                    <td>
-                      <v-btn
-                        class="mx-4"
-                        fab
-                        dark
-                        x-small
-                        color="pink"
-                        @click="startCallContacts(row.item)"                        
-                      >
-                        <v-icon dark>mdi-phone</v-icon>
-                      </v-btn>
-                    </td>
+                    <td>{{ row.item.end }}</td>                    
                     <td>
                       <v-btn
                         class="mx-4"
@@ -570,10 +558,16 @@
       this.getCountries();
       this.refreshAll();
     },
-    methods: {
-      startCallContacts(messageCampaign) {
+    methods: {      
+      startCampaign(messageCampaign) {
+        var type=this.senderServices[messageCampaign.senderService].type;
+        console.log(type);
+        if(type==="sms")  {this.startCampaignMessage(messageCampaign);}
+        if(type==="calls"){this.startCampaignCalls(messageCampaign);}
+      },
+      startCampaignCalls(messageCampaign) {
         this.axios
-          .post("/adminarea/messageCampaign/startCallContacts", {
+          .post("/adminarea/messageCampaign/startCalls", {
             messageCampaign: messageCampaign,
           })
           .then((request) => {
@@ -584,9 +578,9 @@
             console.log(error);
           });
       },
-      startCampaign(messageCampaign) {
+      startCampaignMessage(messageCampaign) {
         this.axios
-          .post("/adminarea/messageCampaign/start", {
+          .post("/adminarea/messageCampaign/startMessages", {
             messageCampaign: messageCampaign,
           })
           .then((request) => {

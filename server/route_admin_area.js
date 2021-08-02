@@ -729,7 +729,7 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/messageCampaign/startCallContacts",
+    app.post("/adminarea/messageCampaign/startCalls",
       function (req, res) {
         var messageCampaign = req.body.messageCampaign;
         database.entities.messageCampaign
@@ -752,14 +752,13 @@ module.exports = {
                       messageCampaign: campNew,
                     });
                   }
-              //  });
               });
             }
           });
       }
     );
 
-    app.post("/adminarea/messageCampaign/start", function (req, res) {
+    app.post("/adminarea/messageCampaign/startMessages", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
       database.entities.messageCampaign
         .findOne({ where: { id: messageCampaign.id } })

@@ -82,9 +82,7 @@ class SmsServer {
           })
           .then((sims) => {
             gateway.nSmsSent = 0;
-            gateway.nSmsReceived;
-            //gateway.isWorkingCall = true;
-            //gateway.isWorkingSms = true;
+            gateway.nSmsReceived = 0;
             gateway.objData = {
               lines: [],
               operator: [],
@@ -113,13 +111,12 @@ class SmsServer {
                 iSim++;
               }
             }
-            gateway.setDataValue("nSmsSent", 0);
-            gateway.setDataValue("nSmsReceived", 0);
             gateway.setDataValue("objData", gateway.objData);
             gateway.changed("objData", true);
             gateway.save().then((gat) => {
               gatewaysReset.push(gat);
               if (gatewaysReset.length === array.length) {
+                //callback(gatewaysReset);
                 this.loadGateways((gats) => {
                   callback(gats);
                 });
