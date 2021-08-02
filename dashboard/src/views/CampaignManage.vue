@@ -741,8 +741,9 @@
               request.data.messageCampaigns.forEach((camp) => {
                 camp.begin = new Date(camp.begin).toLocaleString("it-IT");
                 camp.end = new Date(camp.end).toLocaleString("it-IT");
+                this.messageCampaigns.push(camp);
                 //update counter only for calling campaigns                
-                  this.getCalledContacts(camp, (campTemp) => {
+                  /*this.getCalledContacts(camp, (campTemp) => {
                     this.getNoAnswerContacts(campTemp, (campaign) => {
                       if (
                         campaign &&
@@ -751,7 +752,7 @@
                       )
                         this.messageCampaigns.push(campaign);
                     });
-                  });                
+                  });*/                
               });
             }
           })
