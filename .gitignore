@@ -118,6 +118,6 @@ antifraudMessages.json
 *.mp4
 
 #cache & upload & other
-cache/
-uploads/
-other/
+cache/*
+uploads/*
+other/*
