@@ -522,19 +522,19 @@ class CallServer {
         phone: phoneNumber,
       };
       mapCallAction.set(actionId, JSON.stringify(data));
-      if (config.production)
+      if (config.production && config.pbxProperties && config.pbxProperties.context)
         clientAmi.action({
           Action: "Originate",
           ActionId: actionId,
           Variable: "ACTIONID=" + actionId,
           Channel: channel,
-          Context: "ivr-1", //autocallbma
+          Context: config.pbxProperties.context, //bmacall or ivr-1
           Exten: "s",
           Priority: 1,
           Timeout: 30000,
           CallerID: "1001",
           Async: true,
-          EarlyMedia: true,
+          EarlyMedia: false,
           Application: "",
           Codecs: "ulaw",
         });
