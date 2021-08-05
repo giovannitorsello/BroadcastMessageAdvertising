@@ -751,7 +751,7 @@
               request.data.messageCampaigns.forEach((camp) => {
                 camp.begin = new Date(camp.begin).toLocaleString("it-IT");
                 camp.end = new Date(camp.end).toLocaleString("it-IT");
-                if (camp.sate === "calling") {
+                if (camp.state === "calling") {
                   //update counter only for calling campaigns
                   this.getCalledContacts(camp, (campTemp) => {
                     this.getNoAnswerContacts(campTemp, (campaign) => {
