@@ -130,10 +130,13 @@
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
-                    <td>{{ row.item.nCalledContacts }} - {{ row.item.nNoAnswerContacts }}</td>
+                    <td>
+                      {{ row.item.nCalledContacts }} -
+                      {{ row.item.nNoAnswerContacts }}
+                    </td>
                     <td>{{ row.item.ncompleted }}</td>
                     <td>{{ row.item.begin }}</td>
-                    <td>{{ row.item.end }}</td>                    
+                    <td>{{ row.item.end }}</td>
                     <td>
                       <v-btn
                         class="mx-4"
@@ -141,7 +144,7 @@
                         dark
                         x-small
                         color="green"
-                        @click="startCampaign(row.item)"                        
+                        @click="startCampaign(row.item)"
                       >
                         <v-icon dark>mdi-play</v-icon>
                       </v-btn>
@@ -540,7 +543,10 @@
           { text: "Stato", value: "state" },
           { text: "Messagio", value: "message" },
           { text: "Numero contatti", value: "ncontacts" },
-          { text: "Chiamate risposte e non risposte", value: "nCalledContacts" },
+          {
+            text: "Chiamate risposte e non risposte",
+            value: "nCalledContacts",
+          },
           { text: "Messaggi inviati", value: "ncompleted" },
           { text: "Inizio", value: "begin" },
           { text: "Fine", value: "end" },
@@ -558,12 +564,16 @@
       this.getCountries();
       this.refreshAll();
     },
-    methods: {      
+    methods: {
       startCampaign(messageCampaign) {
-        var type=this.senderServices[messageCampaign.senderService].type;
+        var type = this.senderServices[messageCampaign.senderService].type;
         console.log(type);
-        if(type==="sms")  {this.startCampaignMessage(messageCampaign);}
-        if(type==="calls"){this.startCampaignCalls(messageCampaign);}
+        if (type === "sms") {
+          this.startCampaignMessage(messageCampaign);
+        }
+        if (type === "calls") {
+          this.startCampaignCalls(messageCampaign);
+        }
       },
       startCampaignCalls(messageCampaign) {
         this.axios
@@ -741,9 +751,9 @@
               request.data.messageCampaigns.forEach((camp) => {
                 camp.begin = new Date(camp.begin).toLocaleString("it-IT");
                 camp.end = new Date(camp.end).toLocaleString("it-IT");
-                this.messageCampaigns.push(camp);
-                //update counter only for calling campaigns                
-                  /*this.getCalledContacts(camp, (campTemp) => {
+                if (camp.sate === "calling") {
+                  //update counter only for calling campaigns
+                  this.getCalledContacts(camp, (campTemp) => {
                     this.getNoAnswerContacts(campTemp, (campaign) => {
                       if (
                         campaign &&
@@ -752,7 +762,10 @@
                       )
                         this.messageCampaigns.push(campaign);
                     });
-                  });*/                
+                  });
+                }
+                else
+                  this.messageCampaigns.push(camp);
               });
             }
           })
