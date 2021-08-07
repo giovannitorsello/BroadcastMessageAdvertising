@@ -626,7 +626,8 @@ class CallServer {
                   order: [["state", "DESC"]],
                 })
                 .then((contacts) => {
-                  camp.contacts = contacts;                  
+                  camp.contacts = contacts;
+                  console.log("Loaded "+contacts.length+" to call");                 
                 });
             }
             campaigns.push(camp);
