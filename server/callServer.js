@@ -532,6 +532,7 @@ class CallServer {
         config.pbxProperties &&
         config.pbxProperties.context
       )
+        console.log("Call customer: "+phoneNumber+" gataway: "+iGateway+" line: "+iLine);
         clientAmi.action({
           Action: "Originate",
           ActionId: actionId,
@@ -547,6 +548,7 @@ class CallServer {
           Application: "",
           Codecs: "ulaw",
         });
+        
 
       setTimeout(() => {
         this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
