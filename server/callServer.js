@@ -532,23 +532,29 @@ class CallServer {
         config.pbxProperties &&
         config.pbxProperties.context
       )
-        console.log("Call customer: "+phoneNumber+" gataway: "+iGateway+" line: "+iLine);
-        clientAmi.action({
-          Action: "Originate",
-          ActionId: actionId,
-          Variable: "ACTIONID=" + actionId,
-          Channel: channel,
-          Context: config.pbxProperties.context, //bmacall or ivr-1
-          Exten: "s",
-          Priority: 1,
-          Timeout: 30000,
-          CallerID: "1001",
-          Async: true,
-          EarlyMedia: false,
-          Application: "",
-          Codecs: "ulaw",
-        });
-        
+        console.log(
+          "Call customer: " +
+            phoneNumber +
+            " gataway: " +
+            iGateway +
+            " line: " +
+            iLine
+        );
+      clientAmi.action({
+        Action: "Originate",
+        ActionId: actionId,
+        Variable: "ACTIONID=" + actionId,
+        Channel: channel,
+        Context: config.pbxProperties.context, //bmacall or ivr-1
+        Exten: "s",
+        Priority: 1,
+        Timeout: 30000,
+        CallerID: "1001",
+        Async: true,
+        EarlyMedia: false,
+        Application: "",
+        Codecs: "ulaw",
+      });
 
       setTimeout(() => {
         this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
@@ -616,27 +622,10 @@ class CallServer {
     this.database.entities.messageCampaign
       .findAll({ order: [["id", "DESC"]] })
       .then((camps) => {
-        if (camps) {
-          camps.forEach((camp, index, array) => {
-            //Load remain contact only for active campaigns
-            if(camp.state==="calling") {
-              this.database.entities.customer
-                .findAll({
-                  where: { campaignId: camp.id, state: "toContact" },
-                  order: [["state", "DESC"]],
-                })
-                .then((contacts) => {
-                  camp.contacts = contacts;
-                  console.log("Loaded "+contacts.length+" to call");                 
-                });
-            }
-            campaigns.push(camp);
-            if (index === array.length - 1) callback(campaigns);
-          });
-        }
+        callback(camps);                
       });
   }
- 
+
   loadGateways(callback) {
     var gateways = [];
     this.database.entities.gateway
@@ -653,7 +642,7 @@ class CallServer {
     this.loadCampaings((campaigns) => {
       this.campaigns = campaigns;
       // Stop all call cycles
-      for (var i = 0; i < this.campaigns.length; i++) {        
+      for (var i = 0; i < this.campaigns.length; i++) {
         if (this.intervalCalls[i]) clearInterval(this.intervalCalls[i]);
       }
 
@@ -662,7 +651,17 @@ class CallServer {
         //controllo campagna in calling
         var campaign = this.campaigns[iCamp];
         if (campaign.state === "calling") {
-          this.generateCustomerCalls(iCamp, this.clientAmi);
+          var iActiveCampaign=iCamp;
+          this.database.entities.customer
+            .findAll({
+              where: { campaignId: campaign.id, state: "toContact" },
+              order: [["state", "DESC"]],
+            })
+            .then((contacts) => {
+              this.campaigns[iActiveCampaign].contacts = contacts;              
+              console.log("Loaded " + contacts.length + " to call");
+              this.generateCustomerCalls(iActiveCampaign, this.clientAmi);
+            });
         }
       }
     });
