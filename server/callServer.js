@@ -117,13 +117,10 @@ class CallServer {
               var iGateway = uniqueobj.iGateway;
               var phoneNumber = uniqueobj.phone;
               ///Manage generated call
-              if (
-                iCampaign !== null &&
-                iContact !== null &&
-                iGateway !== null
-              ) {
+              if (typeof iCampaign !== 'undefined'  && typeof iContact !== 'undefined' && typeof iGateway !== 'undefined') {
                 var campaign = this.campaigns[iCampaign];
-                if (campaign && campaign.contacts) {
+                var contacts = campaign.contacts;
+                if (typeof campaign !== 'undefined' && typeof contacts !== 'undefined') {
                   var contacts = campaign.contacts;
                   var contact = contacts[iContact];
                   var gateway = this.gateways[iGateway];
@@ -193,7 +190,7 @@ class CallServer {
         /////////////// ORIGINATE SECTION ////////////////
         if (event.Event === "OriginateResponse") {
           if (
-            event.Context === "autocallbma" &&
+            event.Context === config.pbxProperties.context &&
             event.Response === "Failure" &&
             event.Exten === "failed" &&
             event.Uniqueid &&
@@ -433,7 +430,7 @@ class CallServer {
                   });
                 }
 
-                if (iContacts === contacts.length) iContacts = 0;
+                //if (iContacts === contacts.length) iContacts = 0;
               }
             }
           }
