@@ -620,7 +620,7 @@ class CallServer {
             if(camp.state==="calling") {
               this.database.entities.customer
                 .findAll({
-                  where: { campaignId: camp.id, state: "toContact" },
+                  where: { campaignId: camp.id},
                   order: [["state", "DESC"]],
                 })
                 .then((contacts) => {
