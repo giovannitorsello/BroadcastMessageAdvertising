@@ -389,7 +389,8 @@ class CallServer {
             if (
               (gateway.objData.isWorkingCall[iLine] === 1 ||
                 gateway.objData.isWorkingCall[iLine] === true) &&
-              gateway.objData.callsSent[iLine] < (gateway.nMaxDailyCallPerLine*60)
+              gateway.objData.callsSent[iLine] <
+                gateway.nMaxDailyCallPerLine * 60
             ) {
               if (iContacts < contacts.length) {
                 var phone = contacts[iContacts].mobilephone;
@@ -397,14 +398,19 @@ class CallServer {
                 contacts[iContacts].ncalls = ncalls;
 
                 if (ncalls > config.pbxProperties.maxRetryCustomer) {
-                  contacts[iContacts].state = "noanswer";            
-                  contacts[iContacts].ncalls = ncalls-1; //For correct visualization
-                }      
-                else
-                  contacts[iContacts].state = "toContact";                  
-                                
+                  contacts[iContacts].state = "noanswer";
+                  contacts[iContacts].ncalls = ncalls - 1; //For correct visualization
+                } else contacts[iContacts].state = "toContact";
+
                 contacts[iContacts].save().then((cont) => {
-                  console.log("Contact " + cont.mobilephone + " -- ncalls: "+ncalls+ " -- state: "+cont.state);
+                  console.log(
+                    "Contact " +
+                      cont.mobilephone +
+                      " -- ncalls: " +
+                      ncalls +
+                      " -- state: " +
+                      cont.state
+                  );
                 });
 
                 if (contacts[iContacts].state === "toContact")
@@ -441,12 +447,11 @@ class CallServer {
   }
 
   checkIfCampaignFinished(contacts) {
-    const existsCustomersNotContacted = (element) => element.state === "toContact";
+    const existsCustomersNotContacted = (element) =>
+      element.state === "toContact";
     var index = contacts.findIndex(existsCustomersNotContacted);
-    if (index === -1) 
-      return true;
-    else 
-      return false;
+    if (index === -1) return true;
+    else return false;
   }
 
   generateCalls2(iCampaign, clientAmi) {
@@ -522,7 +527,11 @@ class CallServer {
         phone: phoneNumber,
       };
       mapCallAction.set(actionId, JSON.stringify(data));
-      if (config.production && config.pbxProperties && config.pbxProperties.context)
+      if (
+        config.production &&
+        config.pbxProperties &&
+        config.pbxProperties.context
+      )
         clientAmi.action({
           Action: "Originate",
           ActionId: actionId,
@@ -602,23 +611,29 @@ class CallServer {
   loadCampaings(callback) {
     var campaigns = [];
     //Charge active campaign
-    this.database.entities.messageCampaign.findAll().then((camps) => {
-      if (camps) {
-        camps.forEach((camp) => {
-          this.database.entities.customer
-            .findAll({
-              where: { campaignId: camp.id, state: "toContact" }
-            })
-            .then((contacts) => {
-              camp.contacts = contacts;              
-              campaigns.push(camp);
-              callback(campaigns);
-            });
-        });
-      }
-    });
+    this.database.entities.messageCampaign
+      .findAll({ order: [["id", "DESC"]] })
+      .then((camps) => {
+        if (camps) {
+          camps.forEach((camp, index, array) => {
+            //Load remain contact only for active campaigns
+            if(state==="calling") {
+              this.database.entities.customer
+                .findAll({
+                  where: { campaignId: camp.id, state: "toContact" },
+                  order: [["state", "DESC"]],
+                })
+                .then((contacts) => {
+                  camp.contacts = contacts;                  
+                });
+            }
+            campaigns.push(camp);
+            if (index === array.length - 1) callback(campaigns);
+          });
+        }
+      });
   }
-
+ 
   loadGateways(callback) {
     var gateways = [];
     this.database.entities.gateway
@@ -635,8 +650,7 @@ class CallServer {
     this.loadCampaings((campaigns) => {
       this.campaigns = campaigns;
       // Stop all call cycles
-      for (var i = 0; i < this.campaigns.length; i++) {
-        var camp = this.campaigns;
+      for (var i = 0; i < this.campaigns.length; i++) {        
         if (this.intervalCalls[i]) clearInterval(this.intervalCalls[i]);
       }
 
