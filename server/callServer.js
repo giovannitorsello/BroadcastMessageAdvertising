@@ -617,7 +617,7 @@ class CallServer {
         if (camps) {
           camps.forEach((camp, index, array) => {
             //Load remain contact only for active campaigns
-            if(state==="calling") {
+            if(camp.state==="calling") {
               this.database.entities.customer
                 .findAll({
                   where: { campaignId: camp.id, state: "toContact" },
