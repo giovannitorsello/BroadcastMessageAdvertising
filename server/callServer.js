@@ -532,7 +532,7 @@ class CallServer {
         console.log(
           "Call customer: " +
             phoneNumber +
-            " gataway: " +
+            " gateway: " +
             iGateway +
             " line: " +
             iLine
