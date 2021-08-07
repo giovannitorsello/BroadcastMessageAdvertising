@@ -430,7 +430,7 @@ class CallServer {
                   });
                 }
 
-                //if (iContacts === contacts.length) iContacts = 0;
+                if (iContacts === contacts.length) iContacts = 0;
               }
             }
           }
