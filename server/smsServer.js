@@ -69,6 +69,7 @@ class SmsServer {
     }
   }
 
+
   startCampaignManager() {
     this.smsCampaigns.forEach((campaign, index, arrCamp) => {
       //controllo campagna attiva
@@ -334,16 +335,18 @@ class SmsServer {
       .then((camps) => {
         if (camps) {
           camps.forEach((camp, index, array) => {
-            this.database.entities.customer
-              .findAll({
-                where: { campaignId: camp.id, state: "toContact" },
-                order: [["state", "DESC"]],
-              })
-              .then((contacts) => {
-                camp.contacts = contacts;
-                camp.ncontacts = contacts.length;
-              });
-
+            //Load remain contact only for active campaigns
+            if(state==="active") {
+              this.database.entities.customer
+                .findAll({
+                  where: { campaignId: camp.id, state: "toContact" },
+                  order: [["state", "DESC"]],
+                })
+                .then((contacts) => {
+                  camp.contacts = contacts;
+                  //camp.ncontacts = contacts.length;
+                });
+            }
             campaigns.push(camp);
             if (index === array.length - 1) callback(campaigns);
           });
