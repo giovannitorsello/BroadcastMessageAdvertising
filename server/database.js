@@ -102,6 +102,8 @@ module.exports = {
         senderService: { type: Sequelize.INTEGER, allowNull: false },
         ncontacts: { type: Sequelize.INTEGER, allowNull: true },
         ncompleted: { type: Sequelize.INTEGER, allowNull: true },
+        nCalledContacts: { type: Sequelize.INTEGER, allowNull: true },
+        nNoAnswerContacts: { type: Sequelize.INTEGER, allowNull: true },
         begin: { type: Sequelize.DATE, allowNull: true },
         end: { type: Sequelize.DATE, allowNull: true },
         state: { type: Sequelize.STRING, allowNull: false }, //active, disabled, complete
