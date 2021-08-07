@@ -2,6 +2,11 @@
   <v-container>
     <v-row>
       <v-col>
+        <v-btn color="primary" v-on:click="getGateways">Aggiorna</v-btn>
+      </v-col>
+    </v-row>
+    <v-row>
+      <v-col>
         <v-data-table
           :headers="headerGateways"
           :items="gateways"
@@ -18,13 +23,14 @@
                   <br />
                   <span
                     v-for="(sms, i) in row.item.objData.smsSent"
-                    v-bind:key="i"
+                    :key="'smsSent'+ i"
                     >|{{ sms }}|</span
                   >
                   <br />
-                  <span  style="color: green;"
+                  <span
+                    style="color: green;"
                     v-for="(calls, i) in row.item.objData.callsSent"
-                    v-bind:key="i"
+                    :key="'callSent'+ i"
                     >|{{ calls }}|</span
                   >
                 </div>
@@ -35,13 +41,14 @@
                   <br />
                   <span
                     v-for="(sms, i) in row.item.objData.smsReceived"
-                    v-bind:key="i"
+                    :key="'smsReceived'+ i"
                     >|{{ sms }}|</span
                   >
                   <br />
-                  <span  style="color: green;"
+                  <span
+                    style="color: green;"
                     v-for="(calls, i) in row.item.objData.callsReceived"
-                    v-bind:key="i"
+                    :key="'callReceived'+ i"
                     >|{{ calls }}|</span
                   >
                 </div>
@@ -54,11 +61,14 @@
     </v-row>
     <v-row>
       <v-col>
-        <v-btn color="primary" v-on:click="getGateways"
-          >Aggiorna</v-btn
+        <v-btn color="primary" v-on:click="resetCountersSMS"
+          >Azzera contatori SMS</v-btn
         >
-        <v-btn color="primary" v-on:click="resetCounters"
-          >Azzera i contatori</v-btn
+        <v-btn color="primary" v-on:click="resetCountersCalls"
+          >Azzera contatori chiamate</v-btn
+        >
+        <v-btn color="primary" v-on:click="resetAll"
+          >Ripristina tutto</v-btn
         >
       </v-col>
     </v-row>
@@ -66,51 +76,75 @@
 </template>
 
 <script>
-export default {
-  data() {
-    return {
-      headerGateways: [
-        { text: "ID", value: "id" },
-        { text: "name", value: "name" },
-        { text: "SMS inviati", value: "nSmsSent" },
-        { text: "SMS Ricevuti", value: "nSmsReceived" },
-        { text: "Connesso", value: "isWorking" },
-      ],
-      gateways: [],
-    };
-  },
-  mounted() {
-    setInterval(() => {
-      this.getGateways();
-    }, 10000);
-  },
-  methods: {
-    resetCounters() {
-      this.axios
-        .post("/adminarea/gateway/resetCounters")
-        .then((request) => {          
-          if (request.data.gateways) {
-            this.gateways = request.data.gateways;
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+  export default {
+    data() {
+      return {
+        headerGateways: [
+          { text: "ID", value: "id" },
+          { text: "name", value: "name" },
+          { text: "SMS inviati", value: "nSmsSent" },
+          { text: "SMS Ricevuti", value: "nSmsReceived" },
+          { text: "Connesso", value: "isWorking" },
+        ],
+        gateways: [],
+      };
     },
-    getGateways() {
-      this.axios
-        .post("/adminarea/gateway/getAll")
-        .then((request) => {          
-          if (request.data.gateways) {
-            this.gateways = request.data.gateways;
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+    mounted() {
+      setInterval(() => {
+        this.getGateways();
+      }, 10000);
     },
-  },
-};
+    methods: {
+      resetCountersSMS() {
+        this.axios
+          .post("/adminarea/gateway/resetCountersSMS")
+          .then((request) => {
+            if (request.data.gateways) {
+              this.gateways = request.data.gateways;
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      resetCountersCalls() {
+        this.axios
+          .post("/adminarea/gateway/resetCountersCalls")
+          .then((request) => {
+            if (request.data.gateways) {
+              this.gateways = request.data.gateways;
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      resetAll() {
+        this.axios
+          .post("/adminarea/gateway/resetAll")
+          .then((request) => {
+            if (request.data.gateways) {
+              this.gateways = request.data.gateways;
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      getGateways() {
+        this.axios
+          .post("/adminarea/gateway/getAll")
+          .then((request) => {
+            if (request.data.gateways) {
+              this.gateways = request.data.gateways;
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+    },
+  };
 </script>
 
 <style></style>

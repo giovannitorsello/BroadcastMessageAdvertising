@@ -568,7 +568,7 @@ module.exports = {
       });
     });
 
-    app.post("/adminarea/gateway/reset", function (req, res) {
+    app.post("/adminarea/gateway/resetAll", function (req, res) {
       var gatewaysReset = [];
       var iSim = 0,
         bankIdSel = 0;
@@ -616,6 +616,96 @@ module.exports = {
                 }
                 gateway.setDataValue("nSmsSent", 0);
                 gateway.setDataValue("nSmsReceived", 0);
+                gateway.setDataValue("objData", gateway.objData);
+                gateway.changed("objData", true);
+                gateway.save().then((gat) => {
+                  gatewaysReset.push(gat);
+                  if (gatewaysReset.length === array.length)
+                    res.send({
+                      status: "OK",
+                      msg: "Gateways reset",
+                      gateways: gatewaysReset,
+                    });
+                });
+              });
+          });
+        });
+    });
+
+    app.post("/adminarea/gateway/resetCountersSMS", function (req, res) {
+      var gatewaysReset = [];
+      var iSim = 0,
+        bankIdSel = 0;
+      database.entities.gateway
+        .findAll({ order: [["id", "ASC"]] })
+        .then((gateways) => {
+          gateways.forEach((gateway, iGateway, array) => {
+            database.entities.sim
+              .findAll({
+                where: { bankId: gateway.bankId },
+                order: [["id", "ASC"]],
+              })
+              .then((sims) => {
+                gateway.nSmsSent = 0;
+                gateway.nSmsReceived = 0;
+                //Manage change bank and Sim counter
+                if (bankIdSel !== gateway.bankId) {
+                  iSim = 0;
+                  bankIdSel = gateway.bankId;
+                }
+                for (var i = 0; i < gateway.nRadios; i++) {
+                  if (iSim < sims.length) {
+                    gateway.objData.smsSent[i] = 0;
+                    gateway.objData.smsReceived[i] = 0;
+                    iSim++;
+                  }
+                }
+                gateway.setDataValue("nSmsSent", 0);
+                gateway.setDataValue("nSmsReceived", 0);
+                gateway.setDataValue("objData", gateway.objData);
+                gateway.changed("objData", true);
+                gateway.save().then((gat) => {
+                  gatewaysReset.push(gat);
+                  if (gatewaysReset.length === array.length)
+                    res.send({
+                      status: "OK",
+                      msg: "Gateways reset",
+                      gateways: gatewaysReset,
+                    });
+                });
+              });
+          });
+        });
+    });
+
+    app.post("/adminarea/gateway/resetCountersCalls", function (req, res) {
+      var gatewaysReset = [];
+      var iSim = 0,
+        bankIdSel = 0;
+      database.entities.gateway
+        .findAll({ order: [["id", "ASC"]] })
+        .then((gateways) => {
+          gateways.forEach((gateway, iGateway, array) => {
+            database.entities.sim
+              .findAll({
+                where: { bankId: gateway.bankId },
+                order: [["id", "ASC"]],
+              })
+              .then((sims) => {
+                gateway.nSmsSent = 0;
+                gateway.nSmsReceived = 0;
+                //Manage change bank and Sim counter
+                if (bankIdSel !== gateway.bankId) {
+                  iSim = 0;
+                  bankIdSel = gateway.bankId;
+                }
+                for (var i = 0; i < gateway.nRadios; i++) {
+                  if (iSim < sims.length) {
+                    gateway.objData.callsSent[i] = 0;
+                    gateway.objData.callsReceived[i] = 0;
+                    iSim++;
+                  }
+                }                
                 gateway.setDataValue("objData", gateway.objData);
                 gateway.changed("objData", true);
                 gateway.save().then((gat) => {
