@@ -336,7 +336,7 @@ class SmsServer {
         if (camps) {
           camps.forEach((camp, index, array) => {
             //Load remain contact only for active campaigns
-            if(state==="active") {
+            if(camp.state==="active") {
               this.database.entities.customer
                 .findAll({
                   where: { campaignId: camp.id, state: "toContact" },
