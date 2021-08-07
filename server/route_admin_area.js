@@ -555,7 +555,7 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/gateway/getall", function (req, res) {
+    app.post("/adminarea/gateway/getAll", function (req, res) {
       database.entities.gateway.findAll().then(function (results) {
         if (results)
           res.send({
@@ -1399,25 +1399,6 @@ module.exports = {
               }
             );
           }
-        });
-      });
-    });
-
-    ///////////////////// Gateways ////////////////////////
-    app.post("/adminarea/gateway/getAll", function (req, res) {
-      res.send({
-        status: "OK",
-        msg: "Gateways found",
-        gateways: smsServer.getGateways(),
-      });
-    });
-
-    app.post("/adminarea/gateway/resetCounters", function (req, res) {
-      smsServer.resetCounters((gateways) => {
-        res.send({
-          status: "OK",
-          msg: "Gateways reset",
-          gateways: gateways,
         });
       });
     });

@@ -69,64 +69,6 @@ class SmsServer {
     }
   }
 
-  resetCounters(callback) {
-    var gatewaysReset = [];
-    var iSim = 0,
-      bankIdSel = 0;
-    this.database.entities.gateway.findAll().then((gateways) => {
-      gateways.forEach((gateway, iGateway, array) => {
-        this.database.entities.sim
-          .findAll({
-            where: { bankId: gateway.bankId },
-            order: [["id", "ASC"]],
-          })
-          .then((sims) => {
-            gateway.nSmsSent = 0;
-            gateway.nSmsReceived = 0;
-            gateway.objData = {
-              lines: [],
-              operator: [],
-              isWorkingSms: [],
-              isWorkingCall: [],
-              smsSent: [],
-              smsReceived: [],
-              callsSent: [],
-              callsReceived: [],
-            };
-            //Manage change bank and Sim counter
-            if (bankIdSel !== gateway.bankId) {
-              iSim = 0;
-              bankIdSel = gateway.bankId;
-            }
-            for (var i = 0; i < gateway.nRadios; i++) {
-              if (iSim < sims.length) {
-                gateway.objData.lines[i] = sims[iSim].phoneNumber;
-                gateway.objData.operator[i] = sims[iSim].operator;
-                gateway.objData.isWorkingSms[i] = 1;
-                gateway.objData.isWorkingCall[i] = 1;
-                gateway.objData.smsSent[i] = 0;
-                gateway.objData.smsReceived[i] = 0;
-                gateway.objData.callsSent[i] = 0;
-                gateway.objData.callsReceived[i] = 0;
-                iSim++;
-              }
-            }
-            gateway.setDataValue("objData", gateway.objData);
-            gateway.changed("objData", true);
-            gateway.save().then((gat) => {
-              gatewaysReset.push(gat);
-              if (gatewaysReset.length === array.length) {
-                //callback(gatewaysReset);
-                this.loadGateways((gats) => {
-                  callback(gats);
-                });
-              }
-            });
-          });
-      });
-    });
-  }
-
   startCampaignManager() {
     this.smsCampaigns.forEach((campaign, index, arrCamp) => {
       //controllo campagna attiva
