@@ -134,6 +134,7 @@
             >
               <td>{{ row.item.id }}</td>
               <td>{{ row.item.name }}</td>
+              <td>{{ row.item.operator }}</td>
               <td>{{ row.item.location }}</td>
               <td>{{ row.item.bankId }}</td>
               <td>{{ row.item.nRadios }}</td>
@@ -219,6 +220,7 @@ export default {
       headerGateways: [
         { text: "ID", value: "id" },
         { text: "Nome", value: "name" },
+        { text: "Operatore", value: "operator" },
         { text: "Collocazione", value: "location" },
         { text: "Banco Sim", value: "bankId" },
         { text: "Numero Linee", value: "nRadios" },
