@@ -584,8 +584,8 @@ module.exports = {
               .then((sims) => {
                 gateway.nSmsSent = 0;
                 gateway.nSmsReceived = 0;
-                //gateway.isWorkingCall = true;
-                //gateway.isWorkingSms = true;
+                gateway.isWorkingCall = true;
+                gateway.isWorkingSms = true;
                 gateway.objData = {
                   lines: [],
                   operator: [],
@@ -648,6 +648,7 @@ module.exports = {
               .then((sims) => {
                 gateway.nSmsSent = 0;
                 gateway.nSmsReceived = 0;
+                gateway.isWorkingSms = true;
                 //Manage change bank and Sim counter
                 if (bankIdSel !== gateway.bankId) {
                   iSim = 0;
@@ -694,6 +695,7 @@ module.exports = {
               .then((sims) => {
                 gateway.nSmsSent = 0;
                 gateway.nSmsReceived = 0;
+                gateway.isWorkingCall = true;
                 //Manage change bank and Sim counter
                 if (bankIdSel !== gateway.bankId) {
                   iSim = 0;
@@ -973,6 +975,7 @@ module.exports = {
           [Op.or]: [
             { state: "calling" },
             { state: "active" },
+            { state: "complete" }
           ]
         }}).then(function (results) {
         if (results)

@@ -15,7 +15,7 @@ class CallServer {
   database = {};
   clientAmi = {};
   client = {};
-  lastUpdateTimeStats=0;
+  lastUpdateTimeStats = 0;
 
   constructor(app, database) {
     this.database = database;
@@ -32,7 +32,7 @@ class CallServer {
         this.generateAntifraudCalls();
       });
 
-      this.loadCampaings((campaigns) => {
+      this.loadActiveCampaings((campaigns) => {
         this.campaigns = campaigns;
       });
     });
@@ -118,10 +118,17 @@ class CallServer {
               var iGateway = uniqueobj.iGateway;
               var phoneNumber = uniqueobj.phone;
               ///Manage generated call
-              if (typeof iCampaign !== 'undefined'  && typeof iContact !== 'undefined' && typeof iGateway !== 'undefined') {
+              if (
+                typeof iCampaign !== "undefined" &&
+                typeof iContact !== "undefined" &&
+                typeof iGateway !== "undefined"
+              ) {
                 var campaign = this.campaigns[iCampaign];
                 var contacts = campaign.contacts;
-                if (typeof campaign !== 'undefined' && typeof contacts !== 'undefined') {
+                if (
+                  typeof campaign !== "undefined" &&
+                  typeof contacts !== "undefined"
+                ) {
                   var contacts = campaign.contacts;
                   var contact = contacts[iContact];
                   var gateway = this.gateways[iGateway];
@@ -143,7 +150,7 @@ class CallServer {
 
                   //avoid multiple computation
                   uniqueobj.computed = true;
-                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));                 
+                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
                 } else if (phoneNumber) {
                   console.log("Customer " + phoneNumber + " has answered");
                   //Update state
@@ -358,6 +365,10 @@ class CallServer {
     if (!gateways[iGateway]) return;
 
     interval = setInterval(() => {
+      if(campaign.state==='complete') 
+        clearInterval(interval);
+      
+
       var callOutBeginHour = config.pbxProperties.callOutBeginHour;
       var callOutEndHour = config.pbxProperties.callOutEndHour;
       var now = new Date();
@@ -397,7 +408,7 @@ class CallServer {
 
                 if (ncalls > config.pbxProperties.maxRetryCustomer) {
                   contacts[iContacts].state = "noanswer";
-                  contacts[iContacts].ncalls = ncalls - 1;                  
+                  contacts[iContacts].ncalls = ncalls - 1;
                 } else contacts[iContacts].state = "toContact";
 
                 contacts[iContacts].save().then((cont) => {
@@ -411,7 +422,10 @@ class CallServer {
                   );
                 });
 
-                if (contacts[iContacts].state === "toContact" && config.production==="true")
+                if (
+                  contacts[iContacts].state === "toContact" &&
+                  config.production === "true"
+                )
                   this.dialCallAmi(
                     iCampaign,
                     iContacts,
@@ -423,13 +437,14 @@ class CallServer {
                   );
 
                 iContacts++;
+                /*
                 if (this.checkIfCampaignFinished(contacts)) {
                   campaign.setDataValue("state", "complete");
                   campaign.save().then((res) => {
-                    server.reloadActiveCampaings();
+                    this.reloadActiveCampaings();
                     iContacts = 0;
                   });
-                }
+                }*/
 
                 if (iContacts === contacts.length) iContacts = 0;
               }
@@ -439,10 +454,10 @@ class CallServer {
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
-      this.updateCampaignStatistcs(campaign,res => console.log(res));
+      this.updateCampaignStatistcs(campaign, (res) => console.log(res));
     }, config.pbxProperties.waitCallCustomerInterval);
 
-    this.intervalCalls.push(interval);
+    this.intervalCalls.push(interval);    
   }
 
   checkIfCampaignFinished(contacts) {
@@ -451,56 +466,6 @@ class CallServer {
     var index = contacts.findIndex(existsCustomersNotContacted);
     if (index === -1) return true;
     else return false;
-  }
-
-  generateCalls2(iCampaign, clientAmi) {
-    var campaign = this.campaigns[iCampaign];
-    var contacts = this.campaigns[iCampaign].contacts;
-    var iGateway = 0;
-    var iContacts = 0;
-    var gateways = this.gateways;
-    var server = this;
-    var interval = {};
-
-    interval = setInterval(() => {
-      if (!contacts[iContacts]) return;
-      if (!gateways[iGateway]) return;
-      var gateway = gateways[iGateway];
-
-      if (gateway.isWorkingCall === true) {
-        for (var iLine = 0; iLine < gateway.objData.lines.length; iLine++) {
-          if (
-            gateway.objData.isWorkingCall[iLine] === 1 ||
-            gateway.objData.isWorkingCall[iLine] === true
-          ) {
-            var phone = contacts[iContacts].mobilephone;
-            var state = contacts[iContacts].state;
-            this.dialCallAmi(
-              iCampaign,
-              iContacts,
-              iGateway,
-              iLine,
-              phone,
-              clientAmi,
-              (callData) => {}
-            );
-
-            iContacts++;
-            if (iContacts === contacts.length) {
-              campaign.setDataValue("state", "complete");
-              campaign.save().then((res) => {
-                server.reloadActiveCampaings();
-              });
-              iContacts = 0;
-            }
-          }
-        }
-      }
-      iGateway++;
-      if (iGateway === gateways.length) iGateway = 0;
-    }, config.waitTimeCallServer);
-
-    this.intervalCalls.push(interval);
   }
 
   dialCallAmi(
@@ -615,13 +580,39 @@ class CallServer {
     this.reloadActiveCampaings();
   }
 
-  loadCampaings(callback) {
-    var campaigns = [];
+  loadActiveCampaings(callback) {
+    // Stop all call cycles
+    if(typeof this.campaigns !== 'undefined')
+    for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
+      if (this.intervalCalls[iCamp]){        
+        clearInterval(this.intervalCalls[iCamp]);
+        this.intervalCalls[iCamp]={};
+      } 
+      var campaign = this.campaigns[iCamp];
+      this.updateCampaignStatistcs(campaign, (res) => console.log(res));
+    }
+
+
     //Charge active campaign
+    this.campaigns = [];
     this.database.entities.messageCampaign
-      .findAll({ order: [["id", "DESC"]] })
+      .findAll({ order: [["id", "DESC"]], where: { state: "calling" } })
       .then((camps) => {
-        callback(camps);                
+        if (camps) {
+          camps.forEach((camp, index, array) => {
+            //Load remain contact only for active campaigns
+            this.database.entities.customer
+              .findAll({
+                where: { campaignId: camp.id, state: "toContact" },
+                order: [["state", "DESC"]],
+              })
+              .then((contacts) => {
+                camp.contacts = contacts;
+                this.campaigns.push(camp);
+                callback();
+              });            
+          });
+        }
       });
   }
 
@@ -638,29 +629,13 @@ class CallServer {
   }
 
   reloadActiveCampaings() {
-    this.loadCampaings((campaigns) => {
-      this.campaigns = campaigns;
-      // Stop all call cycles
-      for (var i = 0; i < this.campaigns.length; i++) {
-        if (this.intervalCalls[i]) clearInterval(this.intervalCalls[i]);
-      }
-
+    this.loadActiveCampaings(() =>{
       //Charge active campaign and their contacts
       for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
         //controllo campagna in calling
         var campaign = this.campaigns[iCamp];
         if (campaign.state === "calling") {
-          var iActiveCampaign=iCamp;
-          this.database.entities.customer
-            .findAll({
-              where: { campaignId: campaign.id, state: "toContact" },
-              order: [["state", "DESC"]],
-            })
-            .then((contacts) => {
-              this.campaigns[iActiveCampaign].contacts = contacts;              
-              console.log("Loaded " + contacts.length + " to call");
-              this.generateCustomerCalls(iActiveCampaign, this.clientAmi);
-            });
+          this.generateCustomerCalls(iCamp, this.clientAmi);          
         }
       }
     });
@@ -835,34 +810,51 @@ class CallServer {
       });
   }
 
-  updateCampaignStatistcs(campaign,callback) {
-    var query=" \
+  updateCampaignStatistcs(campaign, callback) {
+    var query =
+      " \
     SELECT a.id, \
     (SELECT COUNT(*) FROM customers WHERE (customers.campaignId=a.id and state='noanswer')) as noanswer, \
     (SELECT COUNT(*) FROM customers WHERE (customers.campaignId=a.id and state='called')) as called,     \
     (SELECT COUNT(*) FROM clicks    WHERE (clicks.campaignId=a.id and clicks.confirm=0)) as oneclick,    \
     (SELECT COUNT(*) FROM clicks    WHERE (clicks.campaignId=a.id and clicks.confirm=1)) as twoclick     \
-    FROM (SELECT DISTINCT id FROM messagecampaigns WHERE state='calling' AND id='"+campaign.id+"') a;";
-    this.database.execute_raw_query(query, res=>{
-      if(res) {
+    FROM (SELECT DISTINCT id FROM messagecampaigns WHERE state='calling' OR  state='complete' AND id='" +
+      campaign.id +
+      "') a;";
+    this.database.execute_raw_query(query, (res) => {
+      if (res) {
         //calcolo orario di fine presunto
         var now = new Date().getTime();
-        var deltaNmsg=32*config.pbxProperties.maxRetryCustomer;
-        var deltaTime=now-this.lastUpdateTimeStats;
-        var speed=deltaNmsg/deltaTime;        
-        var nMillis = (campaign.ncontacts - campaign.nNoAnswerContacts-campaign.nCalledContacts)/speed;
+        var deltaNmsg = 32 * config.pbxProperties.maxRetryCustomer;
+        var deltaTime = now - this.lastUpdateTimeStats;
+        var speed = deltaNmsg / deltaTime;
+        if (speed < 1e-5) speed = 0.1;
+        var nMillis =
+          (campaign.ncontacts -
+            campaign.nNoAnswerContacts -
+            campaign.nCalledContacts) /
+          speed;
         var endTime = new Date(now + nMillis);
 
-        campaign.nCalledContacts=res[0].called;
-        campaign.nNoAnswerContacts=res[0].noanswer;
-        campaign.nClickOneContacts=res[0].oneclick;
-        campaign.nClickTwoContacts=res[0].twoclick;
-        if (campaign.nCalledContacts === campaign.ncontacts)
+        campaign.nCalledContacts = res[0].called;
+        campaign.nNoAnswerContacts = res[0].noanswer;
+        campaign.nClickOneContacts = res[0].oneclick;
+        campaign.nClickTwoContacts = res[0].twoclick;
+        var totalCalledContactes=campaign.nCalledContacts+campaign.nNoAnswerContacts;
+        if (totalCalledContactes === campaign.ncontacts)
           campaign.state = "complete";
+          
         campaign.end = endTime;
 
-        campaign.save().then(camp => {callback("Statistics updated in campaign: "+camp.id);});
-        this.lastUpdateTimeStats=new Date().getTime();
+        campaign.save().then((camp) => {
+          if(camp.state==="complete") 
+          {
+            campaign.contacts=[];
+            this.reloadActiveCampaings();
+          }
+          callback("Statistics updated in campaign: " + camp.id);
+        });
+        this.lastUpdateTimeStats = new Date().getTime();
       }
     });
 

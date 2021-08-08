@@ -305,5 +305,20 @@ module.exports = {
       idCampaign +
       "');";
     this.execute_raw_update(sql, callback);
+  },
+  checkStatistcs() {
+    const query1="UPDATE messagecampaigns SET messagecampaigns.ncontacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id));"
+    const query2="UPDATE messagecampaigns SET messagecampaigns.ncompleted=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='contacted'));"
+    const query3="UPDATE messagecampaigns SET messagecampaigns.nCalledContacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='called'));"
+    const query4="UPDATE messagecampaigns SET messagecampaigns.nNoAnswerContacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='noanswer'));"
+    const query5="UPDATE messagecampaigns SET messagecampaigns.nClickTwoContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=1));"
+    const query6="UPDATE messagecampaigns SET messagecampaigns.nClickOneContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=0));"
+    
+    this.execute_raw_update(query1, res => {console.log("Statistcs check done (contacts).")});
+    this.execute_raw_update(query2, res => {console.log("Statistcs check done (completed).")});
+    this.execute_raw_update(query3, res => {console.log("Statistcs check done (called).")});
+    this.execute_raw_update(query4, res => {console.log("Statistcs check done (noanswer).")});
+    this.execute_raw_update(query5, res => {console.log("Statistcs check done (onclick).")});
+    this.execute_raw_update(query6, res => {console.log("Statistcs check done (twoclick).")});
   }
 };

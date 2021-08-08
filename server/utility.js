@@ -414,5 +414,5 @@ module.exports = {
         callback({status: 'OK', msg: stdout});
       }
     });    
-  }
+  },
 };

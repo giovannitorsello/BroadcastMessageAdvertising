@@ -15,7 +15,7 @@ class SmsServer {
   nAntifroudMessage = 0;
   inteval = {};
   database = {};
-  lastUpdateTimeStats=0;
+  lastUpdateTimeStats = 0;
 
   constructor(app, database) {
     this.database = database;
@@ -29,18 +29,24 @@ class SmsServer {
     this.loadGateways((gateways) => {
       this.smsGateways = gateways;
     });
-    this.loadCampaings((campaigns) => {
+    this.loadActiveCampaings((campaigns) => {
       this.smsCampaigns = campaigns;
     });
+  }
+  
+  existsActiveCampaigns() {
+    // search for active campaigns
+    const existsActiveCampaigns = (element) =>
+    element.state === "active";
+    var index = this.smsCampaigns.findIndex(existsActiveCampaigns);
+    if (index > -1) return true;
+    else return false;
   }
 
   checkIfBalanceIsPossible() {
     this.database.checkIfBalanceIsPossible((results) => {
-      if (results.length >= 2) return true;
-      else {
-        //Stop all campaigns
-        this.disableAllCampaigns();
-        return false;
+      if (results.length < 2) {
+      this.disableAllCampaigns();
       }
     });
   }
@@ -63,6 +69,7 @@ class SmsServer {
 
     if (bIsWorking !== gateway.isWorkingSms) {
       gateway.isWorkingSms = bIsWorking;
+      gateway.changed("isWorkingSms", true);
       gateway.changed("objData", true);
       gateway.save();
 
@@ -70,12 +77,11 @@ class SmsServer {
     }
   }
 
-
   startCampaignManager() {
     this.smsCampaigns.forEach((campaign, index, arrCamp) => {
       //controllo campagna attiva
       if (campaign.state === "active") {
-        this.sendNextMessage(campaign, (response) => console.log(response));        
+        this.sendNextMessage(campaign, (response) => console.log(response));
       }
     });
   }
@@ -123,12 +129,14 @@ class SmsServer {
               " by internet"
           );
           contact.state = "contacted";
-          if(!contact.objData) contact.objData = {};
+          if (!contact.objData) contact.objData = {};
           contact.objData.idSender = 0;
           contact.changed("objData", true);
           contact.save().then((cont) => {
             console.log("Contact " + cont.mobilephone + " updated");
-            this.updateCampaignData(campaign, (response) => callback(response));
+            this.updateCampaignStatistcs(campaign, (response) =>
+              callback(response)
+            );
           });
         }
 
@@ -155,24 +163,24 @@ class SmsServer {
                     response.id
                 );
                 contact.state = "contacted";
-                if(!contact.objData) contact.objData = {};
+                if (!contact.objData) contact.objData = {};
                 contact.objData.idSender = response.id;
                 contact.changed("objData", true);
                 contact.save().then((cont) => {
                   console.log("Contact " + cont.mobilephone + " updated");
-                  this.updateCampaignData(campaign, (response) =>
+                  this.updateCampaignStatistcs(campaign, (response) =>
                     callback(response)
                   );
                 });
               } else {
                 console.log("Error on contact: " + contact.mobilephone);
                 contact.state = "contacted";
-                if(!contact.objData) contact.objData = {};
+                if (!contact.objData) contact.objData = {};
                 contact.objData.idSender = 0;
                 contact.changed("objData", true);
                 contact.save().then((cont) => {
                   console.log("Contact " + cont.mobilephone + " updated");
-                  this.updateCampaignData(campaign, (response) =>
+                  this.updateCampaignStatistcs(campaign, (response) =>
                     callback(response)
                   );
                 });
@@ -191,7 +199,7 @@ class SmsServer {
     var message = this.formatMessage(campaign, contact);
     if (
       message !== "" &&
-      (contact.state === "toContact") && // || contact.state === "called"
+      contact.state === "toContact" &&
       campaign.state === "active"
     ) {
       //Line selection
@@ -221,7 +229,7 @@ class SmsServer {
                     selectedSenderLine,
                     (respose) => {
                       console.log("Antifraud execute.");
-                      this.updateCampaignData(campaign, (response) =>
+                      this.updateCampaignStatistcs(campaign, (response) =>
                         callback(response)
                       );
                     }
@@ -328,27 +336,24 @@ class SmsServer {
       });
   }
 
-  loadCampaings(callback) {
+  loadActiveCampaings(callback) {
     var campaigns = [];
     //Charge active campaign
     this.database.entities.messageCampaign
-      .findAll({ order: [["id", "DESC"]] })
+      .findAll({ order: [["id", "DESC"]], where: { state: "active" } })
       .then((camps) => {
         if (camps) {
           camps.forEach((camp, index, array) => {
             //Load remain contact only for active campaigns
-            if(camp.state==="active") {
-              this.database.entities.customer
-                .findAll({
-                  where: { campaignId: camp.id, state: "toContact" },
-                  order: [["state", "DESC"]],
-                })
-                .then((contacts) => {
-                  camp.contacts = contacts;
-                  //camp.ncontacts = contacts.length;
-                });
-            }
-            campaigns.push(camp);
+            this.database.entities.customer
+              .findAll({
+                where: { campaignId: camp.id, state: "toContact" },
+                order: [["state", "DESC"]],
+              })
+              .then((contacts) => {
+                camp.contacts = contacts;
+                campaigns.push(camp);
+              });
             if (index === array.length - 1) callback(campaigns);
           });
         }
@@ -370,10 +375,18 @@ class SmsServer {
     });
 
     //Charge active campaigns and their contacts
-    this.loadCampaings((campaigns) => {
+    this.loadActiveCampaings((campaigns) => {
       this.smsCampaigns = campaigns;
+      //start sending message
+      var interval = setInterval(() => {
+        if(!this.existsActiveCampaigns()) {
+          clearInterval(interval)              
+        }
+        else
+          this.startCampaignManager();
+      }, config.waitTime);
       //Before start chect gateways situation
-      this.checkIfBalanceIsPossible();
+      //this.checkIfBalanceIsPossible();
     });
   }
 
@@ -554,76 +567,46 @@ class SmsServer {
     return { senderGateway: senderGateway, senderLine: senderLine };
   }
 
-  updateCampaignData(campaign,callback) {
-    var query=" \
+  updateCampaignStatistcs(campaign, callback) {
+    var query =
+      " \
     SELECT a.id, \
     (SELECT COUNT(*) FROM customers WHERE (customers.campaignId=a.id and state='contacted')) as ncompleted, \
     (SELECT COUNT(*) FROM customers WHERE (customers.campaignId=a.id and state='toContact')) as ntocontact,     \
     (SELECT COUNT(*) FROM clicks    WHERE (clicks.campaignId=a.id and clicks.confirm=0)) as oneclick,    \
     (SELECT COUNT(*) FROM clicks    WHERE (clicks.campaignId=a.id and clicks.confirm=1)) as twoclick     \
-    FROM (SELECT DISTINCT id FROM messagecampaigns WHERE state='active' AND id='"+campaign.id+"') a;";
-    this.database.execute_raw_query(query, res=>{
-      if(res) {
+    FROM (SELECT DISTINCT id FROM messagecampaigns WHERE state='active' OR  state='complete' AND id='" +
+      campaign.id +
+      "') a;";
+    this.database.execute_raw_query(query, (res) => {
+      if (res[0]) {
         //calcolo orario di fine presunto
         var now = new Date().getTime();
-        var deltaNmsg=res[0].ncompleted-campaign.ncompleted;
-        var deltaTime=now-this.lastUpdateTimeStats;
-        var speed=deltaNmsg/deltaTime;        
-        var nMillis = (campaign.ncontacts - campaign.ncompleted)/speed;
+        var deltaNmsg = res[0].ncompleted - campaign.ncompleted;
+        var deltaTime = now - this.lastUpdateTimeStats;
+        var speed = deltaNmsg / deltaTime;
+        if (speed < 1e-5) speed = 0.1;
+        var nMillis = (campaign.ncontacts - campaign.ncompleted) / speed;
         var endTime = new Date(now + nMillis);
-        
 
-        campaign.ncompleted=res[0].ncompleted;
-        campaign.ntocontact=res[0].ntocontact;
-        campaign.nClickOneContacts=res[0].oneclick;
-        campaign.nClickTwoContacts=res[0].twoclick;
-        if (campaign.ncompleted === campaign.ncontacts)
-          campaign.state = "complete";              
+        campaign.ncompleted = res[0].ncompleted;
+        campaign.ntocontact = res[0].ntocontact;
+        campaign.nClickOneContacts = res[0].oneclick;
+        campaign.nClickTwoContacts = res[0].twoclick;
+        if (campaign.ncompleted === campaign.ncontacts) 
+          campaign.state = "complete";
+        
         campaign.end = endTime;
 
-        campaign.save().then(camp => {callback("Update campaign done");});
-        this.lastUpdateTimeStats=new Date().getTime();
+        campaign.save().then((camp) => {          
+          if(camp.state==="complete") 
+            this.reloadActiveCampaings();
+          
+          callback("Statistics updated in campaign: " + camp.id);
+        });
+        this.lastUpdateTimeStats = new Date().getTime();
       }
     });
-    /* Adjust statiisics query utility 
-    UPDATE messagecampaigns SET messagecampaigns.ncontacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id));
-    UPDATE messagecampaigns set nCalledContacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='called'));
-    UPDATE messagecampaigns set nNoAnswerContacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='noanswer'));
-    UPDATE messagecampaigns SET messagecampaigns.nClickTwoContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=1));
-    UPDATE messagecampaigns SET messagecampaigns.nClickOneContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=0));
-    UPDATE messagecampaigns set ncompleted=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='contacted'));
-    */
-  }
-
-  updateCampaignDataOld(campaign, callback) {
-    this.database.entities.customer
-      .count({
-        where: {
-          campaignId: campaign.id,
-          state: "contacted",
-        },
-      })
-      .then((countContacted) => {
-        this.database.entities.messageCampaign
-          .findOne({ where: { id: campaign.id } })
-          .then((camp) => {
-            //aggiornamento contattati
-            campaign.ncompleted = countContacted;
-            camp.ncompleted = countContacted;
-            if (camp.ncompleted === camp.ncontacts) {
-              camp.state = "complete";
-              campaign.state = "complete";
-            }
-
-            //calcolo orario di fine presunto
-            var nMillis = (camp.ncontacts - camp.ncompleted) * this.waitTime;
-            var now = new Date().getTime();
-            var endTime = new Date(now + nMillis);
-            camp.end = endTime;
-            camp.save();
-            callback("Update campaign done");
-          });
-      });
   }
 
   getGateways() {
@@ -651,9 +634,6 @@ module.exports = {
   smsServerIstance: {},
   startServer(app, database) {
     this.smsServerIstance = new SmsServer(app, database);
-
-    this.smsServerIstance.interval = setInterval(() => {
-      this.smsServerIstance.startCampaignManager();
-    }, config.waitTime);
+    this.smsServerIstance.reloadActiveCampaings();
   },
 };
