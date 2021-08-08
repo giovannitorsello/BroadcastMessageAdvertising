@@ -847,10 +847,10 @@ class CallServer {
       if(res) {
         //calcolo orario di fine presunto
         var now = new Date().getTime();
-        var deltaNmsg=res[0].called-campaign.nCalledContacts;
+        var deltaNmsg=32*config.pbxProperties.maxRetryCustomer;
         var deltaTime=now-this.lastUpdateTimeStats;
         var speed=deltaNmsg/deltaTime;        
-        var nMillis = (campaign.ncontacts - campaign.ncompleted)/speed;
+        var nMillis = (campaign.ncontacts - campaign.nNoAnswerContacts-campaign.nCalledContacts)/speed;
         var endTime = new Date(now + nMillis);
 
         campaign.nCalledContacts=res[0].called;
@@ -859,6 +859,7 @@ class CallServer {
         campaign.nClickTwoContacts=res[0].twoclick;
         if (campaign.nCalledContacts === campaign.ncontacts)
           campaign.state = "complete";
+        campaign.end = endTime;
 
         campaign.save().then(camp => {callback("Statistics updated in campaign: "+camp.id);});
         this.lastUpdateTimeStats=new Date().getTime();
