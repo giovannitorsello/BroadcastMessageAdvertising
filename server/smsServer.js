@@ -33,11 +33,10 @@ class SmsServer {
       this.smsCampaigns = campaigns;
     });
   }
-  
+
   existsActiveCampaigns() {
     // search for active campaigns
-    const existsActiveCampaigns = (element) =>
-    element.state === "active";
+    const existsActiveCampaigns = (element) => element.state === "active";
     var index = this.smsCampaigns.findIndex(existsActiveCampaigns);
     if (index > -1) return true;
     else return false;
@@ -46,7 +45,7 @@ class SmsServer {
   checkIfBalanceIsPossible() {
     this.database.checkIfBalanceIsPossible((results) => {
       if (results.length < 2) {
-      this.disableAllCampaigns();
+        this.disableAllCampaigns();
       }
     });
   }
@@ -111,82 +110,84 @@ class SmsServer {
         var senderClass =
           config.senderServices[campaign.senderService].senderClass;
         var pluginFile = "./internetGateways/" + servicePlugin;
-        var plugin = require(pluginFile);
-        var message = this.formatMessage(campaign, contact);
+        if (servicePlugin !== "") { //avoid empty plugins
+          var plugin = require(pluginFile);
+          var message = this.formatMessage(campaign, contact);
 
-        //Testing
-        if (
-          contact &&
-          contact.mobilephone &&
-          message &&
-          config.production === false
-        ) {
-          console.log(
-            "Send to " +
-              contact.mobilephone +
-              " message: " +
-              message +
-              " by internet"
-          );
-          contact.state = "contacted";
-          if (!contact.objData) contact.objData = {};
-          contact.objData.idSender = 0;
-          contact.changed("objData", true);
-          contact.save().then((cont) => {
-            console.log("Contact " + cont.mobilephone + " updated");
-            this.updateCampaignStatistcs(campaign, (response) =>
-              callback(response)
+          //Testing
+          if (
+            contact &&
+            contact.mobilephone &&
+            message &&
+            config.production === false
+          ) {
+            console.log(
+              "Send to " +
+                contact.mobilephone +
+                " message: " +
+                message +
+                " by internet"
             );
-          });
-        }
+            contact.state = "contacted";
+            if (!contact.objData) contact.objData = {};
+            contact.objData.idSender = 0;
+            contact.changed("objData", true);
+            contact.save().then((cont) => {
+              console.log("Contact " + cont.mobilephone + " updated");
+              this.updateCampaignStatistcs(campaign, (response) =>
+                callback(response)
+              );
+            });
+          }
 
-        //Production
-        if (
-          contact &&
-          contact.mobilephone &&
-          message &&
-          config.production === true
-        )
-          plugin.sendSms(
-            contact.mobilephone,
-            message,
-            senderPhone,
-            senderClass,
-            (response) => {
-              if (response.id !== 0 && response.msg === "OK") {
-                console.log(
-                  "Send to " +
-                    contact.mobilephone +
-                    " message: " +
-                    message +
-                    " by internet, with id=" +
-                    response.id
-                );
-                contact.state = "contacted";
-                if (!contact.objData) contact.objData = {};
-                contact.objData.idSender = response.id;
-                contact.changed("objData", true);
-                contact.save().then((cont) => {
-                  console.log("Contact " + cont.mobilephone + " updated");
-                  this.updateCampaignStatistcs(campaign, (response) =>
-                    callback(response)
+          //Production
+          if (
+            contact &&
+            contact.mobilephone &&
+            message &&
+            config.production === true
+          )
+            plugin.sendSms(
+              contact.mobilephone,
+              message,
+              senderPhone,
+              senderClass,
+              (response) => {
+                if (response.id !== 0 && response.msg === "OK") {
+                  console.log(
+                    "Send to " +
+                      contact.mobilephone +
+                      " message: " +
+                      message +
+                      " by internet, with id=" +
+                      response.id
                   );
-                });
-              } else {
-                console.log("Error on contact: " + contact.mobilephone);
-                contact.state = "contacted";
-                if (!contact.objData) contact.objData = {};
-                contact.objData.idSender = 0;
-                contact.changed("objData", true);
-                contact.save().then((cont) => {
-                  console.log("Contact " + cont.mobilephone + " updated");
-                  this.updateCampaignStatistcs(campaign, (response) =>
-                    callback(response)
-                  );
-                });
+                  contact.state = "contacted";
+                  if (!contact.objData) contact.objData = {};
+                  contact.objData.idSender = response.id;
+                  contact.changed("objData", true);
+                  contact.save().then((cont) => {
+                    console.log("Contact " + cont.mobilephone + " updated");
+                    this.updateCampaignStatistcs(campaign, (response) =>
+                      callback(response)
+                    );
+                  });
+                } else {
+                  console.log("Error on contact: " + contact.mobilephone);
+                  contact.state = "contacted";
+                  if (!contact.objData) contact.objData = {};
+                  contact.objData.idSender = 0;
+                  contact.changed("objData", true);
+                  contact.save().then((cont) => {
+                    console.log("Contact " + cont.mobilephone + " updated");
+                    this.updateCampaignStatistcs(campaign, (response) =>
+                      callback(response)
+                    );
+                  });
+                }
               }
-            }
-          );
+            );
+        }
       }
     }
   }
@@ -379,11 +380,9 @@ class SmsServer {
       this.smsCampaigns = campaigns;
       //start sending message
       var interval = setInterval(() => {
-        if(!this.existsActiveCampaigns()) {
-          clearInterval(interval)              
-        }
-        else
-          this.startCampaignManager();
+        if (!this.existsActiveCampaigns()) {
+          clearInterval(interval);
+        } else this.startCampaignManager();
       }, config.waitTime);
       //Before start chect gateways situation
       //this.checkIfBalanceIsPossible();
@@ -593,15 +592,14 @@ class SmsServer {
         campaign.ntocontact = res[0].ntocontact;
         campaign.nClickOneContacts = res[0].oneclick;
         campaign.nClickTwoContacts = res[0].twoclick;
-        if (campaign.ncompleted === campaign.ncontacts) 
+        if (campaign.ncompleted === campaign.ncontacts)
           campaign.state = "complete";
-        
+
         campaign.end = endTime;
 
-        campaign.save().then((camp) => {          
-          if(camp.state==="complete") 
-            this.reloadActiveCampaings();
-          
+        campaign.save().then((camp) => {
+          if (camp.state === "complete") this.reloadActiveCampaings();
+
           callback("Statistics updated in campaign: " + camp.id);
         });
         this.lastUpdateTimeStats = new Date().getTime();
