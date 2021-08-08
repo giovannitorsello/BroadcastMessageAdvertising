@@ -659,7 +659,7 @@ module.exports = {
               .then((sims) => {
                 gateway.nSmsSent = 0;
                 gateway.nSmsReceived = 0;
-                gateway.isWorkingSms = true;
+                //gateway.isWorkingSms = true;
                 //Manage change bank and Sim counter
                 if (bankIdSel !== gateway.bankId) {
                   iSim = 0;
@@ -706,7 +706,7 @@ module.exports = {
               .then((sims) => {
                 gateway.nSmsSent = 0;
                 gateway.nSmsReceived = 0;
-                gateway.isWorkingCall = true;
+                //gateway.isWorkingCall = true;
                 //Manage change bank and Sim counter
                 if (bankIdSel !== gateway.bankId) {
                   iSim = 0;
