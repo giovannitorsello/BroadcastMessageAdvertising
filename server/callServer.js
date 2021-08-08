@@ -153,8 +153,7 @@ class CallServer {
                   uniqueobj.computed = true;
                   mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
                 } else if (phoneNumber) {
-                  console.log("Customer " + phoneNumber + " has answered");
-                  //Update state
+                  console.log("Customer " + phoneNumber + " has answered");                
                 }
               }
             }
