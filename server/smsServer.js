@@ -110,7 +110,7 @@ class SmsServer {
         var senderClass =
           config.senderServices[campaign.senderService].senderClass;
         var pluginFile = "./internetGateways/" + servicePlugin;
-        if (servicePlugin !== "") { //avoid empty plugins
+        if (pluginFile !== "./internetGateways/") { //avoid empty plugins
           var plugin = require(pluginFile);
           var message = this.formatMessage(campaign, contact);
 
