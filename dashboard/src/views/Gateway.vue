@@ -277,7 +277,7 @@ export default {
           "Tutti i contatori saranno azzzerati. Sei sicuro di voler riprogrammare i gateways con le sim?"
         )
       ) {
-        this.axios.post("/adminarea/gateway/reset", {}).then((request) => {
+        this.axios.post("/adminarea/gateway/resetAll", {}).then((request) => {
           this.gateways = request.data.gateways;
         });
       }

@@ -613,6 +613,16 @@ module.exports = {
                     gateway.objData.callsReceived[i] = 0;
                     iSim++;
                   }
+                  else {
+                    gateway.objData.lines[i] = "N/D";
+                    gateway.objData.operator[i] = "N/D";
+                    gateway.objData.isWorkingSms[i] = 1;
+                    gateway.objData.isWorkingCall[i] = 1;
+                    gateway.objData.smsSent[i] = 0;
+                    gateway.objData.smsReceived[i] = 0;
+                    gateway.objData.callsSent[i] = 0;
+                    gateway.objData.callsReceived[i] = 0;
+                  }
                 }
                 gateway.setDataValue("nSmsSent", 0);
                 gateway.setDataValue("nSmsReceived", 0);
