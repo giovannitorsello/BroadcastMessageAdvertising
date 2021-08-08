@@ -11,6 +11,7 @@ const { Sequelize, Model, DataTypes } = require("sequelize");
 const path = require("path");
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
+const sequelize = new Sequelize(config.database);
 
 const shortner = require("./shortner.js");
 const pingServer = require("./pingServer.js");
@@ -573,7 +574,7 @@ module.exports = {
       var iSim = 0,
         bankIdSel = 0;
       database.entities.gateway
-        .findAll({ order: [["id", "ASC"]] })
+        .findAll({ order: [[ sequelize.cast(sequelize.col('id'), 'INTEGER') , 'ASC' ]] })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
             database.entities.sim

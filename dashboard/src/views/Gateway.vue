@@ -125,6 +125,8 @@
           :headers="headerGateways"
           :items="gateways"
           :items-per-page="30"
+          :sort-by="['id']"
+          :sort-desc="[false]"
           class="elevation-1"
         >
           <template v-slot:item="row">
