@@ -648,7 +648,7 @@ module.exports = {
       var iSim = 0,
         bankIdSel = 0;
       database.entities.gateway
-        .findAll({ order: [["id", "ASC"]] })
+        .findAll({ order: [[ sequelize.cast(sequelize.col('id'), 'INTEGER') , 'ASC' ]] })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
             database.entities.sim
@@ -695,7 +695,7 @@ module.exports = {
       var iSim = 0,
         bankIdSel = 0;
       database.entities.gateway
-        .findAll({ order: [["id", "ASC"]] })
+        .findAll({ order: [[ sequelize.cast(sequelize.col('id'), 'INTEGER') , 'ASC' ]] })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
             database.entities.sim
