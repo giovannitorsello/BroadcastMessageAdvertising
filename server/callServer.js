@@ -124,14 +124,7 @@ class CallServer {
                 typeof iContact !== "undefined" &&
                 typeof iGateway !== "undefined"
               ) {
-                var campaign = this.campaigns[iCampaign];
-                var contacts = campaign.contacts;
-                if (
-                  typeof campaign !== "undefined" &&
-                  typeof contacts !== "undefined"
-                ) {
-                  var contacts = campaign.contacts;
-                  var contact = contacts[iContact];
+                
                   var gateway = this.gateways[iGateway];
                   var iLine = uniqueobj.iLine;
 
@@ -151,10 +144,7 @@ class CallServer {
 
                   //avoid multiple computation
                   uniqueobj.computed = true;
-                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
-                } else if (phoneNumber) {
-                  console.log("Customer " + phoneNumber + " has answered");                
-                }
+                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));                
               }
             }
           }
