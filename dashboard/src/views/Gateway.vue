@@ -382,7 +382,7 @@ export default {
     loadInternetGateways() {
       this.internetGateways = [];
       this.axios
-        .post("/adminarea/internetGateway/getall")
+        .post("/adminarea/internetGateway/getAll")
         .then((request) => {
           if (request.data.internetGateways) {
             this.internetGateways = request.data.internetGateways;

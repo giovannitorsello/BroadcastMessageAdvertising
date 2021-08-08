@@ -574,7 +574,9 @@ module.exports = {
       var iSim = 0,
         bankIdSel = 0;
       database.entities.gateway
-        .findAll({ order: [[ sequelize.cast(sequelize.col('id'), 'INTEGER') , 'ASC' ]] })
+        .findAll({
+          order: [[sequelize.cast(sequelize.col("id"), "INTEGER"), "ASC"]],
+        })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
             database.entities.sim
@@ -613,8 +615,7 @@ module.exports = {
                     gateway.objData.callsSent[i] = 0;
                     gateway.objData.callsReceived[i] = 0;
                     iSim++;
-                  }
-                  else {
+                  } else {
                     gateway.objData.lines[i] = "N/D";
                     gateway.objData.operator[i] = "N/D";
                     gateway.objData.isWorkingSms[i] = 1;
@@ -648,7 +649,9 @@ module.exports = {
       var iSim = 0,
         bankIdSel = 0;
       database.entities.gateway
-        .findAll({ order: [[ sequelize.cast(sequelize.col('id'), 'INTEGER') , 'ASC' ]] })
+        .findAll({
+          order: [[sequelize.cast(sequelize.col("id"), "INTEGER"), "ASC"]],
+        })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
             database.entities.sim
@@ -695,7 +698,9 @@ module.exports = {
       var iSim = 0,
         bankIdSel = 0;
       database.entities.gateway
-        .findAll({ order: [[ sequelize.cast(sequelize.col('id'), 'INTEGER') , 'ASC' ]] })
+        .findAll({
+          order: [[sequelize.cast(sequelize.col("id"), "INTEGER"), "ASC"]],
+        })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
             database.entities.sim
@@ -718,7 +723,7 @@ module.exports = {
                     gateway.objData.callsReceived[i] = 0;
                     iSim++;
                   }
-                }                
+                }
                 gateway.setDataValue("objData", gateway.objData);
                 gateway.changed("objData", true);
                 gateway.save().then((gat) => {
@@ -736,31 +741,33 @@ module.exports = {
     });
 
     /////////////////////Internet gateway ////////////////////
-    app.post("/adminarea/internetGateway/getall", async function (req, res) {
+    app.post("/adminarea/internetGateway/getAll", async function (req, res) {
       if (config.senderServices) {
         var internetGateways = [];
         for (var i = 1; i < config.senderServices.length; i++) {
           let service = Object.assign({}, config.senderServices[i]);
           var servicePlugin = service.plugin;
           var pluginFile = "./internetGateways/" + servicePlugin;
-          var plugin = require(pluginFile);
+          if (pluginFile !== "./internetGateways/") {
+            var plugin = require(pluginFile);
 
-          await plugin.getCreditEconomic((result) => {
-            if (result.state === "OK") {
-              service.credit = result.credit;
-              internetGateways.push(service);
+            await plugin.getCreditEconomic((result) => {
+              if (result.state === "OK") {
+                service.credit = result.credit;
+                internetGateways.push(service);
 
-              if (
-                i === config.senderServices.length ||
-                i === config.senderServices.length - 1
-              )
-                res.send({
-                  state: "OK",
-                  msg: "Internet gateways found",
-                  internetGateways: internetGateways,
-                });
-            }
-          });
+                if (
+                  i === config.senderServices.length ||
+                  i === config.senderServices.length - 1
+                )
+                  res.send({
+                    state: "OK",
+                    msg: "Internet gateways found",
+                    internetGateways: internetGateways,
+                  });
+              }
+            });
+          }
         }
       } else
         res.send({
@@ -832,34 +839,32 @@ module.exports = {
         });
     });
 
-    app.post("/adminarea/messageCampaign/startCalls",
-      function (req, res) {
-        var messageCampaign = req.body.messageCampaign;
-        database.entities.messageCampaign
-          .findOne({ where: { id: messageCampaign.id } })
-          .then(function (obj) {
-            if (obj !== null) {
-                obj.setDataValue("state", "calling");
-                obj.save().then(function (campNew) {
-                  if (campNew !== null) {
-                    callServer.reloadActiveCampaings();
-                    res.send({
-                      status: "OK",
-                      msg: "Call campaign is started",
-                      messageCampaign: campNew,
-                    });
-                  } else {
-                    res.send({
-                      status: "error",
-                      msg: "Message campaign start error",
-                      messageCampaign: campNew,
-                    });
-                  }
-              });
-            }
-          });
-      }
-    );
+    app.post("/adminarea/messageCampaign/startCalls", function (req, res) {
+      var messageCampaign = req.body.messageCampaign;
+      database.entities.messageCampaign
+        .findOne({ where: { id: messageCampaign.id } })
+        .then(function (obj) {
+          if (obj !== null) {
+            obj.setDataValue("state", "calling");
+            obj.save().then(function (campNew) {
+              if (campNew !== null) {
+                callServer.reloadActiveCampaings();
+                res.send({
+                  status: "OK",
+                  msg: "Call campaign is started",
+                  messageCampaign: campNew,
+                });
+              } else {
+                res.send({
+                  status: "error",
+                  msg: "Message campaign start error",
+                  messageCampaign: campNew,
+                });
+              }
+            });
+          }
+        });
+    });
 
     app.post("/adminarea/messageCampaign/startMessages", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
@@ -963,46 +968,54 @@ module.exports = {
     });
 
     app.post("/adminarea/messageCampaign/getAll", function (req, res) {
-      database.entities.messageCampaign.findAll(
-        {order: [['id', 'DESC']]}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Message campaigns found",
-            messageCampaigns: results,
-          });
-        else
-          res.send({
-            status: "OK",
-            msg: "Message campaigns not found",
-            messageCampaigns: {},
-          });
-      });
+      database.entities.messageCampaign
+        .findAll({ order: [["id", "DESC"]] })
+        .then(function (results) {
+          if (results)
+            res.send({
+              status: "OK",
+              msg: "Message campaigns found",
+              messageCampaigns: results,
+            });
+          else
+            res.send({
+              status: "OK",
+              msg: "Message campaigns not found",
+              messageCampaigns: {},
+            });
+        });
     });
 
-    app.post("/adminarea/messageCampaign/getActiveCampaigns", function (req, res) {
-      database.entities.messageCampaign.findAll(
-        {order: [['id', 'DESC']], where: {
-          [Op.or]: [
-            { state: "calling" },
-            { state: "active" },
-            { state: "complete" }
-          ]
-        }}).then(function (results) {
-        if (results)
-          res.send({
-            status: "OK",
-            msg: "Message campaigns found",
-            messageCampaigns: results,
+    app.post(
+      "/adminarea/messageCampaign/getActiveCampaigns",
+      function (req, res) {
+        database.entities.messageCampaign
+          .findAll({
+            order: [["id", "DESC"]],
+            where: {
+              [Op.or]: [
+                { state: "calling" },
+                { state: "active" },
+                { state: "complete" },
+              ],
+            },
+          })
+          .then(function (results) {
+            if (results)
+              res.send({
+                status: "OK",
+                msg: "Message campaigns found",
+                messageCampaigns: results,
+              });
+            else
+              res.send({
+                status: "OK",
+                msg: "Message campaigns not found",
+                messageCampaigns: {},
+              });
           });
-        else
-          res.send({
-            status: "OK",
-            msg: "Message campaigns not found",
-            messageCampaigns: {},
-          });
-      });
-    });
+      }
+    );
 
     app.post("/adminarea/messageCampaign/getCampaign", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
@@ -1221,9 +1234,7 @@ module.exports = {
               [Op.and]: [
                 { campaignId: messageCampaign.id },
                 {
-                  [Op.or]: [
-                    { state: "noanswer" }                    
-                  ],
+                  [Op.or]: [{ state: "noanswer" }],
                 },
               ],
             },
@@ -1277,22 +1288,30 @@ module.exports = {
 
         fs.writeFile(newPath, rawData, (err) => {
           if (err) console.log(err);
-          if (!err){
-            var fileIn=path.join(__dirname, "templates") + "/audio/" + idCampaign+"_"+type;
-            var fileOut=config.pbxProperties.audioPath+"/"+config.pbxProperties.audioFilenames[type];
-            utility.convertAudioForAsterisk(fileIn,fileOut, (result) => {
-              if(result.status==='OK')
-              res.send({
-                status: "OK",
-                msg: "File loaded and conversion OK",
-              });
+          if (!err) {
+            var fileIn =
+              path.join(__dirname, "templates") +
+              "/audio/" +
+              idCampaign +
+              "_" +
+              type;
+            var fileOut =
+              config.pbxProperties.audioPath +
+              "/" +
+              config.pbxProperties.audioFilenames[type];
+            utility.convertAudioForAsterisk(fileIn, fileOut, (result) => {
+              if (result.status === "OK")
+                res.send({
+                  status: "OK",
+                  msg: "File loaded and conversion OK",
+                });
               else
-              res.send({
-                status: "error",
-                msg: "Error in conversion file.",
-              });
-            })
-          }          
+                res.send({
+                  status: "error",
+                  msg: "Error in conversion file.",
+                });
+            });
+          }
         });
       });
     });
