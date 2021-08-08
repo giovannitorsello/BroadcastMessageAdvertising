@@ -97,35 +97,7 @@ module.exports = {
                   console.log("CSV successfully imported in database");                  
                   callback(results[1]);
                 })
-            });
-            /*
-            rows.forEach((row, index, arrRows) => {
-              var cust = {};
-              cust.id = "";
-              cust.uid = this.makeUuid();
-              cust.firstname = row.Nome;
-              cust.lastname = row.Cognome;
-              cust.email = row.Email;
-              cust.mobilephone = row.Telefono;
-              cust.address = row.Indirizzo;
-              cust.postcode = row.CAP;
-              cust.city = row.Citta;
-              cust.adm1 = row.Provincia;
-              cust.adm2 = row.Regione;
-              cust.adm3 = row.Stato;
-              cust.campaignId = idCampaign;
-              console.log("Customer try to insert " + cust.mobilephone);
-              if(cust.firstname)
-              /*
-              database.entities.customer.create(cust).then((objnew) => {
-                if (objnew !== null) {
-                  nImported++;
-                }
-                if (index === arrRows.length - 1) {
-                  callback(nImported);
-                }
-              });
-            });*/
+            });            
           });
       });
   },

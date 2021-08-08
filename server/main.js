@@ -79,7 +79,7 @@ app.listen(config.server.http_port);
 //Init components and utilities.
 database.setup(() => {
   // Statistics check alignement
-  //database.checkStatistcs();
+  database.checkStatistcs();
   //Loading route for customer area
   clickServer.startServer(app,database);
   smsServer.startServer(app,database);
