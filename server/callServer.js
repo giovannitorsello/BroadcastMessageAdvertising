@@ -119,6 +119,7 @@ class CallServer {
               var phoneNumber = uniqueobj.phone;
               ///Manage generated call
               if (
+                this.campaigns &&
                 typeof iCampaign !== "undefined" &&
                 typeof iContact !== "undefined" &&
                 typeof iGateway !== "undefined"
