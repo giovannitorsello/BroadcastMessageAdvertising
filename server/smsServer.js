@@ -15,6 +15,7 @@ class SmsServer {
   nAntifroudMessage = 0;
   inteval = {};
   database = {};
+  lastUpdateTimeStats=0;
 
   constructor(app, database) {
     this.database = database;
@@ -553,7 +554,48 @@ class SmsServer {
     return { senderGateway: senderGateway, senderLine: senderLine };
   }
 
-  updateCampaignData(campaign, callback) {
+  updateCampaignData(campaign,callback) {
+    var query=" \
+    SELECT a.id, \
+    (SELECT COUNT(*) FROM customers WHERE (customers.campaignId=a.id and state='contacted')) as ncompleted, \
+    (SELECT COUNT(*) FROM customers WHERE (customers.campaignId=a.id and state='toContact')) as ntocontact,     \
+    (SELECT COUNT(*) FROM clicks    WHERE (clicks.campaignId=a.id and clicks.confirm=0)) as oneclick,    \
+    (SELECT COUNT(*) FROM clicks    WHERE (clicks.campaignId=a.id and clicks.confirm=1)) as twoclick     \
+    FROM (SELECT DISTINCT id FROM messagecampaigns WHERE state='active' AND id='"+campaign.id+"') a;";
+    this.database.execute_raw_query(query, res=>{
+      if(res) {
+        //calcolo orario di fine presunto
+        var now = new Date().getTime();
+        var deltaNmsg=res[0].ncompleted-campaign.ncompleted;
+        var deltaTime=now-this.lastUpdateTimeStats;
+        var speed=deltaNmsg/deltaTime;        
+        var nMillis = (campaign.ncontacts - campaign.ncompleted)/speed;
+        var endTime = new Date(now + nMillis);
+        
+
+        campaign.ncompleted=res[0].ncompleted;
+        campaign.ntocontact=res[0].ntocontact;
+        campaign.nClickOneContacts=res[0].oneclick;
+        campaign.nClickTwoContacts=res[0].twoclick;
+        if (campaign.ncompleted === campaign.ncontacts)
+          campaign.state = "complete";              
+        campaign.end = endTime;
+
+        campaign.save().then(camp => {callback("Update campaign done");});
+        this.lastUpdateTimeStats=new Date().getTime();
+      }
+    });
+    /* Adjust statiisics query utility 
+    UPDATE messagecampaigns SET messagecampaigns.ncontacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id));
+    UPDATE messagecampaigns set nCalledContacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='called'));
+    UPDATE messagecampaigns set nNoAnswerContacts=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='noanswer'));
+    UPDATE messagecampaigns SET messagecampaigns.nClickTwoContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=1));
+    UPDATE messagecampaigns SET messagecampaigns.nClickOneContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=0));
+    UPDATE messagecampaigns set ncompleted=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='contacted'));
+    */
+  }
+
+  updateCampaignDataOld(campaign, callback) {
     this.database.entities.customer
       .count({
         where: {

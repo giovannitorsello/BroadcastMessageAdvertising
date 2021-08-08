@@ -122,7 +122,7 @@
                 <template v-slot:item="row">
                   <tr
                     @click="selectCampaign(row.item)"
-                    :class="{ primary: row.item.id === selectedCampaign.id }"
+                    :class="campaignColor(row.item)"                    
                   >
                     <td>{{ row.item.id }}</td>
                     <td>{{ row.item.name }}</td>
@@ -130,11 +130,15 @@
                     <td>{{ row.item.state }}</td>
                     <td>{{ row.item.message }}</td>
                     <td>{{ row.item.ncontacts }}</td>
+                    <td>{{ row.item.ncompleted }} - {{ row.item.ntocontact }}</td>
                     <td>
                       {{ row.item.nCalledContacts }} -
                       {{ row.item.nNoAnswerContacts }}
                     </td>
-                    <td>{{ row.item.ncompleted }}</td>
+                    <td>
+                      {{ row.item.nClickOneContacts }} - 
+                      {{ row.item.nClickTwoContacts }}
+                    </td>                    
                     <td>{{ row.item.begin }}</td>
                     <td>{{ row.item.end }}</td>
                     <td>
@@ -543,11 +547,15 @@
           { text: "Stato", value: "state" },
           { text: "Messagio", value: "message" },
           { text: "Numero contatti", value: "ncontacts" },
+          { text: "Inviati - da inviare", value: "nSentMessage" },
           {
-            text: "Chiamate risposte e non risposte",
+            text: "Risposte - Non risposte",
             value: "nCalledContacts",
           },
-          { text: "Messaggi inviati", value: "ncompleted" },
+          {
+            text: "1 click - 2 click",
+            value: "nClicks",
+          },          
           { text: "Inizio", value: "begin" },
           { text: "Fine", value: "end" },
         ],
@@ -557,12 +565,13 @@
       this.beginDate = new Date().toLocaleDateString("it-IT");
       this.beginTime = new Date().toLocaleTimeString("it-IT");
       this.getSenderServices();
-      this.getCaps();
+      /*this.getCaps();
       this.getCities();
       this.getProvinces();
       this.getStates();
-      this.getCountries();
+      this.getCountries();*/
       this.refreshAll();
+      setInterval(this.updateStatisticsCampaigns, 10000);
     },
     methods: {
       startCampaign(messageCampaign) {
@@ -766,6 +775,28 @@
                 }
                 else
                   this.messageCampaigns.push(camp);
+              });
+            }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
+      },
+      updateStatisticsCampaigns() {        
+        this.axios
+          .post("/adminarea/messageCampaign/getActiveCampaigns")
+          .then((request) => {
+            if (request.data.messageCampaigns) {
+              request.data.messageCampaigns.forEach((camp) => {
+                camp.begin = new Date(camp.begin).toLocaleString("it-IT");
+                camp.end = new Date(camp.end).toLocaleString("it-IT");
+
+                // ricerca nell'array corrente dell'id per evitare il ricaricamento completo
+                function findById(campaign) {return campaign.id === camp.id;}
+                var elem=this.messageCampaigns.find(findById);
+                var index=this.messageCampaigns.indexOf(elem); 
+                //aggiorna solo la campagna attiva, Vue ricaricherà solo quella riga
+                Object.assign(this.messageCampaigns[index], camp);                
               });
             }
           })
@@ -1172,6 +1203,14 @@
           link.click();
         });
       },
+      campaignColor(item) {
+        if(item.id === this.selectedCampaign.id) return "primary";
+        else if(item.state === "active") return "activeCampaign";
+        else if(item.state === "calling") return "callingCampaign";
+        else if(item.state === "disabled") return "disabledCampaign";
+        else if(item.state === "complete") return "completeCampaign";
+        else return "";
+      }
     },
     computed: {
       computedDateFormatted() {
@@ -1181,7 +1220,7 @@
         if (fileCSV.length === 0) return false;
 
         return this.bSaveCampaignButtonDisable;
-      },
+      }
     },
     watch: {
       date(val) {
@@ -1191,4 +1230,21 @@
   };
 </script>
 
-<style></style>
+<style>
+.completeCampaign {
+  background-color: rgb(0, 255, 76);
+}
+
+.disabledCampaign {
+  background-color: rgb(197, 197, 197);
+}
+
+.activeCampaign {
+  background-color: rgb(229, 255, 0);
+}
+
+.callingCampaign {
+  background-color: rgb(0, 238, 255);
+}
+
+</style>

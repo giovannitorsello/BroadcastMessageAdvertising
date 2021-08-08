@@ -967,6 +967,29 @@ module.exports = {
       });
     });
 
+    app.post("/adminarea/messageCampaign/getActiveCampaigns", function (req, res) {
+      database.entities.messageCampaign.findAll(
+        {order: [['id', 'DESC']], where: {
+          [Op.or]: [
+            { state: "calling" },
+            { state: "active" },
+          ]
+        }}).then(function (results) {
+        if (results)
+          res.send({
+            status: "OK",
+            msg: "Message campaigns found",
+            messageCampaigns: results,
+          });
+        else
+          res.send({
+            status: "OK",
+            msg: "Message campaigns not found",
+            messageCampaigns: {},
+          });
+      });
+    });
+
     app.post("/adminarea/messageCampaign/getCampaign", function (req, res) {
       var messageCampaign = req.body.messageCampaign;
       database.entities.messageCampaign
