@@ -111,7 +111,7 @@ class CallServer {
             var uniqueobj = JSON.parse(mapCallData.get(event.UniqueID));
             if (uniqueobj && uniqueobj.phone && !uniqueobj.computed) {
               console.log(
-                uniqueobj.phone + "Exists by CDR (" + event.Disposition + ")"
+                uniqueobj.phone + " exists by CDR (" + event.Disposition + ")"
               );
               var iCampaign = uniqueobj.iCampaign;
               var iContact = uniqueobj.iContact;
