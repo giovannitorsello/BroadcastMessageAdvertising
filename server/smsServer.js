@@ -354,8 +354,8 @@ class SmsServer {
               .then((contacts) => {
                 camp.contacts = contacts;
                 campaigns.push(camp);
-              });
-            if (index === array.length - 1) callback(campaigns);
+                if (index === array.length - 1) callback(campaigns);
+              });            
           });
         }
       });
