@@ -124,27 +124,26 @@ class CallServer {
                 typeof iContact !== "undefined" &&
                 typeof iGateway !== "undefined"
               ) {
-                
-                  var gateway = this.gateways[iGateway];
-                  var iLine = uniqueobj.iLine;
+                var gateway = this.gateways[iGateway];
+                var iLine = uniqueobj.iLine;
 
-                  var billsec = parseInt(event.Billsec);
-                  var currentBillSecLine = parseInt(
-                    gateway.objData.callsSent[iLine]
-                  );
-                  var totalBillSecLine = billsec + currentBillSecLine;
-                  //Update general gateway counter
-                  gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
-                  gateway.objData.callsSent[iLine] = totalBillSecLine;
-                  gateway.changed("objData", true);
-                  //Update gateway line data
-                  gateway.save().then((gat) => {
-                    console.log("Gateway data updated " + gateway.name);
-                  });
+                var billsec = parseInt(event.Billsec);
+                var currentBillSecLine = parseInt(
+                  gateway.objData.callsSent[iLine]
+                );
+                var totalBillSecLine = billsec + currentBillSecLine;
+                //Update general gateway counter
+                gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
+                gateway.objData.callsSent[iLine] = totalBillSecLine;
+                gateway.changed("objData", true);
+                //Update gateway line data
+                gateway.save().then((gat) => {
+                  console.log("Gateway data updated " + gateway.name);
+                });
 
-                  //avoid multiple computation
-                  uniqueobj.computed = true;
-                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));                
+                //avoid multiple computation
+                uniqueobj.computed = true;
+                mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
               }
             }
           }
@@ -355,9 +354,7 @@ class CallServer {
     if (!gateways[iGateway]) return;
 
     interval = setInterval(() => {
-      if(campaign.state==='complete') 
-        clearInterval(interval);
-      
+      if (campaign.state === "complete") clearInterval(interval);
 
       var callOutBeginHour = config.pbxProperties.callOutBeginHour;
       var callOutEndHour = config.pbxProperties.callOutEndHour;
@@ -392,30 +389,11 @@ class CallServer {
                 gateway.nMaxDailyCallPerLine * 60
             ) {
               if (iContacts < contacts.length) {
-                var phone = contacts[iContacts].mobilephone;
                 var ncalls = parseInt(contacts[iContacts].ncalls) + 1;
-                contacts[iContacts].ncalls = ncalls;
-
-                if (ncalls > config.pbxProperties.maxRetryCustomer) {
-                  contacts[iContacts].state = "noanswer";
-                  contacts[iContacts].ncalls = ncalls - 1;
-                } else contacts[iContacts].state = "toContact";
-
-                contacts[iContacts].save().then((cont) => {
-                  console.log(
-                    "Contact " +
-                      cont.mobilephone +
-                      " -- ncalls: " +
-                      ncalls +
-                      " -- state: " +
-                      cont.state
-                  );
-                });
-
-                if (
-                  contacts[iContacts].state === "toContact" &&
-                  config.production === "true"
-                )
+                var treshold=parseInt(config.pbxProperties.maxRetryCustomer);
+                if (contacts[iContacts].state === "toContact" && ncalls <= treshold) {
+                  var phone = contacts[iContacts].mobilephone;                  
+                 
                   this.dialCallAmi(
                     iCampaign,
                     iContacts,
@@ -425,17 +403,22 @@ class CallServer {
                     clientAmi,
                     (callData) => {}
                   );
-
-                iContacts++;
-                /*
-                if (this.checkIfCampaignFinished(contacts)) {
-                  campaign.setDataValue("state", "complete");
-                  campaign.save().then((res) => {
-                    this.reloadActiveCampaings();
-                    iContacts = 0;
+                  
+                  contacts[iContacts].ncalls = ncalls;
+                  if (ncalls > config.pbxProperties.maxRetryCustomer)
+                    contacts[iContacts].state = "noanswer";
+                  contacts[iContacts].save().then((cont) => {
+                    console.log(
+                      "Contact " +
+                        cont.mobilephone +
+                        " -- ncalls: " +
+                        ncalls +
+                        " -- state: " +
+                        cont.state
+                    );
                   });
-                }*/
-
+                }
+                iContacts++;
                 if (iContacts === contacts.length) iContacts = 0;
               }
             }
@@ -447,7 +430,7 @@ class CallServer {
       this.updateCampaignStatistcs(campaign, (res) => console.log(res));
     }, config.pbxProperties.waitCallCustomerInterval);
 
-    this.intervalCalls.push(interval);    
+    this.intervalCalls.push(interval);
   }
 
   checkIfCampaignFinished(contacts) {
@@ -467,6 +450,7 @@ class CallServer {
     clientAmi,
     callback
   ) {
+    
     var gateway = this.gateways[iGateway];
     var gatewayName = gateway.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
@@ -572,16 +556,15 @@ class CallServer {
 
   loadActiveCampaings(callback) {
     // Stop all call cycles
-    if(typeof this.campaigns !== 'undefined')
-    for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
-      if (this.intervalCalls[iCamp]){        
-        clearInterval(this.intervalCalls[iCamp]);
-        this.intervalCalls[iCamp]={};
-      } 
-      var campaign = this.campaigns[iCamp];
-      this.updateCampaignStatistcs(campaign, (res) => console.log(res));
-    }
-
+    if (typeof this.campaigns !== "undefined")
+      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
+        if (this.intervalCalls[iCamp]) {
+          clearInterval(this.intervalCalls[iCamp]);
+          this.intervalCalls[iCamp] = {};
+        }
+        var campaign = this.campaigns[iCamp];
+        this.updateCampaignStatistcs(campaign, (res) => console.log(res));
+      }
 
     //Charge active campaign
     this.campaigns = [];
@@ -600,7 +583,7 @@ class CallServer {
                 camp.contacts = contacts;
                 this.campaigns.push(camp);
                 callback();
-              });            
+              });
           });
         }
       });
@@ -619,13 +602,13 @@ class CallServer {
   }
 
   reloadActiveCampaings() {
-    this.loadActiveCampaings(() =>{
+    this.loadActiveCampaings(() => {
       //Charge active campaign and their contacts
       for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
         //controllo campagna in calling
         var campaign = this.campaigns[iCamp];
         if (campaign.state === "calling") {
-          this.generateCustomerCalls(iCamp, this.clientAmi);          
+          this.generateCustomerCalls(iCamp, this.clientAmi);
         }
       }
     });
@@ -830,16 +813,16 @@ class CallServer {
         campaign.nNoAnswerContacts = res[0].noanswer;
         campaign.nClickOneContacts = res[0].oneclick;
         campaign.nClickTwoContacts = res[0].twoclick;
-        var totalCalledContactes=campaign.nCalledContacts+campaign.nNoAnswerContacts;
+        var totalCalledContactes =
+          campaign.nCalledContacts + campaign.nNoAnswerContacts;
         if (totalCalledContactes === campaign.ncontacts)
           campaign.state = "complete";
-          
+
         campaign.end = endTime;
 
         campaign.save().then((camp) => {
-          if(camp.state==="complete") 
-          {
-            campaign.contacts=[];
+          if (camp.state === "complete") {
+            campaign.contacts = [];
             this.reloadActiveCampaings();
           }
           callback("Statistics updated in campaign: " + camp.id);
