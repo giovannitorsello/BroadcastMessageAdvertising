@@ -38,6 +38,56 @@ class CallServer {
     });
   }
 
+  reloadActiveCampaings() {
+    this.loadActiveCampaings((campaigns) => {
+      console.log("Campaigns load...");
+      console.log(campaigns);
+      //Charge active campaign and their contacts
+      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
+        //controllo campagna in calling
+        var campaign = this.campaigns[iCamp];
+        if (campaign.state === "calling") {
+          this.generateCustomerCalls(iCamp, this.clientAmi);
+        }
+      }
+    });
+  }
+
+  loadActiveCampaings(callback) {
+    // Stop all call cycles
+    if (typeof this.campaigns !== "undefined")
+      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
+        if (this.intervalCalls[iCamp]) {
+          clearInterval(this.intervalCalls[iCamp]);
+          this.intervalCalls[iCamp] = {};
+        }
+        var campaign = this.campaigns[iCamp];
+        this.updateCampaignStatistcs(campaign, (res) => console.log(res));
+      }
+
+    //Charge active campaign
+    this.campaigns = [];
+    this.database.entities.messageCampaign
+      .findAll({ order: [["id", "DESC"]], where: { state: "calling" } })
+      .then((camps) => {
+        if (camps) {
+          camps.forEach((camp, index, array) => {
+            //Load remain contact only for active campaigns
+            this.database.entities.customer
+              .findAll({
+                where: { campaignId: camp.id, state: "toContact" },
+                order: [["state", "DESC"]],
+              })
+              .then((contacts) => {
+                camp.contacts = contacts;
+                this.campaigns.push(camp);
+                callback(this.campaigns);
+              });
+          });
+        }
+      });
+  }
+
   openAmiConnection(callback) {
     this.client = new AmiClient();
     this.client
@@ -554,41 +604,6 @@ class CallServer {
     this.reloadActiveCampaings();
   }
 
-  loadActiveCampaings(callback) {
-    // Stop all call cycles
-    if (typeof this.campaigns !== "undefined")
-      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
-        if (this.intervalCalls[iCamp]) {
-          clearInterval(this.intervalCalls[iCamp]);
-          this.intervalCalls[iCamp] = {};
-        }
-        var campaign = this.campaigns[iCamp];
-        this.updateCampaignStatistcs(campaign, (res) => console.log(res));
-      }
-
-    //Charge active campaign
-    this.campaigns = [];
-    this.database.entities.messageCampaign
-      .findAll({ order: [["id", "DESC"]], where: { state: "calling" } })
-      .then((camps) => {
-        if (camps) {
-          camps.forEach((camp, index, array) => {
-            //Load remain contact only for active campaigns
-            this.database.entities.customer
-              .findAll({
-                where: { campaignId: camp.id, state: "toContact" },
-                order: [["state", "DESC"]],
-              })
-              .then((contacts) => {
-                camp.contacts = contacts;
-                this.campaigns.push(camp);
-                callback();
-              });
-          });
-        }
-      });
-  }
-
   loadGateways(callback) {
     var gateways = [];
     this.database.entities.gateway
@@ -599,19 +614,6 @@ class CallServer {
       .catch((error) => {
         console.log(error);
       });
-  }
-
-  reloadActiveCampaings() {
-    this.loadActiveCampaings(() => {
-      //Charge active campaign and their contacts
-      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
-        //controllo campagna in calling
-        var campaign = this.campaigns[iCamp];
-        if (campaign.state === "calling") {
-          this.generateCustomerCalls(iCamp, this.clientAmi);
-        }
-      }
-    });
   }
 
   dialCall(data, callback) {
