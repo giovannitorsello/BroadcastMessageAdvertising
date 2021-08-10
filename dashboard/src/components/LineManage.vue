@@ -119,7 +119,8 @@ export default {
       } else {
         this.lblStateSms = "SMS NO";
         this.gateway.objData.isWorkingSms[this.line] = false;
-      }      
+      }
+      updateGateway();
     },
     changeStateLineCall() {
       if (this.isWorkingCall === true) {
@@ -128,7 +129,8 @@ export default {
       } else {
         this.lblStateCall = "CHI NO";
         this.gateway.objData.isWorkingCall[this.line] = false;
-      }      
+      }
+      updateGateway();
     },
     updateGateway() {
       this.axios
