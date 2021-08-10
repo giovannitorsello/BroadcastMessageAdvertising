@@ -10,7 +10,9 @@
         <v-data-table
           :headers="headerGateways"
           :items="gateways"
-          :items-per-page="30"
+          :items-per-page="30"          
+          :sort-by="['id']"
+          :sort-desc="[false]"
           class="elevation-1"
         >
           <template v-slot:item="row">
@@ -19,13 +21,15 @@
               <td>{{ row.item.name }} - {{ row.item.operator }}</td>
               <td>
                 <div>
-                  {{ row.item.nSmsSent }}
+                  {{ row.item.nSmsSent +'/' +row.item.nMaxDailyMessagePerLine*32 }}
                   <br />
                   <span
                     v-for="(sms, i) in row.item.objData.smsSent"
                     :key="'smsSent'+ i"
                     >|{{ sms }}|</span
                   >
+                  <br />
+                  <span style="color: green;">{{ Math.ceil(row.item.nCallsSent/60) +'/' +row.item.nMaxDailyCallPerLine }}</span>
                   <br />
                   <span
                     style="color: green;"
@@ -44,6 +48,8 @@
                     :key="'smsReceived'+ i"
                     >|{{ sms }}|</span
                   >
+                  <br />
+                  <span style="color: green;">{{ row.item.nCallsReceived }}</span>
                   <br />
                   <span
                     style="color: green;"
@@ -92,7 +98,7 @@
     mounted() {
       setInterval(() => {
         this.getGateways();
-      }, 10000);
+      }, 20000);
     },
     methods: {
       resetCountersSMS() {

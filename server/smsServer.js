@@ -25,12 +25,25 @@ class SmsServer {
   init() {
     this.loadSims((sims) => {
       this.sims = sims;
-    });
+      this.reloadActiveCampaings();
+    });      
+  }
+
+  reloadActiveCampaings() {
+    //Reload gateways
     this.loadGateways((gateways) => {
       this.smsGateways = gateways;
-    });
-    this.loadActiveCampaings((campaigns) => {
-      this.smsCampaigns = campaigns;
+
+      //Charge active campaigns and their contacts
+      this.loadActiveCampaings((campaigns) => {
+        this.smsCampaigns = campaigns;
+        //start sending message
+        var interval = setInterval(() => {
+          if (!this.existsActiveCampaigns()) {
+            clearInterval(interval);
+          } else this.startCampaignManager();
+        }, config.waitTime);        
+      });
     });
   }
 
@@ -66,7 +79,7 @@ class SmsServer {
       iLine++;
     }
 
-    if (bIsWorking !== gateway.isWorkingSms) {
+    if (+bIsWorking !== +gateway.isWorkingSms) {
       gateway.isWorkingSms = bIsWorking;
       gateway.changed("isWorkingSms", true);
       gateway.changed("objData", true);
@@ -110,7 +123,8 @@ class SmsServer {
         var senderClass =
           config.senderServices[campaign.senderService].senderClass;
         var pluginFile = "./internetGateways/" + servicePlugin;
-        if (pluginFile !== "./internetGateways/") { //avoid empty plugins
+        if (pluginFile !== "./internetGateways/") {
+          //avoid empty plugins
           var plugin = require(pluginFile);
           var message = this.formatMessage(campaign, contact);
 
@@ -222,6 +236,9 @@ class SmsServer {
               contact.save();
               this.smsGateways[iDevice].nSmsSent++;
               this.smsGateways[iDevice].objData.smsSent[selectedSenderLine]++;
+              this.smsGateways[iDevice].changed("nSmsSent",true);
+              this.smsGateways[iDevice].changed("objData",true);
+              
               this.smsGateways[iDevice]
                 .save({ fields: ["nSmsSent", "objData"] })
                 .then((savedgateway) => {
@@ -242,6 +259,8 @@ class SmsServer {
             }
           }
         );
+      else
+          this.checkIfBalanceIsPossible();
     }
   }
 
@@ -355,7 +374,7 @@ class SmsServer {
                 camp.contacts = contacts;
                 campaigns.push(camp);
                 if (index === array.length - 1) callback(campaigns);
-              });            
+              });
           });
         }
       });
@@ -367,26 +386,6 @@ class SmsServer {
       this.smsCampaigns[iCamp].save();
     }
     this.reloadActiveCampaings();
-  }
-
-  reloadActiveCampaings() {
-    //Reload gateways
-    this.loadGateways((gateways) => {
-      this.smsGateways = gateways;
-    });
-
-    //Charge active campaigns and their contacts
-    this.loadActiveCampaings((campaigns) => {
-      this.smsCampaigns = campaigns;
-      //start sending message
-      var interval = setInterval(() => {
-        if (!this.existsActiveCampaigns()) {
-          clearInterval(interval);
-        } else this.startCampaignManager();
-      }, config.waitTime);
-      //Before start chect gateways situation
-      //this.checkIfBalanceIsPossible();
-    });
   }
 
   antifraudRoutine(receiverGateway, selectedReceiverLine, callback) {
@@ -444,10 +443,14 @@ class SmsServer {
         (response) => {
           senderDevice.nSmsSent++;
           senderDevice.objData.smsSent[selectedSenderLine]++;
+          senderDevice.changed("nSmsSent",true);
+          senderDevice.changed("objData",true);
           senderDevice.save({ fields: ["nSmsSent", "objData"] });
 
           receiverDevice.nSmsReceived++;
           receiverDevice.objData.smsReceived[selectedReceiverLine]++;
+          receiverDevice.changed("nSmsSent",true);
+          receiverDevice.changed("objData",true);
           receiverDevice.save({ fields: ["nSmsSent", "objData"] });
 
           //if SIM are non balanced
@@ -476,7 +479,7 @@ class SmsServer {
       i = 0;
     var nMessSent = device.objData.smsSent[0];
     while (i < device.objData.smsSent.length) {
-      if (device.objData.isWorkingSms[i] === 1) {
+      if (device.objData.isWorkingSms[i] === true || device.objData.isWorkingSms[i] === 1) {
         if (nMessSent >= device.objData.smsSent[i]) {
           nMessSent = device.objData.smsSent[i];
           selectedLine = i;
@@ -522,7 +525,7 @@ class SmsServer {
     //avoid zero division
     if (sentSms === 0) return false;
     // bypass if is not working
-    if (device.objData.isWorkingSms[iLine] === 0) return false;
+    if (device.objData.isWorkingSms[iLine] === false) return false;
 
     var percentage = 100 - Math.ceil((100 * receivedSms) / sentSms);
     if (percentage > device.nMaxSentPercetage) return true;

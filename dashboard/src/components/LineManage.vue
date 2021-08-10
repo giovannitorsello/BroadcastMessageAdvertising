@@ -115,19 +115,19 @@ export default {
     changeStateLineSms() {
       if (this.isWorkingSms === true) {
         this.lblStateSms = "SMS SI";
-        this.gateway.objData.isWorkingSms[this.line] = 1;
+        this.gateway.objData.isWorkingSms[this.line] = true;
       } else {
         this.lblStateSms = "SMS NO";
-        this.gateway.objData.isWorkingSms[this.line] = 0;
+        this.gateway.objData.isWorkingSms[this.line] = false;
       }      
     },
     changeStateLineCall() {
       if (this.isWorkingCall === true) {
         this.lblStateCall = "CHI SI";
-        this.gateway.objData.isWorkingCall[this.line] = 1;
+        this.gateway.objData.isWorkingCall[this.line] = true;
       } else {
         this.lblStateCall = "CHI NO";
-        this.gateway.objData.isWorkingCall[this.line] = 0;
+        this.gateway.objData.isWorkingCall[this.line] = false;
       }      
     },
     updateGateway() {

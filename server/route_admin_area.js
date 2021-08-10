@@ -608,8 +608,8 @@ module.exports = {
                   if (iSim < sims.length) {
                     gateway.objData.lines[i] = sims[iSim].phoneNumber;
                     gateway.objData.operator[i] = sims[iSim].operator;
-                    gateway.objData.isWorkingSms[i] = 1;
-                    gateway.objData.isWorkingCall[i] = 1;
+                    gateway.objData.isWorkingSms[i] = true;
+                    gateway.objData.isWorkingCall[i] = true;
                     gateway.objData.smsSent[i] = 0;
                     gateway.objData.smsReceived[i] = 0;
                     gateway.objData.callsSent[i] = 0;
@@ -618,8 +618,8 @@ module.exports = {
                   } else {
                     gateway.objData.lines[i] = "N/D";
                     gateway.objData.operator[i] = "N/D";
-                    gateway.objData.isWorkingSms[i] = 1;
-                    gateway.objData.isWorkingCall[i] = 1;
+                    gateway.objData.isWorkingSms[i] = true;
+                    gateway.objData.isWorkingCall[i] = true;
                     gateway.objData.smsSent[i] = 0;
                     gateway.objData.smsReceived[i] = 0;
                     gateway.objData.callsSent[i] = 0;
@@ -654,41 +654,26 @@ module.exports = {
         })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
-            database.entities.sim
-              .findAll({
-                where: { bankId: gateway.bankId },
-                order: [["id", "ASC"]],
-              })
-              .then((sims) => {
-                gateway.nSmsSent = 0;
-                gateway.nSmsReceived = 0;
-                //gateway.isWorkingSms = true;
-                //Manage change bank and Sim counter
-                if (bankIdSel !== gateway.bankId) {
-                  iSim = 0;
-                  bankIdSel = gateway.bankId;
-                }
-                for (var i = 0; i < gateway.nRadios; i++) {
-                  if (iSim < sims.length) {
-                    gateway.objData.smsSent[i] = 0;
-                    gateway.objData.smsReceived[i] = 0;
-                    iSim++;
-                  }
-                }
-                gateway.setDataValue("nSmsSent", 0);
-                gateway.setDataValue("nSmsReceived", 0);
-                gateway.setDataValue("objData", gateway.objData);
-                gateway.changed("objData", true);
-                gateway.save().then((gat) => {
-                  gatewaysReset.push(gat);
-                  if (gatewaysReset.length === array.length)
-                    res.send({
-                      status: "OK",
-                      msg: "Gateways reset",
-                      gateways: gatewaysReset,
-                    });
+            for (var i = 0; i < gateway.nRadios; i++) {
+              gateway.objData.smsSent[i] = 0;
+              gateway.objData.smsReceived[i] = 0;
+              iSim++;
+            }
+            gateway.setDataValue("nSmsSent", 0);
+            gateway.setDataValue("nSmsReceived", 0);
+            gateway.setDataValue("objData", gateway.objData);
+            gateway.changed("nSmsSent", true);
+            gateway.changed("nSmsReceived", true);
+            gateway.changed("objData", true);
+            gateway.save().then((gat) => {
+              gatewaysReset.push(gat);
+              if (gatewaysReset.length === array.length)
+                res.send({
+                  status: "OK",
+                  msg: "Gateways reset",
+                  gateways: gatewaysReset,
                 });
-              });
+            });
           });
         });
     });
@@ -703,39 +688,25 @@ module.exports = {
         })
         .then((gateways) => {
           gateways.forEach((gateway, iGateway, array) => {
-            database.entities.sim
-              .findAll({
-                where: { bankId: gateway.bankId },
-                order: [["id", "ASC"]],
-              })
-              .then((sims) => {
-                gateway.nSmsSent = 0;
-                gateway.nSmsReceived = 0;
-                //gateway.isWorkingCall = true;
-                //Manage change bank and Sim counter
-                if (bankIdSel !== gateway.bankId) {
-                  iSim = 0;
-                  bankIdSel = gateway.bankId;
-                }
-                for (var i = 0; i < gateway.nRadios; i++) {
-                  if (iSim < sims.length) {
-                    gateway.objData.callsSent[i] = 0;
-                    gateway.objData.callsReceived[i] = 0;
-                    iSim++;
-                  }
-                }
-                gateway.setDataValue("objData", gateway.objData);
-                gateway.changed("objData", true);
-                gateway.save().then((gat) => {
-                  gatewaysReset.push(gat);
-                  if (gatewaysReset.length === array.length)
-                    res.send({
-                      status: "OK",
-                      msg: "Gateways reset",
-                      gateways: gatewaysReset,
-                    });
+            for (var i = 0; i < gateway.nRadios; i++) {
+              gateway.objData.callsSent[i] = 0;
+              gateway.objData.callsReceived[i] = 0;
+            }
+            gateway.setDataValue("nCallsSent", 0);
+            gateway.setDataValue("nCallsReceived", 0);
+            gateway.setDataValue("objData", gateway.objData);
+            gateway.changed("nCallsSent", true);
+            gateway.changed("nCallsReceived", true);
+            gateway.changed("objData", true);
+            gateway.save().then((gat) => {
+              gatewaysReset.push(gat);
+              if (gatewaysReset.length === array.length)
+                res.send({
+                  status: "OK",
+                  msg: "Gateways reset",
+                  gateways: gatewaysReset,
                 });
-              });
+            });
           });
         });
     });

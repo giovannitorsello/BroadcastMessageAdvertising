@@ -266,10 +266,24 @@ export default {
   methods: {
     toggleWorkingCall(gateway) {
       gateway.isWorkingCall = !gateway.isWorkingCall;
+      for (var iLine=0;iLine<gateway.objData.isWorkingSms.length;iLine++){
+        if(gateway.isWorkingCall===1 || gateway.isWorkingCall===true)
+          gateway.objData.isWorkingCall[iLine]=true;
+        else
+          gateway.objData.isWorkingCall[iLine]=false;
+
+      }
+
       this.updateGateway(gateway);
     },
     toggleWorkingSms(gateway) {
-      gateway.isWorkingSms = !gateway.isWorkingSms;
+      gateway.isWorkingSms = !gateway.isWorkingSms;      
+      for (var iLine=0;iLine<gateway.objData.isWorkingSms.length;iLine++) {
+      if(gateway.isWorkingSms===1 || gateway.isWorkingSms===true)
+          gateway.objData.isWorkingSms[iLine]=true;
+        else
+          gateway.objData.isWorkingSms[iLine]=false;
+      }
       this.updateGateway(gateway);
     },
     async insertSimInGateway() {
@@ -345,8 +359,8 @@ export default {
         .then((request) => {
           var gatewayUpdated = request.data.gateway;
           if (gatewayUpdated) {
-            this.selectedGateway = gatewayUpdated;
-            this.loadGateways();
+            this.selectedGateway = {};
+            this.selectedGateway = gatewayUpdated;            
           }
         });
     },
