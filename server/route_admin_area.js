@@ -497,6 +497,7 @@ module.exports = {
 
     app.post("/adminarea/gateway/update", function (req, res) {
       var gateway = req.body.gateway;
+      if(typeof gateway !=="undefined")
       database.entities.gateway
         .findOne({ where: { id: gateway.id } })
         .then(function (gatewayFound) {

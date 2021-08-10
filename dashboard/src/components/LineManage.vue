@@ -7,16 +7,16 @@
     <v-switch
       v-model="isWorkingCall"
       flat
-      :change="changeStateLineCall()"
+      @click="changeStateLineCall()"
       :label="lblStateCall"
     ></v-switch>
     <v-switch
       v-model="isWorkingSms"
       flat
-      :change="changeStateLineSms()"
+      @click="changeStateLineSms()"
       :label="lblStateSms"
     ></v-switch>
-
+    
     <v-dialog
       v-model="dialDlg"
       persistent
@@ -133,12 +133,13 @@ export default {
       this.updateGateway();
     },
     updateGateway() {
+      console.log("Update line");
       this.axios
         .post("/adminarea/gateway/update", {
           gateway: this.gateway,
         })
         .then((request) => {
-          if (request.data.status === "OK") {
+          if (request.data.status === "OK") {            
             console.log("Line updated");
           } else {
             console.log("Line updated error");

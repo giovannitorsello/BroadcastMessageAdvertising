@@ -177,6 +177,7 @@
 
     <v-card>
       <p>Numeri di telefono</p>
+      <v-btn class="primary" @click="updateSelectedGateway()">Salva impostazioni</v-btn>
       <template>
         <v-row v-if="selectedGateway && selectedGateway.objData">
           <v-col
@@ -264,6 +265,11 @@ export default {
   },
   computed: {},
   methods: {
+    updateSelectedGateway() {
+      console.log("Update selected gateway");
+      console.log(this.selectedGateway)
+      this.updateGateway(this.selectedGateway);
+    },
     toggleWorkingCall(gateway) {
       gateway.isWorkingCall = !gateway.isWorkingCall;
       for (var iLine=0;iLine<gateway.objData.isWorkingSms.length;iLine++){
@@ -354,13 +360,15 @@ export default {
       }
     },
     updateGateway(gatToUpdate) {
+      console.log("try to update");
       this.axios
         .post("/adminarea/gateway/update", { gateway: gatToUpdate })
         .then((request) => {
           var gatewayUpdated = request.data.gateway;
           if (gatewayUpdated) {
             this.selectedGateway = {};
-            this.selectedGateway = gatewayUpdated;            
+            this.selectedGateway = gatewayUpdated;      
+            console.log("Settings saved for gateway: "+gatewayUpdated.id);
           }
         });
     },
