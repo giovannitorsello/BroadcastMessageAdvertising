@@ -139,9 +139,9 @@ export default {
         })
         .then((request) => {
           if (request.data.status === "OK") {
-            alert("Dati aggiornati");
+            console.log("Line updated");
           } else {
-            alert("Errore aggiornamento dati");
+            console.log("Line updated error");
           }
         });
     },
