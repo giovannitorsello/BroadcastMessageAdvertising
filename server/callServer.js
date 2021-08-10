@@ -440,10 +440,29 @@ class CallServer {
             ) {
               if (iContacts < contacts.length) {
                 var ncalls = parseInt(contacts[iContacts].ncalls) + 1;
-                var treshold=parseInt(config.pbxProperties.maxRetryCustomer);
-                if (contacts[iContacts].state === "toContact" && ncalls <= treshold) {
-                  var phone = contacts[iContacts].mobilephone;                  
-                 
+                var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
+                if (ncalls > config.pbxProperties.maxRetryCustomer)
+                  contacts[iContacts].state = "noanswer";
+                contacts[iContacts].ncalls = ncalls;
+
+                contacts[iContacts].save().then((cont) => {
+                  console.log(
+                    "Contact " +
+                      cont.mobilephone +
+                      " -- ncalls: " +
+                      ncalls +
+                      " -- state: " +
+                      cont.state
+                  );
+                });
+                
+                
+                if (
+                  contacts[iContacts].state === "toContact" &&
+                  ncalls <= treshold
+                ) {
+                  var phone = contacts[iContacts].mobilephone;
+
                   this.dialCallAmi(
                     iCampaign,
                     iContacts,
@@ -452,21 +471,7 @@ class CallServer {
                     phone,
                     clientAmi,
                     (callData) => {}
-                  );
-                  
-                  contacts[iContacts].ncalls = ncalls;
-                  if (ncalls > config.pbxProperties.maxRetryCustomer)
-                    contacts[iContacts].state = "noanswer";
-                  contacts[iContacts].save().then((cont) => {
-                    console.log(
-                      "Contact " +
-                        cont.mobilephone +
-                        " -- ncalls: " +
-                        ncalls +
-                        " -- state: " +
-                        cont.state
-                    );
-                  });
+                  );                  
                 }
                 iContacts++;
                 if (iContacts === contacts.length) iContacts = 0;
@@ -500,7 +505,6 @@ class CallServer {
     clientAmi,
     callback
   ) {
-    
     var gateway = this.gateways[iGateway];
     var gatewayName = gateway.name;
     var actionId = phoneNumber + "-" + new Date().getTime();
