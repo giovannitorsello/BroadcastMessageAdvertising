@@ -120,7 +120,7 @@ export default {
         this.lblStateSms = "SMS NO";
         this.gateway.objData.isWorkingSms[this.line] = false;
       }
-      updateGateway();
+      this.updateGateway();
     },
     changeStateLineCall() {
       if (this.isWorkingCall === true) {
@@ -130,7 +130,7 @@ export default {
         this.lblStateCall = "CHI NO";
         this.gateway.objData.isWorkingCall[this.line] = false;
       }
-      updateGateway();
+      this.updateGateway();
     },
     updateGateway() {
       this.axios
