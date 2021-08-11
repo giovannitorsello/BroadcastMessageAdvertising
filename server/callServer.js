@@ -185,6 +185,7 @@ class CallServer {
                   //Update general gateway counter
                   gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
                   gateway.objData.callsSent[iLine] = totalBillSecLine;
+                  gateway.changed("nCallsSent", true);
                   gateway.changed("objData", true);
                   //Update gateway line data
                   gateway.save().then((gat) => {
