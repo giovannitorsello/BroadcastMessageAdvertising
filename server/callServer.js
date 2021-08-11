@@ -176,21 +176,21 @@ class CallServer {
               ) {
                 var gateway = this.gateways[iGateway];
                 var iLine = uniqueobj.iLine;
-
-                var billsec = parseInt(event.Billsec);
-                var currentBillSecLine = parseInt(
-                  gateway.objData.callsSent[iLine]
-                );
-                var totalBillSecLine = billsec + currentBillSecLine;
-                //Update general gateway counter
-                gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
-                gateway.objData.callsSent[iLine] = totalBillSecLine;
-                gateway.changed("objData", true);
-                //Update gateway line data
-                gateway.save().then((gat) => {
-                  console.log("Gateway data updated " + gateway.name);
-                });
-
+                if(gateway.isWorkingCall) {
+                  var billsec = parseInt(event.Billsec);
+                  var currentBillSecLine = parseInt(
+                    gateway.objData.callsSent[iLine]
+                  );
+                  var totalBillSecLine = billsec + currentBillSecLine;
+                  //Update general gateway counter
+                  gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
+                  gateway.objData.callsSent[iLine] = totalBillSecLine;
+                  gateway.changed("objData", true);
+                  //Update gateway line data
+                  gateway.save().then((gat) => {
+                    console.log("Gateway data updated " + gateway.name);
+                  });
+                }
                 //avoid multiple computation
                 uniqueobj.computed = true;
                 mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
