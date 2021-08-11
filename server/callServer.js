@@ -435,8 +435,8 @@ class CallServer {
             if (
               (gateway.objData.isWorkingCall[iLine] === 1 ||
                 gateway.objData.isWorkingCall[iLine] === true) &&
-              gateway.objData.callsSent[iLine] <
-                gateway.nMaxDailyCallPerLine * 60
+              (gateway.objData.callsSent[iLine] <
+                gateway.nMaxDailyCallPerLine * 60)
             ) {
               if (iContacts < contacts.length) {
                 var ncalls = parseInt(contacts[iContacts].ncalls) + 1;
