@@ -29,13 +29,13 @@
                     >|{{ sms }}|</span
                   >
                   <br />
-                  <span style="color: green;">{{ Math.ceil(row.item.nCallsSent/60) +'/' +row.item.nMaxDailyCallPerLine*32 }}</span>
+                  <span style="color: green;">{{ Math.floor(row.item.nCallsSent/60) +'/' +row.item.nMaxDailyCallPerLine*32 }}</span>
                   <br />
                   <span
                     style="color: green;"
                     v-for="(calls, i) in row.item.objData.callsSent"
                     :key="'callSent'+ i"
-                    >|{{ Math.ceil(calls/60) }}|</span
+                    >|{{ Math.floor(calls/60)+"m"+Math.floor(calls%60)  }}|</span
                   >
                 </div>
               </td>
@@ -49,13 +49,13 @@
                     >|{{ sms }}|</span
                   >
                   <br />
-                  <span style="color: green;">{{ Math.ceil(row.item.nCallsReceived/60) }}</span>
+                  <span style="color: green;">{{ Math.floor(row.item.nCallsReceived/60) }}</span>
                   <br />
                   <span
                     style="color: green;"
                     v-for="(calls, i) in row.item.objData.callsReceived"
                     :key="'callReceived'+ i"
-                    >|{{ Math.ceil(calls/60) }}|</span
+                    >|{{ Math.floor(calls/60) }}|</span
                   >
                 </div>
               </td>

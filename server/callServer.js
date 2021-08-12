@@ -23,37 +23,30 @@ class CallServer {
   }
 
   init() {
-    this.openAmiConnection((clientAmi) => {
-      this.clientAmi = clientAmi;
-      this.loadGateways((gateways) => {
-        this.gateways = gateways;
-        this.reloadActiveCampaings();
-        //Start antifraud routine
-        this.generateAntifraudCalls();
-      });
-
-      this.loadActiveCampaings((campaigns) => {
-        this.campaigns = campaigns;
-      });
+    this.loadGateways((gateways) => {
+      this.gateways = gateways;
+      this.reloadActiveCampaings();
     });
   }
 
   reloadActiveCampaings() {
-    this.loadActiveCampaings((campaigns) => {
+    this.campaigns = [];
+    this.loadActiveCampaing((campaign) => {
       console.log("Campaigns load...");
-      console.log(campaigns);
-      //Charge active campaign and their contacts
-      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
-        //controllo campagna in calling
-        var campaign = this.campaigns[iCamp];
-        if (campaign.state === "calling") {
-          this.generateCustomerCalls(iCamp, this.clientAmi);
-        }
+      console.log(campaign.name);
+
+      //controllo campagna in calling
+      if (campaign.state === "calling") {        
+        this.openAmiConnection((clientAmi) => {
+          this.campaigns.push(campaign);
+          this.clientAmi = clientAmi;
+          this.generateCustomerCalls(this.clientAmi);
+        });
       }
     });
   }
 
-  loadActiveCampaings(callback) {
+  loadActiveCampaing(callback) {
     // Stop all call cycles
     if (typeof this.campaigns !== "undefined")
       for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
@@ -66,7 +59,6 @@ class CallServer {
       }
 
     //Charge active campaign
-    this.campaigns = [];
     this.database.entities.messageCampaign
       .findAll({ order: [["id", "DESC"]], where: { state: "calling" } })
       .then((camps) => {
@@ -80,8 +72,7 @@ class CallServer {
               })
               .then((contacts) => {
                 camp.contacts = contacts;
-                this.campaigns.push(camp);
-                callback(this.campaigns);
+                callback(camp);
               });
           });
         }
@@ -90,6 +81,7 @@ class CallServer {
 
   openAmiConnection(callback) {
     this.client = new AmiClient();
+    var campaigns = this.campaigns;
     this.client
       .on("connect", () => {
         console.log("Connect to Ami");
@@ -168,15 +160,14 @@ class CallServer {
               var iGateway = uniqueobj.iGateway;
               var phoneNumber = uniqueobj.phone;
               ///Manage generated call
-              if (
-                this.campaigns &&
+              if (                
                 typeof iCampaign !== "undefined" &&
                 typeof iContact !== "undefined" &&
                 typeof iGateway !== "undefined"
               ) {
                 var gateway = this.gateways[iGateway];
                 var iLine = uniqueobj.iLine;
-                if(gateway.isWorkingCall) {
+                if (gateway.isWorkingCall) {
                   var billsec = parseInt(event.Billsec);
                   var currentBillSecLine = parseInt(
                     gateway.objData.callsSent[iLine]
@@ -189,8 +180,11 @@ class CallServer {
                   gateway.changed("objData", true);
                   //Update gateway line data
                   gateway.save().then((gat) => {
-                    console.log("Gateway data updated " + gateway.name);
+                    console.log("Gateway data updated " + gat.name);
                   });
+                  this.database.changeStateCalledByPhone(phoneNumber, (phone) =>
+                    console.log("Contact as answer then is marked called: " + phone)
+                  );
                 }
                 //avoid multiple computation
                 uniqueobj.computed = true;
@@ -391,7 +385,8 @@ class CallServer {
     }, config.pbxProperties.waitCallAntifraudInterval);
   }
 
-  generateCustomerCalls(iCampaign, clientAmi) {
+  generateCustomerCalls(clientAmi) {
+    var iCampaign = 0;
     var campaign = this.campaigns[iCampaign];
     var contacts = this.campaigns[iCampaign].contacts;
     var iGateway = 0;
@@ -436,8 +431,8 @@ class CallServer {
             if (
               (gateway.objData.isWorkingCall[iLine] === 1 ||
                 gateway.objData.isWorkingCall[iLine] === true) &&
-              (gateway.objData.callsSent[iLine] <
-                gateway.nMaxDailyCallPerLine * 60)
+              gateway.objData.callsSent[iLine] <
+                gateway.nMaxDailyCallPerLine * 60
             ) {
               if (iContacts < contacts.length) {
                 var ncalls = parseInt(contacts[iContacts].ncalls) + 1;
@@ -456,8 +451,7 @@ class CallServer {
                       cont.state
                   );
                 });
-                
-                
+
                 if (
                   contacts[iContacts].state === "toContact" &&
                   ncalls <= treshold
@@ -472,7 +466,7 @@ class CallServer {
                     phone,
                     clientAmi,
                     (callData) => {}
-                  );                  
+                  );
                 }
                 iContacts++;
                 if (iContacts === contacts.length) iContacts = 0;
@@ -603,10 +597,6 @@ class CallServer {
           console.log("File placed in asterisk autodial folder");
         });
       });
-  }
-
-  startCallServer() {
-    this.reloadActiveCampaings();
   }
 
   loadGateways(callback) {

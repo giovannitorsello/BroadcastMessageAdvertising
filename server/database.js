@@ -245,6 +245,10 @@ module.exports = {
     sql ="UPDATE customers SET state='called' WHERE (id='" + contactId +"');"      
     this.execute_raw_update(sql, callback);
   },
+  changeStateCalledByPhone(phone, callback) {
+    sql ="UPDATE customers SET state='called' WHERE (mobilephone='" + phone +"');"      
+    this.execute_raw_update(sql, callback(phone));
+  },
   changeStateContactedByCallInterested(phone, callback) {
     sql =
       "UPDATE customers SET state='contactedByCallInterested' WHERE (mobilephone='" +
