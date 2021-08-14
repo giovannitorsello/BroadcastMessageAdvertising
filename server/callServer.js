@@ -40,7 +40,10 @@ class CallServer {
         this.openAmiConnection((clientAmi) => {
           this.campaigns.push(campaign);
           this.clientAmi = clientAmi;
-          this.generateCustomerCalls(this.clientAmi);
+          if(campaign.senderService===2)
+            this.generateCustomerCallsGOIP(campaign,this.clientAmi);
+          if(campaign.senderService===3)
+            this.generateCustomerCallsVOIP(campaign,this.clientAmi);
         });
       }
     });
@@ -392,14 +395,97 @@ class CallServer {
     }, config.pbxProperties.waitCallAntifraudInterval);
   }
 
-  generateCustomerCalls(clientAmi) {
+  generateCustomerCallsVOIP(campaign,clientAmi) {
+    var contacts = campaign.contacts;        
+    var iContacts = 0;
+    var interval = {};
+
+    //Check validity
+    if (!contacts) return;
+    if (!campaign.senderService) return;
+    var senderService=config.senderServices[campaign.senderService];    
+    if (!senderService) return;
+    var nchannels=senderService.nchannels;
+    if (!nchannels) return;
+    
+    interval = setInterval(() => {
+      if (campaign.state === "complete") clearInterval(interval);
+
+      var callOutBeginHour = config.pbxProperties.callOutBeginHour;
+      var callOutEndHour = config.pbxProperties.callOutEndHour;
+      var now = new Date();
+      var nowMillis = now.getTime();
+      var callOutBeginHourMillis = now.setHours(
+        callOutBeginHour[0],
+        callOutBeginHour[1],
+        callOutBeginHour[2]
+      );
+      var callOutEndHourMillis = now.setHours(
+        callOutEndHour[0],
+        callOutEndHour[1],
+        callOutEndHour[2]
+      );
+
+        //Check time for customer calls
+        if (
+          nowMillis > callOutBeginHourMillis &&
+          nowMillis < callOutEndHourMillis
+        ) {            
+
+          // Voip channel iterations, place nchannels call every cycle
+          for (var iChannelVoip=0; iChannelVoip<nchannels; iChannelVoip++){
+            //check if contacts counter is in limit
+            if (iContacts < contacts.length) {
+                var contact = contacts[iContacts];
+                var ncalls = parseInt(contact.ncalls);
+                var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
+                
+                //// Check max call per campaigns and make a call
+                if (contact.state === "toContact" && ncalls <= treshold) {
+                  var phone = contact.mobilephone;
+                  this.dialCallAmiVoip(contact,clientAmi,(callData) => {
+
+                  });
+                  ncalls++;
+                  contact.ncalls = ncalls;
+                }
+                
+                /// mark no answer
+                if (ncalls >= config.pbxProperties.maxRetryCustomer) {
+                    contact.state = "noanswer";
+                    contact.ncalls = ncalls;
+                }  
+
+                /// update contact
+                contact.save().then((cont) => {
+                  console.log(
+                    "Contact " +
+                      cont.mobilephone +
+                      " -- ncalls: " +
+                      ncalls +
+                      " -- state: " +
+                      cont.state
+                  );
+                });
+              iContacts++;              
+            }
+          }
+        
+      }// check call time
+      if (iContacts >= contacts.length) iContacts = 0;
+
+      this.updateCampaignStatistcs(campaign, (res) => console.log(res));
+    }, config.pbxProperties.waitCallCustomerInterval);
+
+    this.intervalCalls.push(interval);
+  }
+
+  generateCustomerCallsGOIP(campaign, clientAmi) {
     var iCampaign = 0;
-    var campaign = this.campaigns[iCampaign];
-    var contacts = this.campaigns[iCampaign].contacts;
+    var contacts = campaign.contacts;
     var iGateway = 0;
     var iContacts = 0;
-    var gateways = this.gateways;
-    var server = this;
+    var gateways = this.gateways;    
     var interval = {};
 
     //Check validity
@@ -443,7 +529,7 @@ class CallServer {
               gateway.objData.callsSent[iLine] <
                 gateway.nMaxDailyCallPerLine * 60
             ) {
-                //check if contacts conunter is in limit
+                //check if contacts counter is in limit
                 if (iContacts < contacts.length) {
                     var contact = contacts[iContacts];
                     var ncalls = parseInt(contact.ncalls);
@@ -505,6 +591,38 @@ class CallServer {
     var index = contacts.findIndex(existsCustomersNotContacted);
     if (index === -1) return true;
     else return false;
+  }
+
+  dialCallAmiVoip(contact,clientAmi,callback) {
+    var phoneNumber = contact.mobilephone;    
+    var actionId =
+      phoneNumber + "-" + new Date().getTime();    
+    var channel = "SIP/VOIP/"+phoneNumber;    
+      console.log(
+        "Call customer: "+phoneNumber+" by VOIP channel ");
+      if (
+        config.production &&
+        config.pbxProperties &&
+        config.pbxProperties.context
+      ) {
+        clientAmi.action({
+          Action: "Originate",
+          ActionId: actionId,
+          Variable: "ACTIONID=" + actionId,
+          Channel: channel,
+          Context: config.pbxProperties.context, //bmacall or ivr-1
+          Exten: "s",
+          Priority: 1,
+          Timeout: 30000,
+          CallerID: "1001",
+          Async: true,
+          EarlyMedia: false,
+          Application: "",
+          Codecs: "ulaw",
+        });
+        callback({ state: "dial" });
+      }
+      else callback({ state: "disabled" });
   }
 
   dialCallAmi(
