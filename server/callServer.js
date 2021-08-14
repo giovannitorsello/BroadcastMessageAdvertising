@@ -191,10 +191,11 @@ class CallServer {
                       "Contact as answer then is marked called: " + phone
                     )
                   );
+
+                  //avoid multiple computation
+                  uniqueobj.computed = true;
+                  mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
                 }
-                //avoid multiple computation
-                uniqueobj.computed = true;
-                mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
               }
             }
           }
@@ -433,59 +434,65 @@ class CallServer {
           nowMillis > callOutBeginHourMillis &&
           nowMillis < callOutEndHourMillis
         ) {
-          //Check working gateway
-          if (gateway.isWorkingCall === true) {
-            //Check working line
+            //Check working gateway
+            if (gateway.isWorkingCall === true) {
+            //Check working line and time counter
             if (
               (gateway.objData.isWorkingCall[iLine] === 1 ||
                 gateway.objData.isWorkingCall[iLine] === true) &&
               gateway.objData.callsSent[iLine] <
                 gateway.nMaxDailyCallPerLine * 60
             ) {
-              if (iContacts < contacts.length) {
-                var ncalls = parseInt(contacts[iContacts].ncalls) + 1;
-                var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
-                if (ncalls > config.pbxProperties.maxRetryCustomer)
-                  contacts[iContacts].state = "noanswer";
-                contacts[iContacts].ncalls = ncalls;
+                //check if contacts conunter is in limit
+                if (iContacts < contacts.length) {
+                    var contact = contacts[iContacts];
+                    var ncalls = parseInt(contact.ncalls);
+                    var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
+                    
+                    //// Check max call per campaigns and make a call
+                    if (contact.state === "toContact" && ncalls <= treshold) {
+                      var phone = contact.mobilephone;
+                      this.dialCallAmi(
+                        iCampaign,
+                        iContacts,
+                        iGateway,
+                        iLine,
+                        phone,
+                        clientAmi,
+                        (callData) => {}
+                      );
+                      ncalls++;
+                      contact.ncalls = ncalls;
+                    }
+                    
+                    /// mark no answer
+                    if (ncalls >= config.pbxProperties.maxRetryCustomer) {
+                        contact.state = "noanswer";
+                        contact.ncalls = ncalls;
+                    }  
 
-                contacts[iContacts].save().then((cont) => {
-                  console.log(
-                    "Contact " +
-                      cont.mobilephone +
-                      " -- ncalls: " +
-                      ncalls +
-                      " -- state: " +
-                      cont.state
-                  );
-                });
-
-                if (
-                  contacts[iContacts].state === "toContact" &&
-                  ncalls <= treshold
-                ) {
-                  var phone = contacts[iContacts].mobilephone;
-
-                  this.dialCallAmi(
-                    iCampaign,
-                    iContacts,
-                    iGateway,
-                    iLine,
-                    phone,
-                    clientAmi,
-                    (callData) => {}
-                  );
-                }
-                iContacts++;
-              }
-            }
-          }
-        }
+                    /// update contact
+                    contact.save().then((cont) => {
+                      console.log(
+                        "Contact " +
+                          cont.mobilephone +
+                          " -- ncalls: " +
+                          ncalls +
+                          " -- state: " +
+                          cont.state
+                      );
+                    });
+                  } //check if contacts conunter is in limit
+                  iContacts++;
+              } //check working line
+            } // check working gateway
+          }// check call time
+        
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
       if (iContacts >= contacts.length) iContacts = 0;
-      
+
       this.updateCampaignStatistcs(campaign, (res) => console.log(res));
     }, config.pbxProperties.waitCallCustomerInterval);
 
@@ -531,7 +538,8 @@ class CallServer {
           iGateway +
           " line: " +
           iLine +
-          " actionID:" +actionId
+          " actionID:" +
+          actionId
       );
       if (
         config.production &&
