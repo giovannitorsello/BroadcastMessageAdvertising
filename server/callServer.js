@@ -36,7 +36,7 @@ class CallServer {
       console.log(campaign.name);
 
       //controllo campagna in calling
-      if (campaign.state === "calling") {        
+      if (campaign.state === "calling") {
         this.openAmiConnection((clientAmi) => {
           this.campaigns.push(campaign);
           this.clientAmi = clientAmi;
@@ -160,14 +160,18 @@ class CallServer {
               var iGateway = uniqueobj.iGateway;
               var phoneNumber = uniqueobj.phone;
               ///Manage generated call
-              if (                
+              if (
                 typeof iCampaign !== "undefined" &&
                 typeof iContact !== "undefined" &&
                 typeof iGateway !== "undefined"
               ) {
                 var gateway = this.gateways[iGateway];
                 var iLine = uniqueobj.iLine;
-                if (gateway.isWorkingCall) {
+                if (
+                  gateway.isWorkingCall &&
+                  (!uniqueobj.computed ||
+                    typeof uniqueobj.computed === "undefined")
+                ) {
                   var billsec = parseInt(event.Billsec);
                   var currentBillSecLine = parseInt(
                     gateway.objData.callsSent[iLine]
@@ -183,7 +187,9 @@ class CallServer {
                     console.log("Gateway data updated " + gat.name);
                   });
                   this.database.changeStateCalledByPhone(phoneNumber, (phone) =>
-                    console.log("Contact as answer then is marked called: " + phone)
+                    console.log(
+                      "Contact as answer then is marked called: " + phone
+                    )
                   );
                 }
                 //avoid multiple computation
@@ -399,6 +405,8 @@ class CallServer {
     if (!contacts[iContacts]) return;
     if (!gateways[iGateway]) return;
 
+    //Clear map call data
+    mapCallData.clear();
     interval = setInterval(() => {
       if (campaign.state === "complete") clearInterval(interval);
 
@@ -502,7 +510,8 @@ class CallServer {
   ) {
     var gateway = this.gateways[iGateway];
     var gatewayName = gateway.name;
-    var actionId = phoneNumber + "-" + new Date().getTime();
+    var actionId =
+      phoneNumber + "-" + iGateway + "-" + iLine + "-" + new Date().getTime();
     var outLine = ("000" + (iLine + 1)).slice(-3);
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     if (gateway.isWorkingCall === true) {
@@ -514,39 +523,41 @@ class CallServer {
         phone: phoneNumber,
       };
       mapCallAction.set(actionId, JSON.stringify(data));
+      console.log(
+        "Call customer: " +
+          phoneNumber +
+          " gateway: " +
+          iGateway +
+          " line: " +
+          iLine +
+          " actionID:" +actionId
+      );
       if (
         config.production &&
         config.pbxProperties &&
         config.pbxProperties.context
-      )
-        console.log(
-          "Call customer: " +
-            phoneNumber +
-            " gateway: " +
-            iGateway +
-            " line: " +
-            iLine
-        );
-      clientAmi.action({
-        Action: "Originate",
-        ActionId: actionId,
-        Variable: "ACTIONID=" + actionId,
-        Channel: channel,
-        Context: config.pbxProperties.context, //bmacall or ivr-1
-        Exten: "s",
-        Priority: 1,
-        Timeout: 30000,
-        CallerID: "1001",
-        Async: true,
-        EarlyMedia: false,
-        Application: "",
-        Codecs: "ulaw",
-      });
-
+      ) {
+        clientAmi.action({
+          Action: "Originate",
+          ActionId: actionId,
+          Variable: "ACTIONID=" + actionId,
+          Channel: channel,
+          Context: config.pbxProperties.context, //bmacall or ivr-1
+          Exten: "s",
+          Priority: 1,
+          Timeout: 30000,
+          CallerID: "1001",
+          Async: true,
+          EarlyMedia: false,
+          Application: "",
+          Codecs: "ulaw",
+        });
+      }
+      /*
       setTimeout(() => {
         this.antiFraudCallAlgorithm(iGateway, iLine, clientAmi);
       }, 70000);
-
+      */
       callback({ state: "dial" });
     } else callback({ state: "disabled" });
   }
