@@ -522,12 +522,12 @@ class CallServer {
         ) {
             //Check working gateway
             if (gateway.isWorkingCall === true) {
+              var timeCallLine = parseInt(gateway.objData.callsSent[iLine]);
+              var maxCallLineTime = parseInt(gateway.nMaxDailyCallPerLine)*60;
             //Check working line and time counter
-            if (
+            if ((timeCallLine < maxCallLineTime) &&
               (gateway.objData.isWorkingCall[iLine] === 1 ||
-                gateway.objData.isWorkingCall[iLine] === true) &&
-              gateway.objData.callsSent[iLine] <
-                gateway.nMaxDailyCallPerLine * 60
+                gateway.objData.isWorkingCall[iLine] === true)                
             ) {
                 //check if contacts counter is in limit
                 if (iContacts < contacts.length) {
