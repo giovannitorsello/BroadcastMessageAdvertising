@@ -52,7 +52,7 @@ module.exports = {
             cust.adm2 = data.Regione;
             cust.adm3 = data.Stato;
             cust.campaignId = idCampaign;
-            cust.state = "toContact";
+            cust.state = "toContact";            
             cust.objData = {};
             console.log("Customer try to insert " + cust.mobilephone);
             if (cust.firstname) {

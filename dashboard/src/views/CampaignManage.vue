@@ -139,6 +139,7 @@
                       {{ row.item.nClickOneContacts }} - 
                       {{ row.item.nClickTwoContacts }}
                     </td>                    
+                    <td>{{ Math.floor(row.item.nBillSecondsCall/60)+"m"+Math.floor(row.item.nBillSecondsCall%60)  }} </td>
                     <td>{{ row.item.begin }}</td>
                     <td>{{ row.item.end }}</td>
                     <td>
@@ -515,6 +516,7 @@
         headersCustomers: [
           { text: "ID", value: "id" },
           { text: "Stato", value: "state" },
+          { text: "Consumo", value: "nBillSecondsCall" },
           { text: "Chiamate", value: "ncalls" },
           { text: "Campagna", value: "campaignId" },
           { text: "Nome", value: "firstname" },
@@ -556,6 +558,7 @@
             text: "1 click - 2 click",
             value: "nClicks",
           },          
+          { text: "Cunsumo (s)", value: "nBillSecondsCall" },
           { text: "Inizio", value: "begin" },
           { text: "Fine", value: "end" },
         ],

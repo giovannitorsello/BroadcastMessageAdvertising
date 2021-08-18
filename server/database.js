@@ -81,9 +81,10 @@ module.exports = {
         adm1: { type: Sequelize.STRING, allowNull: true }, //Provincia
         adm2: { type: Sequelize.STRING, allowNull: true }, //Regione
         adm3: { type: Sequelize.STRING, defaultValue: "ITALY" }, //Stato
-        campaignId: { type: Sequelize.INTEGER, allowNull: false },
+        campaignId: { type: Sequelize.INTEGER, allowNull: false },        
         state: { type: Sequelize.STRING, defaultValue: "toContact" }, //toContact, contacted, called, noanwer
         ncalls: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        nBillSecondsCall: { type: Sequelize.INTEGER, defaultvalue: 0 }, //secondi di chiamata
         objData: { type: DataTypes.JSON },
       },
       {
@@ -100,16 +101,17 @@ module.exports = {
         messagePage2: { type: Sequelize.STRING, allowNull: false },
         imageFile: { type: Sequelize.STRING, allowNull: true },
         senderService: { type: Sequelize.INTEGER, allowNull: false },
-        ncontacts: { type: Sequelize.INTEGER, allowNull: true },
-        ncompleted: { type: Sequelize.INTEGER, allowNull: true },
-        ntocontact: { type: Sequelize.INTEGER, allowNull: true },
-        nCalledContacts: { type: Sequelize.INTEGER, allowNull: true },
-        nNoAnswerContacts: { type: Sequelize.INTEGER, allowNull: true },
-        nClickOneContacts: { type: Sequelize.INTEGER, allowNull: true },
-        nClickTwoContacts: { type: Sequelize.INTEGER, allowNull: true },
+        ncontacts: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        ncompleted: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        ntocontact: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        nCalledContacts: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        nNoAnswerContacts: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        nClickOneContacts: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        nClickTwoContacts: { type: Sequelize.INTEGER, defaultvalue: 0 },
+        nBillSecondsCall: { type: Sequelize.INTEGER, defaultvalue: 0 },
         begin: { type: Sequelize.DATE, allowNull: true },
         end: { type: Sequelize.DATE, allowNull: true },
-        state: { type: Sequelize.STRING, allowNull: false }, //active, disabled, complete
+        state: { type: Sequelize.STRING, defaultvalue: 'disabled' }, //active, disabled, complete
       },
       {
         sequelize,
@@ -244,11 +246,7 @@ module.exports = {
   changeStateCalled(contactId, callback) {
     sql ="UPDATE customers SET state='called' WHERE (id='" + contactId +"');"      
     this.execute_raw_update(sql, callback);
-  },
-  changeStateCalledByPhone(phone, callback) {
-    sql ="UPDATE customers SET state='called' WHERE (mobilephone='" + phone +"');"      
-    this.execute_raw_update(sql, callback(phone));
-  },
+  },  
   changeStateContactedByCallInterested(phone, callback) {
     sql =
       "UPDATE customers SET state='contactedByCallInterested' WHERE (mobilephone='" +

@@ -40,46 +40,51 @@ class CallServer {
         this.openAmiConnection((clientAmi) => {
           this.campaigns.push(campaign);
           this.clientAmi = clientAmi;
-          if(campaign.senderService===2)
-            this.generateCustomerCallsGOIP(campaign,this.clientAmi);
-          if(campaign.senderService===3)
-            this.generateCustomerCallsVOIP(campaign,this.clientAmi);
+          if (campaign.senderService === 2)
+            this.generateCustomerCallsGOIP(campaign, this.clientAmi);
+          if (campaign.senderService === 3)
+            this.generateCustomerCallsVOIP(campaign, this.clientAmi);
         });
       }
     });
   }
 
-  loadActiveCampaing(callback) {
-    // Stop all call cycles
-    if (typeof this.campaigns !== "undefined")
-      for (var iCamp = 0; iCamp < this.campaigns.length; iCamp++) {
+  stopAllCampaigns(callback) {
+    if (typeof this.campaigns !== "undefined") {
+      for (var iCamp = 0; iCamp < this.intervalCalls.length; iCamp++) {
         if (this.intervalCalls[iCamp]) {
           clearInterval(this.intervalCalls[iCamp]);
           this.intervalCalls[iCamp] = {};
-        }
-        var campaign = this.campaigns[iCamp];
-        this.updateCampaignStatistcs(campaign, (res) => console.log(res));
+        }        
       }
+      callback();
+    }
+  }
 
-    //Charge active campaign
-    this.database.entities.messageCampaign
-      .findAll({ order: [["id", "DESC"]], where: { state: "calling" } })
-      .then((camps) => {
-        if (camps) {
-          camps.forEach((camp, index, array) => {
-            //Load remain contact only for active campaigns
-            this.database.entities.customer
-              .findAll({
-                where: { campaignId: camp.id, state: "toContact" },
-                order: [["state", "DESC"]],
-              })
-              .then((contacts) => {
-                camp.contacts = contacts;
-                callback(camp);
-              });
-          });
-        }
-      });
+  loadActiveCampaing(callback) {
+    // Stop all call cycles
+    this.stopAllCampaigns(() => {
+      //Charge active campaign
+      this.database.entities.messageCampaign
+        .findAll({ order: [["id", "DESC"]], where: { state: "calling" } })
+        .then((camps) => {
+          if (camps) {
+            camps.forEach((camp, index, array) => {
+              this.campaigns.push(camp);
+              //Load remain contact only for active campaigns
+              this.database.entities.customer
+                .findAll({
+                  where: { campaignId: camp.id, state: "toContact" },
+                  order: [["state", "DESC"]],
+                })
+                .then((contacts) => {
+                  camp.contacts = contacts;
+                  callback(camp);
+                });
+            });
+          }
+        });
+    });
   }
 
   openAmiConnection(callback) {
@@ -158,15 +163,22 @@ class CallServer {
               console.log(
                 uniqueobj.phone + " exists by CDR (" + event.Disposition + ")"
               );
-              var iCampaign = uniqueobj.iCampaign;
+              var idCampaign = uniqueobj.idCampaign;
+              var idContact = uniqueobj.idContact;
               var iContact = uniqueobj.iContact;
               var iGateway = uniqueobj.iGateway;
               var phoneNumber = uniqueobj.phone;
-              ///Manage generated call
+              var type = uniqueobj.type;
+
+
+              ///Manage ansewer from GOIP
               if (
-                typeof iCampaign !== "undefined" &&
+                typeof type !== "undefined" &&
+                typeof idCampaign !== "undefined" &&
+                typeof idContact !== "undefined" &&
                 typeof iContact !== "undefined" &&
-                typeof iGateway !== "undefined"
+                typeof iGateway !== "undefined" &&
+                type==="GOIP"
               ) {
                 var gateway = this.gateways[iGateway];
                 var iLine = uniqueobj.iLine;
@@ -179,7 +191,8 @@ class CallServer {
                   var currentBillSecLine = parseInt(
                     gateway.objData.callsSent[iLine]
                   );
-                  var totalBillSecLine = billsec + currentBillSecLine;
+                  
+                  var totalBillSecLine = billsec + currentBillSecLine;                  
                   //Update general gateway counter
                   gateway.nCallsSent = parseInt(gateway.nCallsSent) + billsec;
                   gateway.objData.callsSent[iLine] = totalBillSecLine;
@@ -189,17 +202,56 @@ class CallServer {
                   gateway.save().then((gat) => {
                     console.log("Gateway data updated " + gat.name);
                   });
-                  this.database.changeStateCalledByPhone(phoneNumber, (phone) =>
-                    console.log(
-                      "Contact as answer then is marked called: " + phone
-                    )
+                  
+                  this.addBillSecCampaign(
+                    idCampaign,
+                    billsec,
+                    (id) => {
+                      console.log("Update total billsecs "+billsec+" campaign: "+ id);
+                    }
                   );
-
+                  this.addBillSecContacts(
+                    idContact,
+                    billsec,
+                    (id) => {
+                      console.log("Update total billsecs "+billsec+" contact: "+ id);
+                    }
+                  );
                   //avoid multiple computation
                   uniqueobj.computed = true;
                   mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
                 }
               }
+              ///Manage ansewer from GOIP
+
+              ///Manage ansewer from VOIP
+              if (
+                typeof type !== "undefined" &&
+                typeof idCampaign !== "undefined" &&
+                typeof idContact !== "undefined" &&
+                type==="VOIP"
+              ) {
+                var billsec = parseInt(event.Billsec);
+                
+                this.addBillSecCampaign(
+                  idCampaign,
+                  billsec,
+                  (id) => {
+                    console.log("Update total billsecs "+billsec+" campaign: "+ id);
+                  }
+                );
+                this.addBillSecContacts(
+                  idContact,
+                  billsec,
+                  (id) => {
+                    console.log("Update total billsecs "+billsec+" contact: "+ id);
+                  }
+                );
+                //avoid multiple computation
+                uniqueobj.computed = true;
+                mapCallData.set(event.UniqueID, JSON.stringify(uniqueobj));
+              }
+              ///Manage ansewer from VOIP
             }
           }
         }
@@ -220,12 +272,14 @@ class CallServer {
               event.Uniqueid,
               JSON.stringify({
                 id: event.Uniqueid,
-                iCampaign: actionData.iCampaign,
+                idCampaign: actionData.idCampaign,
+                idContact: actionData.idContact,
                 iContact: actionData.iContact,
                 iGateway: actionData.iGateway,
                 iLine: actionData.iLine,
                 phone: actionData.phone,
-                channel: event.Channel,
+                type: actionData.type,
+                channel: event.Channel,                
               })
             );
           }
@@ -395,21 +449,22 @@ class CallServer {
     }, config.pbxProperties.waitCallAntifraudInterval);
   }
 
-  generateCustomerCallsVOIP(campaign,clientAmi) {
-    var contacts = campaign.contacts;        
+  generateCustomerCallsVOIP(campaign, clientAmi) {
+    var contacts = campaign.contacts;
     var iContacts = 0;
     var interval = {};
 
     //Check validity
     if (!contacts) return;
     if (!campaign.senderService) return;
-    var senderService=config.senderServices[campaign.senderService];    
+    var senderService = config.senderServices[campaign.senderService];
     if (!senderService) return;
-    var nchannels=senderService.nchannels;
+    var nchannels = senderService.nchannels;
     if (!nchannels) return;
-    
+
     interval = setInterval(() => {
       if (campaign.state === "complete") clearInterval(interval);
+      if (campaign.state === "disabled") clearInterval(interval);
 
       var callOutBeginHour = config.pbxProperties.callOutBeginHour;
       var callOutEndHour = config.pbxProperties.callOutEndHour;
@@ -426,52 +481,48 @@ class CallServer {
         callOutEndHour[2]
       );
 
-        //Check time for customer calls
-        if (
-          nowMillis > callOutBeginHourMillis &&
-          nowMillis < callOutEndHourMillis
-        ) {            
+      //Check time for customer calls
+      if (
+        nowMillis > callOutBeginHourMillis &&
+        nowMillis < callOutEndHourMillis
+      ) {
+        // Voip channel iterations, place nchannels call every cycle
+        for (var iChannelVoip = 0; iChannelVoip < nchannels; iChannelVoip++) {
+          //check if contacts counter is in limit
+          if (iContacts < contacts.length) {
+            var contact = contacts[iContacts];
+            var ncalls = parseInt(contact.ncalls);
+            var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
 
-          // Voip channel iterations, place nchannels call every cycle
-          for (var iChannelVoip=0; iChannelVoip<nchannels; iChannelVoip++){
-            //check if contacts counter is in limit
-            if (iContacts < contacts.length) {
-                var contact = contacts[iContacts];
-                var ncalls = parseInt(contact.ncalls);
-                var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
-                
-                //// Check max call per campaigns and make a call
-                if (contact.state === "toContact" && ncalls <= treshold) {
-                  var phone = contact.mobilephone;
-                  this.dialCallAmiVoip(contact,clientAmi,(callData) => {
-
-                  });
-                  ncalls++;
-                  contact.ncalls = ncalls;
-                }
-                
-                /// mark no answer
-                if (ncalls >= config.pbxProperties.maxRetryCustomer) {
-                    contact.state = "noanswer";
-                    contact.ncalls = ncalls;
-                }  
-
-                /// update contact
-                contact.save().then((cont) => {
-                  console.log(
-                    "Contact " +
-                      cont.mobilephone +
-                      " -- ncalls: " +
-                      ncalls +
-                      " -- state: " +
-                      cont.state
-                  );
-                });
-              iContacts++;              
+            //// Check max call per campaigns and make a call
+            if (contact.state === "toContact" && ncalls <= treshold) {
+              var phone = contact.mobilephone;
+              this.dialCallAmiVOIP(campaign, contact, clientAmi, (callData) => {});
+              ncalls++;
+              contact.ncalls = ncalls;
             }
+
+            /// mark no answer
+            if (ncalls >= config.pbxProperties.maxRetryCustomer) {
+              contact.state = "noanswer";
+              contact.ncalls = ncalls;
+            }
+
+            /// update contact
+            contact.save().then((cont) => {
+              console.log(
+                "Contact " +
+                  cont.mobilephone +
+                  " -- ncalls: " +
+                  ncalls +
+                  " -- state: " +
+                  cont.state
+              );
+            });
+            iContacts++;
           }
-        
-      }// check call time
+        }
+      } // check call time
       if (iContacts >= contacts.length) iContacts = 0;
 
       this.updateCampaignStatistcs(campaign, (res) => console.log(res));
@@ -481,11 +532,11 @@ class CallServer {
   }
 
   generateCustomerCallsGOIP(campaign, clientAmi) {
-    var iCampaign = 0;
+    var iCampaign = 0;    
     var contacts = campaign.contacts;
     var iGateway = 0;
     var iContacts = 0;
-    var gateways = this.gateways;    
+    var gateways = this.gateways;
     var interval = {};
 
     //Check validity
@@ -496,6 +547,7 @@ class CallServer {
     mapCallData.clear();
     interval = setInterval(() => {
       if (campaign.state === "complete") clearInterval(interval);
+      if (campaign.state === "disabled") clearInterval(interval);
 
       var callOutBeginHour = config.pbxProperties.callOutBeginHour;
       var callOutEndHour = config.pbxProperties.callOutEndHour;
@@ -520,60 +572,60 @@ class CallServer {
           nowMillis > callOutBeginHourMillis &&
           nowMillis < callOutEndHourMillis
         ) {
-            //Check working gateway
-            if (gateway.isWorkingCall === true) {
-              var timeCallLine = parseInt(gateway.objData.callsSent[iLine]);
-              var maxCallLineTime = parseInt(gateway.nMaxDailyCallPerLine)*60;
+          //Check working gateway
+          if (gateway.isWorkingCall === true) {
+            var timeCallLine = parseInt(gateway.objData.callsSent[iLine]);
+            var maxCallLineTime = parseInt(gateway.nMaxDailyCallPerLine) * 60;
             //Check working line and time counter
-            if ((timeCallLine < maxCallLineTime) &&
+            if (
+              timeCallLine < maxCallLineTime &&
               (gateway.objData.isWorkingCall[iLine] === 1 ||
-                gateway.objData.isWorkingCall[iLine] === true)                
+                gateway.objData.isWorkingCall[iLine] === true)
             ) {
-                //check if contacts counter is in limit
-                if (iContacts < contacts.length) {
-                    var contact = contacts[iContacts];
-                    var ncalls = parseInt(contact.ncalls);
-                    var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
-                    
-                    //// Check max call per campaigns and make a call
-                    if (contact.state === "toContact" && ncalls <= treshold) {
-                      var phone = contact.mobilephone;
-                      this.dialCallAmi(
-                        iCampaign,
-                        iContacts,
-                        iGateway,
-                        iLine,
-                        phone,
-                        clientAmi,
-                        (callData) => {}
-                      );
-                      ncalls++;
-                      contact.ncalls = ncalls;
-                    }
-                    
-                    /// mark no answer
-                    if (ncalls >= config.pbxProperties.maxRetryCustomer) {
-                        contact.state = "noanswer";
-                        contact.ncalls = ncalls;
-                    }  
+              //check if contacts counter is in limit
+              if (iContacts < contacts.length) {
+                var contact = contacts[iContacts];
+                var ncalls = parseInt(contact.ncalls);
+                var treshold = parseInt(config.pbxProperties.maxRetryCustomer);
 
-                    /// update contact
-                    contact.save().then((cont) => {
-                      console.log(
-                        "Contact " +
-                          cont.mobilephone +
-                          " -- ncalls: " +
-                          ncalls +
-                          " -- state: " +
-                          cont.state
-                      );
-                    });
-                  } //check if contacts conunter is in limit
-                  iContacts++;
-              } //check working line
-            } // check working gateway
-          }// check call time
-        
+                //// Check max call per campaigns and make a call
+                if (contact.state === "toContact" && ncalls <= treshold) {
+                  var phone = contact.mobilephone;
+                  this.dialCallAmiGOIP(
+                    campaign,
+                    iContacts,
+                    iGateway,
+                    iLine,
+                    phone,
+                    clientAmi,
+                    (callData) => {}
+                  );
+                  ncalls++;
+                  contact.ncalls = ncalls;
+                }
+
+                /// mark no answer
+                if (ncalls >= config.pbxProperties.maxRetryCustomer) {
+                  contact.state = "noanswer";
+                  contact.ncalls = ncalls;
+                }
+
+                /// update contact
+                contact.save().then((cont) => {
+                  console.log(
+                    "Contact " +
+                      cont.mobilephone +
+                      " -- ncalls: " +
+                      ncalls +
+                      " -- state: " +
+                      cont.state
+                  );
+                });
+              } //check if contacts conunter is in limit
+              iContacts++;
+            } //check working line
+          } // check working gateway
+        } // check call time
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
@@ -593,40 +645,60 @@ class CallServer {
     else return false;
   }
 
-  dialCallAmiVoip(contact,clientAmi,callback) {
-    var phoneNumber = contact.mobilephone;    
+  dialCallAmiVOIP(campaign, contact, clientAmi, callback) {
+    if (!campaign) return;
+    if (!contact) return;
+    var phoneNumber = contact.mobilephone;
     var actionId =
-      phoneNumber + "-" + new Date().getTime();    
-    var channel = "SIP/VOIP/"+phoneNumber;    
+      phoneNumber +
+      "-" +
+      campaign.id +
+      "-" +
+      contact.id +
+      "-" +
+      new Date().getTime();
+    var channel = "SIP/VOIP/" + phoneNumber;
+    console.log("Call customer: " + phoneNumber + " by VOIP channel ");
+    if (
+      config.production &&
+      config.pbxProperties &&
+      config.pbxProperties.context
+    ) {
+      var data = {
+        type: "VOIP",
+        idCampaign: campaign.id,
+        idContact: contact.id,
+        phone: phoneNumber,
+      };
+      mapCallAction.set(actionId, JSON.stringify(data));
       console.log(
-        "Call customer: "+phoneNumber+" by VOIP channel ");
-      if (
-        config.production &&
-        config.pbxProperties &&
-        config.pbxProperties.context
-      ) {
-        clientAmi.action({
-          Action: "Originate",
-          ActionId: actionId,
-          Variable: "ACTIONID=" + actionId,
-          Channel: channel,
-          Context: config.pbxProperties.context, //bmacall or ivr-1
-          Exten: "s",
-          Priority: 1,
-          Timeout: 30000,
-          CallerID: "1001",
-          Async: true,
-          EarlyMedia: false,
-          Application: "",
-          Codecs: "ulaw",
-        });
-        callback({ state: "dial" });
-      }
-      else callback({ state: "disabled" });
+        "Call customer: " +
+          phoneNumber +
+          " from voip " +
+          " actionID: " +
+          actionId
+      );
+      clientAmi.action({
+        Action: "Originate",
+        ActionId: actionId,
+        Variable: "ACTIONID=" + actionId,
+        Channel: channel,
+        Context: config.pbxProperties.context, //bmacall or ivr-1
+        Exten: "s",
+        Priority: 1,
+        Timeout: 30000,
+        CallerID: "1001",
+        Async: true,
+        EarlyMedia: false,
+        Application: "",
+        Codecs: "ulaw",
+      });
+      callback({ state: "dial" });
+    } else callback({ state: "disabled" });
   }
 
-  dialCallAmi(
-    iCampaign,
+  dialCallAmiGOIP(
+    campaign,
     iContact,
     iGateway,
     iLine,
@@ -634,7 +706,12 @@ class CallServer {
     clientAmi,
     callback
   ) {
+    if (!campaign) return;
+    var contact = campaign.contacts[iContact];
+    if (!contact) return;
     var gateway = this.gateways[iGateway];
+    if (!gateway) return;
+
     var gatewayName = gateway.name;
     var actionId =
       phoneNumber + "-" + iGateway + "-" + iLine + "-" + new Date().getTime();
@@ -642,7 +719,9 @@ class CallServer {
     var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
     if (gateway.isWorkingCall === true) {
       var data = {
-        iCampaign: iCampaign,
+        type: "GOIP",
+        idCampaign: campaign.id,
+        idContact: contact.id,        
         iContact: iContact,
         iGateway: iGateway,
         iLine: iLine,
@@ -758,7 +837,7 @@ class CallServer {
       var iGateway = this.gateways.findIndex(hasId);
       var iLine = data.line;
       var phonenumber = data.phonenumber;
-      this.dialCallAmi(0, 0, iGateway, iLine, phonenumber, clientAmi, (res) => {
+      this.dialCallAmiGOIP(0, 0, iGateway, iLine, phonenumber, clientAmi, (res) => {
         callback(res);
       });
     });
@@ -974,6 +1053,16 @@ class CallServer {
     UPDATE messagecampaigns SET messagecampaigns.nClickOneContacts=(SELECT COUNT(*) FROM clicks WHERE (clicks.campaignId=messagecampaigns.id and clicks.confirm=0));
     UPDATE messagecampaigns set ncompleted=(SELECT COUNT(*) FROM customers WHERE (customers.campaignId=messagecampaigns.id and state='contacted'));
     */
+  }
+
+  addBillSecCampaign(idCampaign, billsec, callback) {
+    var sql ="UPDATE messagecampaigns SET nBillSecondsCall=nBillSecondsCall+"+billsec+" WHERE (id='" + idCampaign +"');"      
+    this.database.execute_raw_update(sql, callback(idCampaign));
+  }
+  
+  addBillSecContacts(idContact, billsec, callback) {
+    var sql ="UPDATE customers SET nBillSecondsCall=nBillSecondsCall+"+billsec+", state='called' WHERE (id='" + idContact +"');"      
+    this.database.execute_raw_update(sql, callback(idContact));
   }
 }
 
