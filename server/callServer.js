@@ -5,6 +5,57 @@ var contacts = [];
 var mapCallData = new Map();
 var mapCallAction = new Map();
 
+voipcallers=[{id: 161,caller:"00393760481830"},
+{id: 160,caller:"00393760483111"},
+{id: 159,caller:"00393760481879"},
+{id: 158,caller:"00393760481707"},
+{id: 157,caller:"00393760481999"},
+{id: 156,caller:"00393760481500"},
+{id: 155,caller:"00393760481937"},
+{id: 154,caller:"00393760481569"},
+{id: 153,caller:"00393760481542"},
+{id: 152,caller:"00393760481912"},
+{id: 151,caller:"00393760481914"},
+{id: 150,caller:"00393760483050"},
+{id: 149,caller:"00393760481913"},
+{id: 148,caller:"00393760483046"},
+{id: 147,caller:"00393760483047"},
+{id: 146,caller:"00393760483049"},
+{id: 145,caller:"00393760483048"},
+{id: 144,caller:"00393760483043"},
+{id: 143,caller:"00393760481515"},
+{id: 142,caller:"00393760483041"},
+{id: 141,caller:"00393760483040"},
+{id: 140,caller:"00393760483204"},
+{id: 139,caller:"00393760481916"},
+{id: 138,caller:"00393760481907"},
+{id: 137,caller:"00393760481918"},
+{id: 136,caller:"00393760481632"},
+{id: 135,caller:"00393760481908"},
+{id: 134,caller:"00393760481915"},
+{id: 133,caller:"00393760481629"},
+{id: 132,caller:"00393760481910"},
+{id: 130,caller:"00393760483201"},
+{id: 129,caller:"00393760481635"},
+{id: 128,caller:"00393760483042"},
+{id: 127,caller:"00393760483206"},
+{id: 126,caller:"00393760481509"},
+{id: 125,caller:"00393760481510"},
+{id: 124,caller:"00393760481512"},
+{id: 123,caller:"00393760481511"},
+{id: 122,caller:"00393760481513"},
+{id: 121,caller:"00393760481909"},
+{id: 120,caller:"00393760481516"},
+{id: 119,caller:"00393760483207"},
+{id: 118,caller:"00393760483205"},
+{id: 117,caller:"00393760481810"},
+{id: 116,caller:"00393760481919"},
+{id: 115,caller:"00393760483044"},
+{id: 114,caller:"00393760481517"},
+{id: 113,caller:"00393760481630"},
+{id: 112,caller:"00393760481631"},
+{id: 111,caller:"00393760481917"}];
+
 class CallServer {
   gateways = [];
   campaigns = [];
@@ -453,6 +504,7 @@ class CallServer {
     var contacts = campaign.contacts;
     var iContacts = 0;
     var interval = {};
+    var iVoipNumber=0
 
     //Check validity
     if (!contacts) return;
@@ -465,7 +517,7 @@ class CallServer {
     interval = setInterval(() => {
       if (campaign.state === "complete") clearInterval(interval);
       if (campaign.state === "disabled") clearInterval(interval);
-
+            
       var callOutBeginHour = config.pbxProperties.callOutBeginHour;
       var callOutEndHour = config.pbxProperties.callOutEndHour;
       var now = new Date();
@@ -487,7 +539,9 @@ class CallServer {
         nowMillis < callOutEndHourMillis
       ) {
         // Voip channel iterations, place nchannels call every cycle
-        for (var iChannelVoip = 0; iChannelVoip < nchannels; iChannelVoip++) {
+        for (var iChannelVoip = 0; iChannelVoip < nchannels; iChannelVoip++) {          
+          var caller=voipcallers[iVoipNumber];
+          if(iVoipNumber>=voipcallers.lenght) {iVoipNumber=0};
           //check if contacts counter is in limit
           if (iContacts < contacts.length) {
             var contact = contacts[iContacts];
@@ -497,7 +551,7 @@ class CallServer {
             //// Check max call per campaigns and make a call
             if (contact.state === "toContact" && ncalls <= treshold) {
               var phone = contact.mobilephone;
-              this.dialCallAmiVOIP(campaign, contact, clientAmi, (callData) => {});
+              this.dialCallAmiVOIP(campaign, contact, caller, clientAmi, (callData) => {});
               ncalls++;
               contact.ncalls = ncalls;
             }
@@ -521,6 +575,7 @@ class CallServer {
             });
             iContacts++;
           }
+          iVoipNumber++;
         }
       } // check call time
       if (iContacts >= contacts.length) iContacts = 0;
@@ -645,7 +700,7 @@ class CallServer {
     else return false;
   }
 
-  dialCallAmiVOIP(campaign, contact, clientAmi, callback) {
+  dialCallAmiVOIP(campaign, contact, caller, clientAmi, callback) {
     if (!campaign) return;
     if (!contact) return;
     var phoneNumber = contact.mobilephone;
@@ -687,7 +742,7 @@ class CallServer {
         Exten: "s",
         Priority: 1,
         Timeout: 30000,
-        CallerID: "1001",
+        CallerID: caller,
         Async: true,
         EarlyMedia: false,
         Application: "",
