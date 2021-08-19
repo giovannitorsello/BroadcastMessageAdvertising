@@ -495,8 +495,9 @@ class CallServer {
       ) {
         // Voip channel iterations, place nchannels call every cycle
         for (var iChannelVoip = 0; iChannelVoip < nchannels; iChannelVoip++) {          
-          var caller=voipcallers[iVoipNumber];
           if(iVoipNumber>=voipcallers.lenght) {iVoipNumber=0};
+          var caller=voipcallers[iVoipNumber];
+          
           //check if contacts counter is in limit
           if (iContacts < contacts.length) {
             var contact = contacts[iContacts];
