@@ -261,7 +261,7 @@ class SmsServer {
         );
       }
       else {
-          console.log("SMS Send fail line disabled: "+senderDevice.name+":"+iLine);
+          console.log("SMS Send fail line disabled: "+senderDevice.name+":"+selectedSenderLine);
           this.checkIfBalanceIsPossible();
       }
     }
