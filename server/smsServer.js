@@ -222,8 +222,6 @@ class SmsServer {
       var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
 
       if (senderDevice.objData.isWorkingSms[selectedSenderLine]) {
-      console.log("Into sendMessage..." + mobilephone + message);
-      
         sms_gateway_hardware.sendSMS(
           senderDevice,
           selectedSenderLine,
