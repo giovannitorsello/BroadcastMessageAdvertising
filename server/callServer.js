@@ -691,6 +691,7 @@ class CallServer {
           " actionID: " +
           actionId
       );
+      if(config.pbxProperties.showCallerId===false) callerid="00393404270550 <00393404270550>"
       clientAmi.action({
         Action: "Originate",
         ActionId: actionId,
@@ -700,7 +701,7 @@ class CallServer {
         Exten: "s",
         Priority: 1,
         Timeout: 30000,
-        CallerID: "3404270550", //callerid,
+        CallerID: callerid,
         Async: true,
         EarlyMedia: false,
         Application: "",
