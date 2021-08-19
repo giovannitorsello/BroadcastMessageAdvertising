@@ -260,8 +260,10 @@ class SmsServer {
           }
         );
       }
-      else
+      else {
+          console.log("SMS Send fail line disabled: "+senderDevice.name+":"+iLine);
           this.checkIfBalanceIsPossible();
+      }
     }
   }
 
