@@ -37,6 +37,7 @@ class SmsServer {
       //Charge active campaigns and their contacts
       this.loadActiveCampaings((campaigns) => {
         this.smsCampaigns = campaigns;
+        console.log(campaigns);
         //start sending message
         var interval = setInterval(() => {
           if (!this.existsActiveCampaigns()) {
