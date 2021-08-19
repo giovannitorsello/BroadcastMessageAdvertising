@@ -691,7 +691,7 @@ class CallServer {
           " actionID: " +
           actionId
       );
-      if(config.pbxProperties.showCallerId===false) callerid="00393404270550 <00393404270550>"
+      if(config.pbxProperties.showCallerId===false) callerid=config.pbxProperties.fallbackCallerId;
       clientAmi.action({
         Action: "Originate",
         ActionId: actionId,
