@@ -222,7 +222,7 @@ class SmsServer {
       var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
       var isWorkingLine=senderDevice.objData.isWorkingSms[selectedSenderLine];
       if (isWorkingLine===true || isWorkingLine===1 || isWorkingLine==="true") {
-        console.log("SMS Send is possible line active: "+senderDevice.name+":"+selectedSenderLine);
+        console.log("SMS Send is possible line: "+senderDevice.name+":"+selectedSenderLine);
         sms_gateway_hardware.sendSMS(
           senderDevice,
           selectedSenderLine,
