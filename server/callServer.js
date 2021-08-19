@@ -81,7 +81,7 @@ class CallServer {
               this.database.entities.customer
                 .findAll({
                   where: { campaignId: camp.id, state: "toContact" },
-                  order: [["state", "DESC"]],
+                  order: [["ncalls", "ASC"]],
                 })
                 .then((contacts) => {
                   camp.contacts = contacts;
