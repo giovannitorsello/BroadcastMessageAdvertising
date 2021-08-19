@@ -209,8 +209,7 @@ class SmsServer {
   sendMessage(campaign, iDevice, contact, callback) {    
     if (!this.smsGateways[iDevice]) return;
     if (!campaign) return;
-    if (!contact) return;
-    console.log("Into sendMessage...")
+    if (!contact) return;    
     var mobilephone = contact.mobilephone;
     var message = this.formatMessage(campaign, contact);
     if (
@@ -218,6 +217,7 @@ class SmsServer {
       contact.state === "toContact" &&
       campaign.state === "active"
     ) {
+      console.log("Into sendMessage..." + mobilephone + message);
       //Line selection
       var senderDevice = this.smsGateways[iDevice];
       var selectedSenderLine = this.getDeviceLineWithLessSent(iDevice);
