@@ -207,6 +207,7 @@ class SmsServer {
   }
 
   sendMessage(campaign, iDevice, contact, callback) {
+    console.log("Into sendMessage...")
     if (!this.smsGateways[iDevice]) return;
     if (!campaign) return;
     if (!contact) return;
