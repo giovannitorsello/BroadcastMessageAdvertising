@@ -459,7 +459,7 @@ class CallServer {
     var contacts = campaign.contacts;
     var iContacts = 0;
     var interval = {};
-    var iVoipNumber=0
+    var iVoipNumber=0;
 
     //Check validity
     if (!contacts) return;
@@ -495,9 +495,11 @@ class CallServer {
       ) {
         // Voip channel iterations, place nchannels call every cycle
         for (var iChannelVoip = 0; iChannelVoip < nchannels; iChannelVoip++) {          
-          if(iVoipNumber>=voipcallers.lenght) {iVoipNumber=0};
-          var caller=voipcallers[iVoipNumber];
           
+          if(iVoipNumber>=voipcallers.length) {iVoipNumber=0};
+          var caller=voipcallers[iVoipNumber];
+          iVoipNumber++;
+
           //check if contacts counter is in limit
           if (iContacts < contacts.length) {
             var contact = contacts[iContacts];
@@ -529,8 +531,7 @@ class CallServer {
               );
             });
             iContacts++;
-          }
-          iVoipNumber++;
+          }         
         }
       } // check call time
       if (iContacts >= contacts.length) iContacts = 0;
