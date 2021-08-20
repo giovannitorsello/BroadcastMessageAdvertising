@@ -660,6 +660,9 @@ module.exports = {
               gateway.objData.smsReceived[i] = 0;
               iSim++;
             }
+            if(gateway.isWorkingSms)
+              gateway.objData.isWorkingSms[i] = true;
+
             gateway.setDataValue("nSmsSent", 0);
             gateway.setDataValue("nSmsReceived", 0);
             gateway.setDataValue("objData", gateway.objData);
@@ -693,6 +696,9 @@ module.exports = {
               gateway.objData.callsSent[i] = 0;
               gateway.objData.callsReceived[i] = 0;
             }
+            if(gateway.isWorkingCall)
+              gateway.objData.isWorkingCall[i] = true;
+
             gateway.setDataValue("nCallsSent", 0);
             gateway.setDataValue("nCallsReceived", 0);
             gateway.setDataValue("objData", gateway.objData);
