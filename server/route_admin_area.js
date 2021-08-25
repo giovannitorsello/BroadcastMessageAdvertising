@@ -1391,7 +1391,7 @@ module.exports = {
                       campaign.save();
                       res.send({
                         status: "OK",
-                        msg: "Importati correttamente "+nImported+" contati.",
+                        msg: "Importati correttamente "+nImported+" contatti.",
                         ncontacts: nImported,
                       });                    
                     });
