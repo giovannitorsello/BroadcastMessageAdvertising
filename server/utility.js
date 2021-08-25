@@ -40,9 +40,9 @@ module.exports = {
           .on("data", (data) => {
             var cust = {};
             //Gestione campi vuoti
-            if(data.Nome==="NULL") Data.Nome="VUOTO";
-            if(data.Cognome==="NULL") Data.Nome="VUOTO";
-            if(data.Telefono==="NULL") Data.Telefono="VUOTO";
+            if(data.Nome==="NULL") data.Nome="VUOTO";
+            if(data.Cognome==="NULL") data.Nome="VUOTO";
+            if(data.Telefono==="NULL") data.Telefono="VUOTO";
 
             cust.id = "";
             cust.uid = this.makeUuid();            
