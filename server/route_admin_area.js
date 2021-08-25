@@ -1347,7 +1347,7 @@ module.exports = {
           res.send({
             status: "Error",
             msg: "File not found",
-            ncontacts: nImported,
+            ncontacts: 0,
           });
         }
         var oldPath = files.csv_data.path;
