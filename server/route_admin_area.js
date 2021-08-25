@@ -1340,23 +1340,23 @@ module.exports = {
 
     app.post("/upload/contacts", function (req, res) {
       const form = new formidable.IncomingForm();
-      form.parse(req, function (err, fields, files) {
-        if (!files.csv_data) {
+      form.parse(req, function (err, fields, files) {        
+        if (!files || !files.csv_data) {
           res.send({
             status: "Error",
             msg: "File not found",
             ncontacts: 0,
           });
-        } else if (!idCampaign || idCampaign <= 0) {
+        } else if (!fields || !fields.idCampaign || fields.idCampaign <= 0) {
           res.send({
             status: "Error",
             msg: "Error in campaign id",
             ncontacts: 0,
           });
           return;
-        } else {
+        } else {   
           var idCampaign = fields.idCampaign;
-          var oldPath = files.csv_data.path;
+          var oldPath = files.csv_data.path;       
           var newPath =
             path.join(__dirname, "uploads") + "/" + files.csv_data.name;
           var rawData = fs.readFileSync(oldPath);
@@ -1375,11 +1375,16 @@ module.exports = {
                 newPath,
                 database,
                 (nImported) => {
-                  console.log("File csv successfully imported.");
-                  res.send({
-                    status: "OK",
-                    msg: "Contacts found",
-                    ncontacts: nImported,
+                  console.log("File csv successfully imported.");                  
+                  //update counter
+                  database.entities.messageCampaign.findOne({ where: {id: idCampaign}}).then(campaign =>{
+                    campaign.ncontacts=nImported;
+                    campaign.save();
+                    res.send({
+                      status: "OK",
+                      msg: "Contacts found",
+                      ncontacts: nImported,
+                    });
                   });
                 }
               );
