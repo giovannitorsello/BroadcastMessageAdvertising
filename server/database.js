@@ -240,8 +240,10 @@ module.exports = {
   },
   insert_bulk(sql, callback) {
     sequelize.query(sql, { type: QueryTypes.INSERT }).then((results) => {
-      callback(results);
-    });
+      callback({status: 'OK', data: results});
+    }).catch(function (err) {
+      callback({status: 'error', error: err});
+    });;
   },
   changeStateCalled(contactId, callback) {
     sql ="UPDATE customers SET state='called' WHERE (id='" + contactId +"');"      

@@ -1098,9 +1098,19 @@
             .then((request) => {
               this.dialogImportContacts = false;
               this.contacts = [];
-              this.ncontacts = request.data.ncontacts;
-              this.selectedCampaign.ncontacts = request.data.ncontacts;
-              this.updateMessageCampaign();
+              console.log(request);
+              if(request.data.status==='OK') {
+                this.ncontacts = request.data.ncontacts;
+                this.selectedCampaign.ncontacts = request.data.ncontacts;
+                alert(request.data.msg);
+                this.updateMessageCampaign();
+              }
+              else{
+                alert(request.data.msg);
+              }
+
+
+              
             })
             .catch((error) => {
               console.log(error);

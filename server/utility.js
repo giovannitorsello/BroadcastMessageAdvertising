@@ -42,8 +42,7 @@ module.exports = {
             //Gestione campi vuoti
             if(data.Nome==="NULL") data.Nome="VUOTO";
             if(data.Cognome==="NULL") data.Nome="VUOTO";
-            if(data.Telefono==="NULL") data.Telefono="VUOTO";
-
+            if(data.Telefono==="NULL") data.Telefono="VUOTO";            
             cust.id = "";
             cust.uid = this.makeUuid();            
             cust.firstname = data.Nome;
@@ -98,9 +97,9 @@ module.exports = {
                 filename_import +
                 "' INTO TABLE bma.customers  FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 ROWS "+
                 " (firstname,lastname,email,mobilephone,address,postcode,city,adm1,adm2,adm3,campaignId,state)";
-              database.insert_bulk(sql, results => {
-                  console.log("CSV successfully imported in database");                  
-                  callback(results[1]);
+              database.insert_bulk(sql, res => {
+                  console.log("CSV successfully imported in database");
+                  callback(res);
                 })
             });            
           });

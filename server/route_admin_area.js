@@ -1374,18 +1374,28 @@ module.exports = {
                 idCampaign,
                 newPath,
                 database,
-                (nImported) => {
-                  console.log("File csv successfully imported.");                  
-                  //update counter
-                  database.entities.messageCampaign.findOne({ where: {id: idCampaign}}).then(campaign =>{
-                    campaign.ncontacts=nImported;
-                    campaign.save();
+                (resImport) => {
+                  if(resImport.error) {
                     res.send({
-                      status: "OK",
-                      msg: "Contacts found",
-                      ncontacts: nImported,
+                      status: "error",
+                      msg: resImport.error.message,                      
+                    });  
+                  }
+                  else if(!resImport.error)
+                  {
+                    console.log("File csv successfully imported.");                  
+                    //update counter
+                    nImported=resImport.data[1];
+                    database.entities.messageCampaign.findOne({ where: {id: idCampaign}}).then(campaign =>{
+                      campaign.ncontacts=nImported;
+                      campaign.save();
+                      res.send({
+                        status: "OK",
+                        msg: "Importati correttamente "+nImported+" contati.",
+                        ncontacts: nImported,
+                      });                    
                     });
-                  });
+                  }
                 }
               );
             }
