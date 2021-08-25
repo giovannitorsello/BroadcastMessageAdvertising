@@ -497,28 +497,28 @@ module.exports = {
 
     app.post("/adminarea/gateway/update", function (req, res) {
       var gateway = req.body.gateway;
-      if(typeof gateway !=="undefined")
-      database.entities.gateway
-        .findOne({ where: { id: gateway.id } })
-        .then(function (gatewayFound) {
-          Object.assign(gatewayFound, gateway);
-          gatewayFound.changed("objData", true);
-          gatewayFound.save().then(function (savedGateway) {
-            if (savedGateway) {
-              res.send({
-                status: "OK",
-                msg: "Gateway update successfully",
-                gateway: savedGateway,
-              });
-            } else {
-              res.send({
-                status: "error",
-                msg: "Gateway update error",
-                gateway: gateway,
-              });
-            }
+      if (typeof gateway !== "undefined")
+        database.entities.gateway
+          .findOne({ where: { id: gateway.id } })
+          .then(function (gatewayFound) {
+            Object.assign(gatewayFound, gateway);
+            gatewayFound.changed("objData", true);
+            gatewayFound.save().then(function (savedGateway) {
+              if (savedGateway) {
+                res.send({
+                  status: "OK",
+                  msg: "Gateway update successfully",
+                  gateway: savedGateway,
+                });
+              } else {
+                res.send({
+                  status: "error",
+                  msg: "Gateway update error",
+                  gateway: gateway,
+                });
+              }
+            });
           });
-        });
     });
 
     app.post("/adminarea/gateway/delete", function (req, res) {
@@ -660,8 +660,7 @@ module.exports = {
               gateway.objData.smsReceived[i] = 0;
               iSim++;
             }
-            if(gateway.isWorkingSms)
-              gateway.objData.isWorkingSms[i] = true;
+            if (gateway.isWorkingSms) gateway.objData.isWorkingSms[i] = true;
 
             gateway.setDataValue("nSmsSent", 0);
             gateway.setDataValue("nSmsReceived", 0);
@@ -696,8 +695,7 @@ module.exports = {
               gateway.objData.callsSent[i] = 0;
               gateway.objData.callsReceived[i] = 0;
             }
-            if(gateway.isWorkingCall)
-              gateway.objData.isWorkingCall[i] = true;
+            if (gateway.isWorkingCall) gateway.objData.isWorkingCall[i] = true;
 
             gateway.setDataValue("nCallsSent", 0);
             gateway.setDataValue("nCallsReceived", 0);
@@ -1349,46 +1347,45 @@ module.exports = {
             msg: "File not found",
             ncontacts: 0,
           });
-        }
-        var oldPath = files.csv_data.path;
-        var idCampaign = fields.idCampaign;
-        if (!idCampaign || idCampaign <= 0) {
+        } else if (!idCampaign || idCampaign <= 0) {
           res.send({
             status: "Error",
             msg: "Error in campaign id",
             ncontacts: 0,
           });
           return;
+        } else {
+          var idCampaign = fields.idCampaign;
+          var oldPath = files.csv_data.path;
+          var newPath =
+            path.join(__dirname, "uploads") + "/" + files.csv_data.name;
+          var rawData = fs.readFileSync(oldPath);
+          console.log("Received file:  " + oldPath);
+          console.log("Upload file:  " + newPath);
+
+          fs.writeFile(newPath, rawData, (err) => {
+            if (err) console.log(err);
+            else {
+              //delete all old customers
+              database.entities.customer.destroy({
+                where: { campaignId: idCampaign },
+              });
+              utility.import_Contacts_From_Csv(
+                idCampaign,
+                newPath,
+                database,
+                (nImported) => {
+                  console.log("File csv successfully imported.");
+                  res.send({
+                    status: "OK",
+                    msg: "Contacts found",
+                    ncontacts: nImported,
+                  });
+                }
+              );
+            }
+          });
         }
-
-        var newPath =
-          path.join(__dirname, "uploads") + "/" + files.csv_data.name;
-        var rawData = fs.readFileSync(oldPath);
-        console.log("Received file:  " + oldPath);
-        console.log("Upload file:  " + newPath);
-
-        fs.writeFile(newPath, rawData, (err) => {
-          if (err) console.log(err);
-          else {
-            //delete all old customers
-            database.entities.customer.destroy({
-              where: { campaignId: idCampaign },
-            });
-            utility.import_Contacts_From_Csv(
-              idCampaign,
-              newPath,
-              database,
-              (nImported) => {
-                console.log("File csv successfully imported.");
-                res.send({
-                  status: "OK",
-                  msg: "Contacts found",
-                  ncontacts: nImported,
-                });
-              }
-            );
-          }
-        });
       });
     });
 
