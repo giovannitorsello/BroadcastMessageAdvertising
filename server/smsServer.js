@@ -16,6 +16,7 @@ class SmsServer {
   inteval = {};
   database = {};
   lastUpdateTimeStats = 0;
+  interval = null;
 
   constructor(app, database) {
     this.database = database;
@@ -29,20 +30,30 @@ class SmsServer {
     });      
   }
 
+  
   reloadActiveCampaings() {
     //Reload gateways
     this.loadGateways((gateways) => {
       this.smsGateways = gateways;
+      
 
       //Charge active campaigns and their contacts
       this.loadActiveCampaings((campaigns) => {
+        if (!this.existsActiveCampaigns() && this.interval) {
+          clearInterval(this.interval);
+        }
+
         this.smsCampaigns = campaigns;        
         //start sending message
-        var interval = setInterval(() => {
-          if (!this.existsActiveCampaigns()) {
-            clearInterval(interval);
-          } else this.startCampaignManager();
-        }, config.waitTime);        
+        if(this.existsActiveCampaigns())
+          this.interval = setInterval(() => {
+            this.startCampaignManager();
+            
+            //Stop campaign whe it is complete
+            if (!this.existsActiveCampaigns()) 
+              clearInterval(this.interval);                                          
+          }, config.waitTime);        
+        
       });
     });
   }
@@ -366,7 +377,7 @@ class SmsServer {
     this.database.entities.messageCampaign
       .findAll({ order: [["id", "DESC"]], where: { state: "active" } })
       .then((camps) => {
-        if (camps) {
+        if (camps && camps.length>0) {
           camps.forEach((camp, index, array) => {
             //Load remain contact only for active campaigns
             this.database.entities.customer
@@ -381,6 +392,8 @@ class SmsServer {
               });
           });
         }
+        if (camps && camps.length===0) callback([]);
+        if (!camps) callback([]);
       });
   }
 
