@@ -228,6 +228,7 @@ module.exports = {
       header: [
         { id: "id", title: "Id" },
         { id: "state", title: "Contattato?" },
+        { id: "nBillSecondsCall", title: "Secondi chiamata"},
         { id: "ncalls", title: "Chiamate" },
         { id: "firstname", title: "Nome" },
         { id: "lastname", title: "Cognome" },
