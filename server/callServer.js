@@ -842,7 +842,60 @@ class CallServer {
       });
   }
 
-  dialCall(data, callback) {
+
+
+  dialCallAmiGOIPTest(
+    iGateway,
+    iLine,
+    phoneNumber,
+    clientAmi,
+    callback
+  ) {
+    var gateway = this.gateways[iGateway];
+    if (!gateway) return;
+
+    var gatewayName = gateway.name;
+    var actionId =
+      phoneNumber + "-" + iGateway + "-" + iLine + "-" + new Date().getTime();
+    var outLine = ("000" + (iLine + 1)).slice(-3);
+    var channel = "SIP/" + gatewayName + "/" + outLine + phoneNumber;
+    if (gateway.isWorkingCall === true) {
+      console.log(
+        "Call customer: " +
+          phoneNumber +
+          " gateway: " +
+          iGateway +
+          " line: " +
+          iLine +
+          " actionID:" +
+          actionId
+      );
+      if (
+        config.pbxProperties &&
+        config.pbxProperties.context
+      ) {
+        clientAmi.action({
+          Action: "Originate",
+          ActionId: actionId,
+          Variable: "ACTIONID=" + actionId,
+          Channel: channel,
+          Context: config.pbxProperties.context, //bmacall or ivr-1
+          Exten: "s",
+          Priority: 1,
+          Timeout: 30000,
+          CallerID: "1001",
+          Async: true,
+          EarlyMedia: false,
+          Application: "",
+          Codecs: "ulaw",
+        });
+      }
+      callback({ state: "dial" });
+    } else callback({ state: "disabled" });
+  }
+
+
+  dialCallGoipTest(data, callback) {
     this.openAmiConnection((clientAmi) => {
       //Find gateway index
       const hasId = (element) => {
@@ -851,7 +904,7 @@ class CallServer {
       var iGateway = this.gateways.findIndex(hasId);
       var iLine = data.line;
       var phonenumber = data.phonenumber;
-      this.dialCallAmiGOIP(0, 0, iGateway, iLine, phonenumber, clientAmi, (res) => {
+      this.dialCallAmiGOIPTest(iGateway, iLine, phonenumber, clientAmi, (res) => {
         callback(res);
       });
     });
