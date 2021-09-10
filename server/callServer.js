@@ -452,7 +452,7 @@ class CallServer {
       }
       iGateway++;
       if (iGateway === gateways.length) iGateway = 0;
-    }, config.pbxProperties.waitCallAntifraudInterval);
+    }, config.pbxProperties.waitCallAntifraudIntervalGOIP);
   }
 
   generateCustomerCallsVOIP(campaign, clientAmi) {
@@ -537,7 +537,7 @@ class CallServer {
       if (iContacts >= contacts.length) iContacts = 0;
 
       this.updateCampaignStatistcs(campaign, (res) => console.log(res));
-    }, config.pbxProperties.waitCallCustomerInterval);
+    }, config.pbxProperties.waitCallCustomerIntervalVOIP);
 
     this.intervalCalls.push(interval);
   }
@@ -643,7 +643,7 @@ class CallServer {
       if (iContacts >= contacts.length) iContacts = 0;
 
       this.updateCampaignStatistcs(campaign, (res) => console.log(res));
-    }, config.pbxProperties.waitCallCustomerInterval);
+    }, config.pbxProperties.waitCallCustomerIntervalGOIP);
 
     this.intervalCalls.push(interval);
   }
