@@ -29,6 +29,7 @@ class CallServer {
   }
 
   init() {
+    this.gateways = [];
     this.loadGateways((gateways) => {
       this.gateways = gateways;
       this.reloadActiveCampaings();
