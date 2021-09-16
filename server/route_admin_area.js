@@ -801,8 +801,10 @@ module.exports = {
             camp.save().then(function (campNew) {
               if (campNew) {
                 //Reload campaigns in smsServer
-                callServer.reloadActiveCampaings();
-                smsServer.reloadActiveCampaings();
+                callServer.init();
+                smsServer.init();
+                //callServer.reloadActiveCampaings();
+                //smsServer.reloadActiveCampaings();
               } else {
                 res.send({
                   status: "error",
@@ -824,7 +826,7 @@ module.exports = {
             obj.setDataValue("state", "calling");
             obj.save().then(function (campNew) {
               if (campNew !== null) {
-                callServer.reloadActiveCampaings();
+                callServer.init();
                 res.send({
                   status: "OK",
                   msg: "Call campaign is started",
